@@ -13,6 +13,14 @@ import {
 import * as INF from './influence';
 import { checkAchievements } from './achievements';
 import type { ResultCode } from '../chess/rules';
+import type { AwardRecord } from '../world/types';
+import { TROPHY_BY_ID, awardsFor } from '../world/trophies';
+import { competitorPrestige } from '../world/records';
+import { ensureLedger, ledgerRecordGame, inc, isEligible, newLedger } from './ledger';
+import {
+  ensureSaveV2, pushTimeline, updateRivalry, rivalSignificance, trackSeasonGame, closeSeason, hostCostFor, championshipPrivileges,
+} from './legacy';
+import type { SeasonReport } from './state';
 
 export function newPlayer(name: string, female: boolean, day: number, startRating = DEFAULT_RATING): PlayerState {
   const ratings = {} as Record<TimeControlPool, RatingState>;
@@ -24,16 +32,19 @@ export function newPlayer(name: string, female: boolean, day: number, startRatin
     w: 0, d: 0, l: 0, ratedGames: 0, tournamentsPlayed: 0, tournamentsWon: 0, championships: 0, titles: [],
     achievements: {}, unlockedSets: [0], h2h: {}, rivalId: null, ratingHistory: [{ day, pool: 'rapid', rating: startRating }],
     openingsPlayed: {}, streak: 0, bestWinRating: 0,
+    ledger: newLedger(day), rivals: {}, seasonReports: [],
+    timeline: [{ day, kind: 'enlisted', text: `Enlisted as ${RANKS[rank].name} in ${ARENAS[0].name}.` }],
   };
 }
 
 export function newSave(world: WorldState, name: string, female: boolean, startRating = DEFAULT_RATING): Save {
   const now = new Date().toISOString();
-  return {
+  const s: Save = {
     schema: SAVE_SCHEMA, createdAt: now, updatedAt: now, seed: world.seed,
     player: newPlayer(name, female, world.day, startRating), world, settings: { ...DEFAULT_SETTINGS },
     active: null, library: [], libraryMeta: {}, coach: { positions: [] },
   };
+  return ensureSaveV2(s);
 }
 
 export function careerRating(s: Save): RatingState {
@@ -44,7 +55,7 @@ export function playerArena(s: Save): number {
   return RANKS[s.player.rank].arena;
 }
 
-export function hooksFor(s: Save, events: string[] = []): PlayerHooks {
+export function hooksFor(s: Save, events: string[] = [], awards?: AwardRecord[]): PlayerHooks {
   return {
     playerRating: () => careerRating(s).rating,
     playerArena: () => playerArena(s),
@@ -61,17 +72,29 @@ export function hooksFor(s: Save, events: string[] = []): PlayerHooks {
       else if (place <= 4) gain = Math.round(t.prize / 4);
       if (gain) gainInfluence(s, gain);
       if (place > 1) events.push(`${t.name}: finished #${place}`);
+      if (place <= 3) inc(ensureLedger(p, s.world.day), 'podiums');
       if (place === 1 && t.arena >= 0) unlockSet(s, t.arena, events);
+    },
+    onPlayerAward: (a) => {
+      const def = TROPHY_BY_ID[a.defId];
+      const gain = INF.trophyInfluence(a.defId, a.arena);
+      if (gain) gainInfluence(s, gain);
+      awards?.push(a);
+      if (def && def.category !== 'medal' && def.category !== 'cup' && def.category !== 'regional' && def.category !== 'elite') events.push(`🏅 ${def.name}${gain ? ` (+${gain} Influence)` : ''}`);
+      pushTimeline(s, { day: a.day, kind: 'trophy', text: `${def?.name ?? a.defId}${a.result ? ` · ${a.result}` : ''}${a.finalOpponentName && def?.category !== 'distinction' ? ` vs ${a.finalOpponentName}` : ''}`, ref: a.awardId, arena: a.arena });
     },
     onPlayerTitle: (titleId, gained) => {
       const p = s.player;
+      const title = s.world.titles.find((t) => t.id === titleId);
       if (gained) {
         p.titles.push(titleId);
         p.championships++;
-        events.push(`👑 You are now ${s.world.titles.find((t) => t.id === titleId)?.name}!`);
+        events.push(`👑 You are now ${title?.name}!`);
+        pushTimeline(s, { day: s.world.day, kind: 'title-won', text: `Became ${title?.name}`, ref: titleId, arena: title?.arena });
       } else {
         p.titles = p.titles.filter((x) => x !== titleId);
-        events.push(`Your title was lost: ${s.world.titles.find((t) => t.id === titleId)?.name}`);
+        events.push(`Your title was lost: ${title?.name}`);
+        pushTimeline(s, { day: s.world.day, kind: 'title-lost', text: `Lost the title ${title?.name}`, ref: titleId, arena: title?.arena });
       }
     },
   };
@@ -176,6 +199,10 @@ export type PostGame = {
   events: string[];
   achievements: string[];
   trialAvailable: boolean;
+  /** v0.2: trophies presented to the player during this game's day. */
+  trophies?: AwardRecord[];
+  /** v0.2: set when this game closed a season (show the season-end ceremony). */
+  seasonReport?: SeasonReport;
 };
 
 export function playerScore(result: ResultCode, color: 'w' | 'b'): number {
@@ -186,6 +213,7 @@ export function playerScore(result: ResultCode, color: 'w' | 'b'): number {
 }
 
 export function finishPlayerGame(s: Save, rec: GameRecord): PostGame {
+  ensureSaveV2(s);
   const p = s.player;
   const color = rec.playerColor!;
   const score = playerScore(rec.result, color);
@@ -199,6 +227,17 @@ export function finishPlayerGame(s: Save, rec: GameRecord): PostGame {
   const outcome = score === 1 ? 'win' : score === 0 ? 'loss' : 'draw';
   const oppRating = color === 'w' ? rec.black.rating : rec.white.rating;
   const oppArena = opp ? RANKS[opp.rank].arena : rec.arena;
+  // Context captured before this game changes anything (ledger / rivalry).
+  const tKind = rec.tournamentId ? s.world.tournaments.find((t) => t.id === rec.tournamentId)?.kind : undefined;
+  const prevRival = opp ? p.rivals?.[opp.id] : undefined;
+  const h0 = opp ? p.h2h[opp.id] : undefined;
+  const gctx = {
+    score, oppId: opp?.id ?? null, lastVsOpp: prevRival?.games[prevRival.games.length - 1]?.result,
+    oppWinsBefore: h0?.l ?? 0, playerWinsBefore: h0?.w ?? 0, isRival: !!opp && p.rivalId === opp.id,
+    oppHoldsTitle: !!opp && opp.titles.length > 0, oppHoldsImperial: !!opp && opp.titles.includes('title-11'),
+    oppChampionships: opp ? Math.max(opp.championships, awardsFor(s.world, opp.id).filter((a) => a.defId.startsWith('sig-')).length) : 0,
+    tournamentKind: tKind,
+  };
   if (rec.rated) {
     const after = applyResult(before, oppRating, score);
     delta = after.rating - before.rating;
@@ -227,6 +266,7 @@ export function finishPlayerGame(s: Save, rec: GameRecord): PostGame {
     else if (score === 0) h.l++;
     else h.d++;
     h.lastDay = s.world.day;
+    updateRivalry(s, rec, opp, score, tKind);
     updateRival(s, events);
     // Legitimate preparation: opponents remember the openings you play against them.
     if (rec.opening?.name) {
@@ -241,11 +281,28 @@ export function finishPlayerGame(s: Save, rec: GameRecord): PostGame {
     else o.d++;
   }
   if (infl) gainInfluence(s, infl);
+  ledgerRecordGame(s, rec, gctx);
+  trackSeasonGame(s, rec, score, opp?.id ?? null, opp?.name ?? '', oppRating);
+  const L = ensureLedger(p, s.world.day);
+  if (score === 1 && isEligible(rec) && (oppRating - before.rating >= 200 || gctx.oppHoldsTitle)) {
+    pushTimeline(s, { day: s.world.day, kind: 'notable-win', text: `Defeated ${opp?.name ?? 'an opponent'} (${oppRating})${gctx.oppHoldsTitle ? ', a reigning champion' : ''}`, ref: rec.id });
+  }
+  {
+    const est = Object.values(p.ratings).filter((r) => r.games >= 20).map((r) => r.peak);
+    const peak = Math.max(0, ...est);
+    const prev = L.peakEstablished;
+    if (peak > prev) {
+      L.peakEstablished = peak;
+      const m = Math.floor(peak / 100) * 100;
+      if (m >= 1000 && m > Math.floor(prev / 100) * 100) pushTimeline(s, { day: s.world.day, kind: 'rating-milestone', text: `Reached an established rating of ${m}`, ref: String(m) });
+    }
+  }
 
   // Trials and rank movement (career pool only).
   let rankNote: string | null = null;
   if (rec.kind === 'trial' && p.trial) {
     if (score === 1) {
+      inc(L, 'trialsWon');
       setRank(s, p.trial.toRank, 'Won promotion trial');
       rankNote = `Promoted to ${RANKS[p.trial.toRank].name} — welcome to ${ARENAS[RANKS[p.trial.toRank].arena].name}!`;
       unlockSet(s, RANKS[p.trial.toRank].arena, events);
@@ -262,6 +319,7 @@ export function finishPlayerGame(s: Save, rec: GameRecord): PostGame {
     switch (dec.kind) {
       case 'grade-up':
       case 'arena-up':
+        if (dec.kind === 'arena-up' && !isProvisional(cr)) inc(L, 'dominancePromotions');
         setRank(s, dec.to, isProvisional(cr) ? 'Placement' : dec.kind === 'arena-up' ? 'Dominance promotion' : 'Promotion');
         rankNote = isProvisional(cr) ? `Placement: ${RANKS[dec.to].name}` : `Promoted to ${RANKS[dec.to].name}`;
         if (RANKS[dec.to].arena > RANKS[rankBefore].arena) unlockSet(s, RANKS[dec.to].arena, events);
@@ -285,20 +343,39 @@ export function finishPlayerGame(s: Save, rec: GameRecord): PostGame {
   }
 
   // Tournament bookkeeping.
-  const hooks = hooksFor(s, events);
+  const trophies: AwardRecord[] = [];
+  const hooks = hooksFor(s, events, trophies);
   if (rec.kind === 'tournament' && rec.tournamentId && rec.pairingId) {
-    recordPlayerTournamentGame(s.world, rec.tournamentId, rec.pairingId, playerScore(rec.result, 'w'), hooks);
+    recordPlayerTournamentGame(s.world, rec.tournamentId, rec.pairingId, playerScore(rec.result, 'w'), hooks, rec.id);
   }
   // Every completed game moves the empire forward one day.
-  const seasonBefore = Math.floor(s.world.day / DAYS_PER_SEASON);
-  advanceDay(s.world, hooks);
-  if (Math.floor(s.world.day / DAYS_PER_SEASON) !== seasonBefore) seasonRollover(s, events);
+  const seasonReport = advancePlayerDay(s, events, trophies) ?? undefined;
   refreshInvitations(s);
   const achievements = checkAchievements(s, rec);
   return {
     outcome, rated: rec.rated, pool, ratingBefore: before.rating, ratingAfter: p.ratings[pool].rating, delta,
     rankBefore, rankAfter: p.rank, rankNote, influence: infl, events, achievements, trialAvailable: !!p.trial,
+    trophies, seasonReport,
   };
+}
+
+/**
+ * Advance the empire one day on the player's behalf: tournaments, off-screen
+ * play, season rollover (Influence decay + season-end report) and the
+ * "rival promoted" Chronicle entry. Returns the SeasonReport if a season ended.
+ */
+export function advancePlayerDay(s: Save, events: string[], trophies?: AwardRecord[]): SeasonReport | null {
+  const rival = s.player.rivalId ? s.world.competitors.find((c) => c.id === s.player.rivalId && c.retiredDay === null) : undefined;
+  const rivalArena = rival ? RANKS[rival.rank].arena : -1;
+  const seasonBefore = Math.floor(s.world.day / DAYS_PER_SEASON);
+  advanceDay(s.world, hooksFor(s, events, trophies));
+  let report: SeasonReport | null = null;
+  if (Math.floor(s.world.day / DAYS_PER_SEASON) !== seasonBefore) report = seasonRollover(s, events);
+  if (rival && RANKS[rival.rank].arena > rivalArena) {
+    pushChronicle(s.world, { day: s.world.day, kind: 'promotion', tag: 'rival-promoted', arena: RANKS[rival.rank].arena, ids: [rival.id, PLAYER_ID], text: `${s.player.name}'s rival ${rival.name} is promoted to ${ARENAS[RANKS[rival.rank].arena].name}.` });
+    events.push(`Your rival ${rival.name} has been promoted to ${ARENAS[RANKS[rival.rank].arena].name}.`);
+  }
+  return report;
 }
 
 export function setRank(s: Save, to: number, reason: string) {
@@ -306,86 +383,130 @@ export function setRank(s: Save, to: number, reason: string) {
   if (to === p.rank) return;
   p.rank = to;
   p.peakRank = Math.max(p.peakRank, to);
+  const from = p.rankHistory[p.rankHistory.length - 1]?.rank ?? 0;
   p.rankHistory.push({ day: s.world.day, rank: to, reason });
+  // Timeline: every real promotion/demotion; provisional placement only when it changes arena.
+  if (reason !== 'Placement' || RANKS[to].arena !== RANKS[from].arena) {
+    const down = reason === 'Demotion' || to < from;
+    pushTimeline(s, { day: s.world.day, kind: down ? 'demotion' : 'promotion', text: `${reason}: ${RANKS[to].name} (${ARENAS[RANKS[to].arena].name})`, ref: String(to), arena: RANKS[to].arena });
+  }
   if (RANKS[to].arena >= 3 && reason !== 'Demotion') {
     pushChronicle(s.world, { day: s.world.day, kind: 'player', arena: RANKS[to].arena, text: `${p.name} rises to ${RANKS[to].name}.` });
   }
 }
 
-export function seasonRollover(s: Save, events: string[]) {
+export function seasonRollover(s: Save, events: string[]): SeasonReport {
   s.player.influence = Math.floor(s.player.influence * INF.SEASON_DECAY);
+  const report = closeSeason(s);
   events.push(`A new season begins: Season ${s.world.season + 1}`);
+  return report;
 }
 
+/** Rival = the most significant active rivalry (≥ 3 games), see legacy.rivalSignificance. */
 function updateRival(s: Save, events: string[]) {
   const p = s.player;
   let best: string | null = null;
   let bestScore = 0;
   const act = activeById(s);
-  for (const [id, h] of Object.entries(p.h2h)) {
-    if (!act.has(id)) continue;
-    const n = h.w + h.d + h.l;
-    if (n < 3) continue;
-    const closeness = 1 / (1 + Math.abs(h.w - h.l));
-    const recency = 1 / (1 + (s.world.day - h.lastDay) / 20);
-    const sc = n * closeness * recency + (h.l > h.w ? 1 : 0);
-    if (sc > bestScore) {
+  for (const r of Object.values(p.rivals ?? {})) {
+    if (!act.has(r.id) || r.w + r.d + r.l < 3) continue;
+    const sc = rivalSignificance(r, s.world.day);
+    if (sc > bestScore || (sc === bestScore && best !== null && r.id < best)) {
       bestScore = sc;
-      best = id;
+      best = r.id;
     }
   }
   if (best && best !== p.rivalId) {
     p.rivalId = best;
     events.push(`New rival: ${act.get(best)!.name}`);
+    pushTimeline(s, { day: s.world.day, kind: 'rival', text: `New rival: ${act.get(best)!.name}`, ref: best });
   }
 }
 
 // ---------------------------------------------------------------- invitations
 
+/**
+ * Invitations, strictly derived from eligibility (see docs/WORLD.md):
+ *  trial              — a promotion trial is pending and off cooldown
+ *  regional-championship / open-registration — the arena League / Open starts within 4 days
+ *  invitational / elite-invitational — Influence ≥ threshold, OR top-6 rating in the arena,
+ *                       OR a reigning title holder (privilege), OR prestige ≥ 40 × (arena+1)
+ *  seeded / wildcard  — Cup/Gauntlet: seeded if your rating is within the arena's top `size`;
+ *                       wildcard if recent form (last 5 rated ≥ 3.5) or prestige qualifies
+ *  title-challenge    — won an event in this arena within 28 days and Influence ≥ threshold
+ *  rival-rematch      — your rival exists, you met ≥ 3 days ago or they lost the last game
+ *  exhibition         — prestige ≥ 150 and a title / Season Laurel / top-3 standing
+ *  challenge          — an in-form competitor within 120 points (seeded daily draw)
+ * Guarantee: if you have no entry in the current season, the next open-entry event of
+ * your arena is offered regardless of the 4-day window (open registration / wildcard).
+ */
 export function refreshInvitations(s: Save) {
   const w = s.world;
   const day = w.day;
-  w.invitations = w.invitations.filter((i) => i.expiresDay >= day);
+  w.invitations = w.invitations.filter((i) => i.expiresDay >= day && (!i.tournamentId || w.tournaments.some((t) => t.id === i.tournamentId && t.status === 'scheduled' && !t.playerEntered)));
   const rng = createRng(mixSeed(s.seed, 'inv', day));
   const arena = playerArena(s);
   const r = careerRating(s).rating;
   const has = (k: string, t?: string) => w.invitations.some((i) => i.kind === k && (!t || i.tournamentId === t));
+  const hasT = (t: string) => w.invitations.some((i) => i.tournamentId === t);
   const act = s.world.competitors.filter((c) => c.retiredDay === null);
-  const push = (i: Omit<Invitation, 'id' | 'createdDay'>) => {
-    if (w.invitations.length >= 6) return;
+  const priv = championshipPrivileges(s);
+  const p = s.player;
+  const L = ensureLedger(p, day);
+  const recent5 = L.recent.slice(-5);
+  const inForm = recent5.length >= 5 && recent5.reduce((a, b) => a + b, 0) >= 3.5;
+  const ranked = act.filter((c) => RANKS[c.rank].arena === arena).sort((a, b) => b.rating - a.rating || (a.id < b.id ? -1 : 1));
+  const ratingRank = ranked.filter((c) => c.rating > r).length + 1; // your standing in the arena
+  const push = (i: Omit<Invitation, 'id' | 'createdDay'>, priority = false) => {
+    if (w.invitations.length >= (priority ? 8 : 6)) return;
     w.invitations.push({ ...i, id: `inv-${day}-${w.invitations.length}-${rng.int(0, 1e6)}`, createdDay: day });
   };
   // Promotion trial.
-  const p = s.player;
   if (p.trial && p.ratedGames >= p.trial.cooldownUntilGames && !has('trial')) {
     const target = RANKS[p.trial.toRank].arena;
     const cands = act.filter((c) => RANKS[c.rank].arena === target && c.rating < ARENAS[target].floor + 160 && c.games >= 20);
     const opp = cands.length ? rng.pick(cands) : null;
-    if (opp) push({ kind: 'trial', fromId: opp.id, title: `Promotion Trial`, detail: `Defeat ${opp.name} to enter ${ARENAS[target].name}.`, stakes: `Win → ${RANKS[p.trial.toRank].name}`, expiresDay: day + 30 });
+    if (opp) push({ kind: 'trial', context: 'trial', reason: 'Your rating reached the next arena floor.', fromId: opp.id, title: `Promotion Trial`, detail: `Defeat ${opp.name} to enter ${ARENAS[target].name}.`, stakes: `Win → ${RANKS[p.trial.toRank].name}`, expiresDay: day + 30 }, true);
   }
+  const enteredThisSeason = w.tournaments.some((t) => t.playerEntered && !t.playerWithdrawn && t.season === w.season && t.hostId === undefined);
+  const invThreshold = INF.invitationalThreshold(arena);
+  const prestigeOk = p.prestige >= 40 * (arena + 1);
   // Tournament registrations and invitations for the player's arena.
   for (const t of w.tournaments) {
     if (t.status !== 'scheduled' || t.arena !== arena || t.playerEntered) continue;
     if (t.startDay - day > 4) continue;
-    if (has('invitational', t.id) || has('wildcard', t.id) || has('championship', t.id) || has('exhibition', t.id)) continue;
+    if (hasT(t.id)) continue;
     if (t.kind === 'open' || t.kind === 'league') {
-      push({ kind: 'invitational', fromId: null, tournamentId: t.id, title: t.name, detail: t.kind === 'open' ? 'Open registration · Swiss' : 'Season league · double round-robin', stakes: `${t.prize} Influence to the winner`, expiresDay: t.startDay });
-    } else if (t.kind === 'invitational' && p.influence >= INF.invitationalThreshold(arena)) {
-      push({ kind: 'invitational', fromId: null, tournamentId: t.id, title: t.name, detail: 'Invitation by standing · round-robin', stakes: `${t.prize} Influence`, expiresDay: t.startDay });
+      push({
+        kind: 'invitational', context: t.kind === 'open' ? 'open-registration' : 'regional-championship', fromId: null, tournamentId: t.id, title: t.name,
+        detail: t.kind === 'open' ? 'Open registration · Swiss' : 'Regional championship · season league, double round-robin',
+        reason: t.kind === 'open' ? 'Every competitor of the arena may register.' : 'Season league of your arena.',
+        stakes: `${t.prize} Influence to the winner`, expiresDay: t.startDay,
+      }, true);
+    } else if (t.kind === 'invitational') {
+      const why = priv.autoSeeded ? 'Reigning champion' : p.influence >= invThreshold ? `Influence ≥ ${invThreshold}` : ratingRank <= 6 ? `Rated #${ratingRank} in the arena` : prestigeOk ? 'Prestige' : null;
+      if (why) push({ kind: 'invitational', context: arena >= 6 ? 'elite-invitational' : 'invitational', reason: why, fromId: null, tournamentId: t.id, title: t.name, detail: `${arena >= 6 ? 'Elite invitation' : 'Invitation by standing'} · round-robin`, stakes: `${t.prize} Influence`, expiresDay: t.startDay }, true);
     } else if (t.kind === 'cup' || t.kind === 'gauntlet') {
-      const ranked = act.filter((c) => RANKS[c.rank].arena === arena).sort((a, b) => b.rating - a.rating);
-      const cut = ranked[Math.min(ranked.length - 1, t.size - 1)]?.rating ?? 0;
-      if (r >= cut || rng.chance(0.35)) push({ kind: r >= cut ? 'invitational' : 'wildcard', fromId: null, tournamentId: t.id, title: t.name, detail: r >= cut ? 'Seeded entry' : 'Wildcard entry', stakes: `${t.prize} Influence`, expiresDay: t.startDay });
+      const seeded = ratingRank <= t.size || priv.autoSeeded;
+      const wild = !seeded && (inForm || prestigeOk || p.influence >= Math.ceil(invThreshold / 2));
+      if (seeded || wild) push({ kind: seeded ? 'invitational' : 'wildcard', context: seeded ? 'seeded' : 'wildcard', reason: seeded ? (priv.autoSeeded ? 'Reigning champion' : `Rated #${ratingRank} in the arena`) : inForm ? 'Recent form' : 'Standing', fromId: null, tournamentId: t.id, title: t.name, detail: seeded ? 'Seeded entry' : 'Wildcard entry', stakes: `${t.prize} Influence`, expiresDay: t.startDay }, true);
     } else if (t.kind === 'championship') {
       const title = w.titles.find((x) => x.id === t.titleId);
       const isHolder = title?.holder === PLAYER_ID;
       const lastWin = [...w.history].reverse().find((h) => h.arena === arena && h.winner === PLAYER_ID && h.endDay > day - 28);
       if (!isHolder && lastWin && p.influence >= INF.championshipThreshold(arena)) {
-        push({ kind: 'championship', fromId: title?.holder ?? null, tournamentId: t.id, title: `Challenge for ${title?.name}`, detail: `Your ${lastWin.name} victory earned a title shot.`, stakes: `The crown · ${t.prize} Influence`, expiresDay: t.startDay });
+        push({ kind: 'championship', context: 'title-challenge', reason: `Won the ${lastWin.name}`, fromId: title?.holder ?? null, tournamentId: t.id, title: `Challenge for ${title?.name}`, detail: `Your ${lastWin.name} victory earned a title shot.`, stakes: `The crown · ${t.prize} Influence`, expiresDay: t.startDay }, true);
       }
     }
   }
-  // Defend your title automatically.
+  // Seasonal guarantee: at least one meaningful competition per season.
+  if (!enteredThisSeason && !w.invitations.some((i) => i.tournamentId)) {
+    const next = w.tournaments
+      .filter((t) => t.status === 'scheduled' && t.arena === arena && !t.playerEntered && t.kind !== 'championship' && t.kind !== 'hosted' && t.startDay >= day)
+      .sort((a, b) => a.startDay - b.startDay || (a.id < b.id ? -1 : 1))[0];
+    if (next) push({ kind: next.kind === 'open' || next.kind === 'league' ? 'invitational' : 'wildcard', context: next.kind === 'open' ? 'open-registration' : next.kind === 'league' ? 'regional-championship' : 'wildcard', reason: 'Seasonal entry: you have no event this season.', fromId: null, tournamentId: next.id, title: next.name, detail: `Seasonal entry · starts day ${next.startDay}`, stakes: `${next.prize} Influence`, expiresDay: next.startDay }, true);
+  }
+  // Defend your title automatically (champions are auto-entered and auto-seeded).
   for (const t of w.tournaments) {
     if (t.kind === 'championship' && t.status === 'scheduled' && w.titles.find((x) => x.id === t.titleId)?.holder === PLAYER_ID) t.playerEntered = true;
   }
@@ -394,18 +515,22 @@ export function refreshInvitations(s: Save) {
     const cands = act.filter((c) => Math.abs(c.rating - r) < 120 && c.form > 0.1);
     if (cands.length) {
       const c = rng.pick(cands);
-      push({ kind: 'challenge', fromId: c.id, title: `${c.name} challenges you`, detail: `${RANKS[c.rank].name} · ${c.rating}`, stakes: 'Rated', expiresDay: day + 4 });
+      push({ kind: 'challenge', context: 'challenge', reason: 'An in-form competitor near your rating.', fromId: c.id, title: `${c.name} challenges you`, detail: `${RANKS[c.rank].name} · ${c.rating}`, stakes: 'Rated', expiresDay: day + 4 });
     }
   }
-  if (p.rivalId && !has('rivalry') && rng.chance(0.3)) {
+  if (p.rivalId && !has('rivalry')) {
     const c = act.find((x) => x.id === p.rivalId);
-    if (c) push({ kind: 'rivalry', fromId: c.id, title: `Rematch: ${c.name}`, detail: 'Your rival demands another game.', stakes: 'Rated · +5 Influence on victory', expiresDay: day + 5 });
+    const rv = p.rivals?.[p.rivalId];
+    const last = rv?.games[rv.games.length - 1];
+    const due = !!c && !!rv && (rv.lastDay <= day - 3 || last?.result === 'w');
+    if (c && due) push({ kind: 'rivalry', context: 'rival-rematch', reason: last?.result === 'w' ? 'Your rival lost the last meeting and demands revenge.' : 'Your rivalry is waiting.', fromId: c.id, title: `Rematch: ${c.name}`, detail: `Your rival demands another game · ${rv!.w}-${rv!.d}-${rv!.l}`, stakes: 'Rated · +5 Influence on victory', expiresDay: day + 5 });
   }
-  if (p.prestige >= 150 && rng.chance(0.06) && !has('exhibition')) {
-    const elite = act.filter((c) => RANKS[c.rank].arena >= Math.min(11, arena + 2)).sort((a, b) => b.rating - a.rating);
+  const standingOk = priv.autoSeeded || awardsFor(w, PLAYER_ID).some((a) => a.defId.startsWith('laurel-')) || ratingRank <= 3;
+  if (p.prestige >= 150 && standingOk && rng.chance(0.06) && !has('exhibition')) {
+    const elite = act.filter((c) => RANKS[c.rank].arena >= Math.min(11, arena + 2)).sort((a, b) => competitorPrestige(w, b) - competitorPrestige(w, a) || b.rating - a.rating);
     if (elite.length) {
       const c = elite[rng.int(0, Math.min(10, elite.length))];
-      push({ kind: 'exhibition', fromId: c.id, title: `Exhibition vs ${c.name}`, detail: `An elite ${RANKS[c.rank].name} accepts your request.`, stakes: 'Rated · prestige', expiresDay: day + 5 });
+      push({ kind: 'exhibition', context: 'exhibition', reason: 'Your prestige and standing', fromId: c.id, title: `Exhibition vs ${c.name}`, detail: `An elite ${RANKS[c.rank].name} accepts your request.`, stakes: 'Rated · prestige', expiresDay: day + 5 });
     }
   }
 }
@@ -442,20 +567,21 @@ export function playerWithdraw(s: Save, tournamentId: string) {
 /** Let in-world time pass without playing (e.g. to reach a tournament start). */
 export function restDays(s: Save, days: number): string[] {
   const events: string[] = [];
+  ensureSaveV2(s);
   for (let i = 0; i < days; i++) {
     if (playerTournamentGame(s)) break; // never skip your own scheduled game
-    const seasonBefore = Math.floor(s.world.day / DAYS_PER_SEASON);
-    advanceDay(s.world, hooksFor(s, events));
-    if (Math.floor(s.world.day / DAYS_PER_SEASON) !== seasonBefore) seasonRollover(s, events);
+    advancePlayerDay(s, events);
   }
   refreshInvitations(s);
+  checkAchievements(s, null);
   return events;
 }
 
 /** Spend influence to host an invitational in your arena (top contenders invited). */
 export function hostInvitational(s: Save): string | null {
+  ensureSaveV2(s);
   const arena = playerArena(s);
-  const cost = INF.hostCost(arena);
+  const cost = hostCostFor(s); // title holders host at a 25% discount
   if (s.player.influence < cost) return null;
   s.player.influence -= cost;
   const w = s.world;
@@ -465,7 +591,8 @@ export function hostInvitational(s: Save): string | null {
     startDay: w.day, roundEveryDays: 1, nextRoundDay: w.day, status: 'scheduled', state: null, playerEntered: true,
     prize: INF.prizeFor('hosted', arena), featured: [], gameIds: {}, size: 6, hostId: PLAYER_ID,
   });
-  advanceDay(w, hooksFor(s));
+  inc(ensureLedger(s.player, w.day), 'hosted');
+  advancePlayerDay(s, []);
   return id;
 }
 
@@ -475,4 +602,13 @@ export function opponentPersonaElo(c: Competitor): number {
 
 export function bestRating(s: Save): number {
   return Math.max(...POOLS.map((p) => s.player.ratings[p].peak));
+}
+
+/**
+ * Re-evaluate achievements and invitations without playing (e.g. after a
+ * spectated broadcast decided a tournament, or on load). Idempotent.
+ */
+export function syncCareer(s: Save): string[] {
+  ensureSaveV2(s);
+  return checkAchievements(s, null);
 }

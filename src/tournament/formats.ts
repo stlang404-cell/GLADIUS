@@ -24,7 +24,12 @@ export type Pairing = {
   forfeit?: 'white' | 'black' | 'both';
 };
 
-export type TournamentConfig = { rounds?: number; matchGames?: number };
+export type TournamentConfig = {
+  rounds?: number;
+  matchGames?: number;
+  /** Entrants seeded first, in this order, ahead of rating order (e.g. reigning title holders). */
+  topSeeds?: EntrantId[];
+};
 
 type Stage = 'bracket' | 'gf' | 'gf2' | 'done';
 
@@ -234,7 +239,11 @@ export function createTournament(
   if (new Set(entrants).size !== entrants.length) throw new Error('Duplicate entrants');
   if (entrants.length < 2) throw new Error('A tournament needs at least 2 entrants');
   if (format === 'match-series' && entrants.length !== 2) throw new Error('A match series needs exactly 2 entrants');
+  const top = (config.topSeeds ?? []).filter((x) => entrants.includes(x));
   const seeded = [...entrants].sort((a, b) => {
+    const ta = top.indexOf(a);
+    const tb = top.indexOf(b);
+    if (ta !== tb) return (ta < 0 ? Infinity : ta) - (tb < 0 ? Infinity : tb);
     const d = (ratings[b] ?? 0) - (ratings[a] ?? 0);
     if (d !== 0) return d;
     return a < b ? -1 : a > b ? 1 : 0;
@@ -854,7 +863,7 @@ function generateMatch(t: TournamentState): void {
 // ---------------------------------------------------------------------------
 
 /** [white score, black score] of a finished game (forfeits respected). */
-function gameScores(p: Pairing): [number, number] {
+export function gameScores(p: Pairing): [number, number] {
   if (p.result === null) return [0, 0];
   if (p.black === null) return [p.result, 0];
   if (p.forfeit === 'both') return [0, 0];

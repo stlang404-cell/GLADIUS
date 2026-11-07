@@ -4,7 +4,9 @@ import {
   type Format, type Pairing, type TournamentState,
 } from '../tournament/formats';
 import { ARENAS, RANKS } from './arenas';
-import { DAYS_PER_SEASON, type Competitor } from './types';
+import { DAYS_PER_SEASON, type Competitor, type AwardRecord, type ChronicleEntry } from './types';
+import { processTournamentAwards, presentSeasonLaurels, titleSeriesChanged, ensureWorldV2 } from './trophies';
+import { competitorPrestige, checkRecordsBroken } from './records';
 import { simulateGame, recordCompetitorResult, pushChronicle, simulateDay } from './sim';
 import type { WorldState, WorldTournament, TournamentKind, TournamentSummary } from '../game/state';
 import { prizeFor } from '../game/influence';
@@ -66,11 +68,18 @@ function pickEntrants(w: WorldState, arena: number, size: number, kind: Tourname
   }
   if (pool.length < 2) return [];
   if (kind === 'invitational' || kind === 'league' || kind === 'cup') {
-    // Invitations by standing: rating + recent form + titles.
-    pool.sort((a, b) => b.rating + b.form * 80 + b.tournamentsWon * 5 - (a.rating + a.form * 80 + a.tournamentsWon * 5));
+    // Invitations by standing: rating + recent form + prestige (real honours, titles, peak).
+    const key = new Map(pool.map((c) => [c.id, standingKey(w, c)]));
+    pool.sort((a, b) => key.get(b.id)! - key.get(a.id)! || (a.id < b.id ? -1 : 1));
     const top = pool.slice(0, Math.max(size, Math.ceil(size * 1.5)));
     const chosen: Competitor[] = [];
     while (chosen.length < size && top.length) chosen.push(top.splice(rng.int(0, Math.min(top.length, size)), 1)[0]);
+    // Championship privilege: the arena's reigning champion is always invited.
+    const holder = w.titles.find((t) => t.arena === arena)?.holder;
+    if (holder && holder !== PLAYER_ID && !chosen.some((c) => c.id === holder)) {
+      const hc = pool.find((c) => c.id === holder);
+      if (hc && chosen.length) chosen[chosen.length - 1] = hc;
+    }
     return chosen.map((c) => c.id);
   }
   // Opens: anyone may register; random draw from the arena.
@@ -78,6 +87,11 @@ function pickEntrants(w: WorldState, arena: number, size: number, kind: Tourname
   const copy = [...pool];
   while (out.length < size && copy.length) out.push(copy.splice(rng.int(0, copy.length), 1)[0].id);
   return out;
+}
+
+/** Seeding / invitation standing: rating + form + capped prestige (see docs/WORLD.md). */
+export function standingKey(w: WorldState, c: Competitor): number {
+  return c.rating + c.form * 80 + Math.min(300, competitorPrestige(w, c)) * 0.4;
 }
 
 export function scheduleSeason(w: WorldState, season: number) {
@@ -105,6 +119,8 @@ export type PlayerHooks = {
   playerName: string;
   onPlayerTournamentEnd?: (t: WorldTournament, place: number) => void;
   onPlayerTitle?: (titleId: string, gained: boolean) => void;
+  /** v0.2: a trophy was presented to the player (called once per new award). */
+  onPlayerAward?: (a: AwardRecord) => void;
 };
 
 function startTournament(w: WorldState, t: WorldTournament, hooks: PlayerHooks | null) {
@@ -113,11 +129,19 @@ function startTournament(w: WorldState, t: WorldTournament, hooks: PlayerHooks |
   let entrants: string[];
   if (t.kind === 'championship') {
     const title = w.titles.find((x) => x.id === t.titleId)!;
+    // A champion who retired or left the arena relinquishes the title before the match.
+    if (title.holder && title.holder !== PLAYER_ID) {
+      const hc = w.competitors.find((c) => c.id === title.holder);
+      if (!hc || hc.retiredDay !== null) vacateTitle(w, title, hc ? `${hc.name} retires as champion; the title ${title.name} is vacated.` : `The title ${title.name} is vacated.`, hooks);
+      else if (RANKS[hc.rank].arena !== t.arena) vacateTitle(w, title, `${hc.name} now competes in ${ARENAS[RANKS[hc.rank].arena].name} and relinquishes the title ${title.name}.`, hooks);
+    } else if (title.holder === PLAYER_ID && hooks && hooks.playerArena() !== t.arena) {
+      vacateTitle(w, title, `${hooks.playerName} now competes in ${ARENAS[hooks.playerArena()].name} and relinquishes the title ${title.name}.`, hooks);
+    }
     const challenger = championshipChallenger(w, t.arena, title.holder);
     let holder = title.holder;
-    if (!holder || (holder !== PLAYER_ID && !w.competitors.find((c) => c.id === holder && c.retiredDay === null))) {
+    if (!holder) {
       // Vacant title: the two top contenders contest it.
-      const pool = arenaPool(w, t.arena).sort((a, b) => b.rating - a.rating);
+      const pool = arenaPool(w, t.arena).filter((c) => c.id !== challenger).sort((a, b) => b.rating - a.rating || (a.id < b.id ? -1 : 1));
       holder = pool[0]?.id ?? null;
     }
     const ch = t.playerEntered && holder !== PLAYER_ID ? PLAYER_ID : challenger && challenger !== holder ? challenger : null;
@@ -138,11 +162,32 @@ function startTournament(w: WorldState, t: WorldTournament, hooks: PlayerHooks |
   const ratings: Record<string, number> = {};
   for (const id of entrants) ratings[id] = id === PLAYER_ID ? (hooks?.playerRating() ?? 1000) : (byId.get(id)?.rating ?? 1000);
   const arenaGames = t.arena >= 8 ? 6 : 4;
-  t.state = createTournament(t.format, entrants, ratings, t.format === 'match-series' ? { matchGames: arenaGames } : undefined);
+  // Championship privilege: reigning title holders are seeded first (own arena's champion on top).
+  const holders = w.titles.filter((x) => x.holder && entrants.includes(x.holder)).sort((a, b) => Number(b.arena === t.arena) - Number(a.arena === t.arena) || b.arena - a.arena).map((x) => x.holder!);
+  const cfg = t.format === 'match-series' ? { matchGames: arenaGames } : holders.length ? { topSeeds: holders } : undefined;
+  t.state = createTournament(t.format, entrants, ratings, cfg);
   t.status = 'running';
   t.nextRoundDay = w.day;
   // Feature the most prestigious pairings for live engine broadcast in Spectate.
   markFeatured(t);
+}
+
+/** Vacate a title (holder retired or left the arena). Reign closed, awards become historical. */
+export function vacateTitle(w: WorldState, title: WorldState['titles'][number], text: string, hooks: PlayerHooks | null) {
+  const prev = title.holder;
+  if (!prev) return;
+  const reign = w.reigns.find((r) => r.titleId === title.id && r.to === null);
+  if (reign) reign.to = w.day;
+  if (prev === PLAYER_ID) hooks?.onPlayerTitle?.(title.id, false);
+  else {
+    const pc = w.competitors.find((c) => c.id === prev);
+    if (pc) pc.titles = pc.titles.filter((x) => x !== title.id);
+  }
+  title.holder = null;
+  title.since = w.day;
+  title.defenses = 0;
+  titleSeriesChanged(w, title.arena, null);
+  pushChronicle(w, { day: w.day, kind: 'title', arena: title.arena, ids: [prev], text });
 }
 
 export function markFeatured(t: WorldTournament) {
@@ -163,7 +208,9 @@ export function championshipChallenger(w: WorldState, arena: number, holder: str
     const c = w.competitors.find((x) => x.id === cand.winner);
     if (c && c.retiredDay === null && Math.abs(RANKS[c.rank].arena - arena) <= 1) return c.id;
   }
-  const pool = arenaPool(w, arena).filter((c) => c.id !== holder).sort((a, b) => b.rating - a.rating);
+  const pool = arenaPool(w, arena).filter((c) => c.id !== holder);
+  const key = new Map(pool.map((c) => [c.id, c.rating + Math.min(300, competitorPrestige(w, c)) * 0.3]));
+  pool.sort((a, b) => key.get(b.id)! - key.get(a.id)! || (a.id < b.id ? -1 : 1));
   return pool[0]?.id ?? null;
 }
 
@@ -217,6 +264,14 @@ function finishTournament(w: WorldState, t: WorldTournament, hooks: PlayerHooks 
   }
   w.history.push(summary);
   if (w.history.length > 1500) w.history.splice(0, w.history.length - 1500);
+  // Trophies (before the title changes hands, so defences are recognised).
+  const titleBefore = t.kind === 'championship' && t.titleId ? w.titles.find((x) => x.id === t.titleId) : undefined;
+  processTournamentAwards(w, t, {
+    nameOf: (id) => nameOf(id),
+    prevHolder: titleBefore?.holder ?? null,
+    prevDefenses: titleBefore?.defenses ?? 0,
+    onAward: (a) => { if (a.holder === PLAYER_ID) hooks?.onPlayerAward?.(a); },
+  });
   const wc = winner ? byId.get(winner) : undefined;
   if (wc) {
     wc.tournamentsWon++;
@@ -232,6 +287,9 @@ function finishTournament(w: WorldState, t: WorldTournament, hooks: PlayerHooks 
       if (reign) reign.defenses++;
       pushChronicle(w, { day: w.day, kind: 'title', arena: t.arena, ids: [winner], text: `${nameOf(winner)} defends the ${short(t.arena)} crown against ${nameOf(runnerUp)}.` });
     } else {
+      const comeback = w.reigns.some((r) => r.titleId === title.id && r.holder === winner && r.to !== null);
+      const gap = (st.ratings[runnerUp ?? ''] ?? 0) - (st.ratings[winner] ?? 0);
+      const tag: ChronicleEntry['tag'] = prev && runnerUp === prev && gap >= 150 ? 'elite-upset' : comeback ? 'comeback' : 'new-champion';
       const old = w.reigns.find((r) => r.titleId === title.id && r.to === null);
       if (old) old.to = w.day;
       if (prev && prev !== PLAYER_ID) {
@@ -242,20 +300,31 @@ function finishTournament(w: WorldState, t: WorldTournament, hooks: PlayerHooks 
       title.holder = winner;
       title.since = w.day;
       title.defenses = 0;
+      titleSeriesChanged(w, t.arena, winner);
       w.reigns.push({ titleId: title.id, holder: winner, holderName: nameOf(winner), from: w.day, to: null, defenses: 0 });
       if (winner === PLAYER_ID) hooks?.onPlayerTitle?.(title.id, true);
       else if (wc) {
         wc.titles.push(title.id);
         wc.championships++;
       }
-      pushChronicle(w, {
-        day: w.day, kind: 'title', arena: t.arena, ids: [winner],
-        text: prev ? `${nameOf(winner)} dethrones ${nameOf(prev)} to become ${title.name}.` : `${nameOf(winner)} claims the vacant title ${title.name}.`,
-      });
+      const text = tag === 'comeback'
+        ? `${nameOf(winner)} regains the crown: ${title.name} once more, defeating ${nameOf(runnerUp)}.`
+        : tag === 'elite-upset'
+          ? `Upset! ${nameOf(winner)} (${st.ratings[winner]}) dethrones ${nameOf(prev)} (${st.ratings[prev!]}) to become ${title.name}.`
+          : prev ? `${nameOf(winner)} dethrones ${nameOf(prev)} to become ${title.name}.` : `${nameOf(winner)} claims the vacant title ${title.name}.`;
+      pushChronicle(w, { day: w.day, kind: 'title', tag, arena: t.arena, ids: prev ? [winner, prev] : [winner], text });
     }
-  } else if (winner && (t.arena >= 6 || t.kind === 'league' || winner === PLAYER_ID)) {
-    pushChronicle(w, { day: w.day, kind: 'tournament', arena: t.arena, ids: [winner], text: `${nameOf(winner)} wins the ${t.name}.` });
-  }
+  } else if (winner) {
+    const seed = st.entrants.indexOf(winner);
+    const gap = (st.ratings[st.entrants[0]] ?? 0) - (st.ratings[winner] ?? 0);
+    const upset = st.entrants.length >= 6 && seed >= st.entrants.length / 2 && gap >= 150;
+    if (upset && (t.arena >= 3 || winner === PLAYER_ID)) {
+      pushChronicle(w, { day: w.day, kind: 'tournament', tag: 'tournament-upset', arena: t.arena, ids: [winner], text: `Upset: ${nameOf(winner)}, seeded ${seed + 1} of ${st.entrants.length}, wins the ${t.name}.` });
+    } else if (t.arena >= 6 || t.kind === 'league' || winner === PLAYER_ID) {
+      pushChronicle(w, { day: w.day, kind: 'tournament', arena: t.arena, ids: [winner], text: `${nameOf(winner)} wins the ${t.name}.` });
+    }
+  }  // A late event may complete a past season: present its Season Laurel now.
+  if (t.season < w.season) presentSeasonLaurels(w, (id) => nameOf(id), (a) => { if (a.holder === PLAYER_ID) hooks?.onPlayerAward?.(a); });
 }
 
 /** Advance tournaments for the current day. Rounds wait for the player's own game. */
@@ -283,11 +352,12 @@ export function tickTournaments(w: WorldState, hooks: PlayerHooks | null) {
 }
 
 /** Record the player's tournament game. */
-export function recordPlayerTournamentGame(w: WorldState, tournamentId: string, pairingId: string, whiteScore: number, hooks: PlayerHooks) {
+export function recordPlayerTournamentGame(w: WorldState, tournamentId: string, pairingId: string, whiteScore: number, hooks: PlayerHooks, gameId?: string) {
   const t = w.tournaments.find((x) => x.id === tournamentId);
   if (!t?.state) return;
   const p = t.state.rounds.flat().find((x) => x.id === pairingId);
   if (!p || p.result !== null) return;
+  if (gameId) t.gameIds[pairingId] = gameId;
   // Rate the AI side (the player's own rating is handled by the career module).
   const byId = competitorById(w);
   const oppId = p.white === PLAYER_ID ? p.black : p.white;
@@ -336,6 +406,7 @@ export function withdrawPlayer(w: WorldState, tournamentId: string, hooks: Playe
 
 /** Advance the world one day: off-screen games, tournaments, season rollover. */
 export function advanceDay(w: WorldState, hooks: PlayerHooks | null) {
+  ensureWorldV2(w);
   tickTournaments(w, hooks);
   const busy = new Set<string>();
   for (const t of w.tournaments) if (t.status === 'running' && t.state) for (const id of t.state.entrants) busy.add(id);
@@ -345,6 +416,11 @@ export function advanceDay(w: WorldState, hooks: PlayerHooks | null) {
   if (seasonAfter !== seasonBefore) {
     w.season = seasonAfter;
     scheduleSeason(w, seasonAfter);
+    const names = new Map(w.competitors.map((c) => [c.id, c.name]));
+    presentSeasonLaurels(w, (id) => (id === PLAYER_ID ? (hooks?.playerName ?? 'You') : names.get(id) ?? id), (a) => {
+      if (a.holder === PLAYER_ID) hooks?.onPlayerAward?.(a);
+    });
+    checkRecordsBroken(w, (e) => pushChronicle(w, e));
     // Keep only live and recent tournaments in the save; summaries persist in history.
     w.tournaments = w.tournaments.filter((t) => t.status !== 'complete' || t.season >= seasonAfter - 1 || t.playerEntered && t.season >= seasonAfter - 4);
   }

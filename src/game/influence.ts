@@ -31,3 +31,20 @@ export const PRIZE_MULT: Record<string, number> = { open: 6, cup: 8, gauntlet: 8
 export function prizeFor(kind: string, arena: number): number {
   return (PRIZE_MULT[kind] ?? 6) * (arena + 1);
 }
+
+/**
+ * v0.2 trophy & achievement Influence (player only; modest; also adds to prestige):
+ *   signature championship trophy: 10 + arena    Imperial Crown: +25
+ *   title defence: 8      Season Laurel: 8       lifetime distinction: 15
+ *   historical feat: 20   cups / medals: 0 (already paid through tournament prizes)
+ *   achievements: common 2 · rare 5 · epic 10 · legendary 20 (see game/achievements.ts)
+ */
+export function trophyInfluence(defId: string, arena: number): number {
+  if (defId.startsWith('sig-')) return 10 + arena;
+  if (defId === 'imperial-crown') return 25;
+  if (defId.startsWith('defense-')) return 8;
+  if (defId.startsWith('laurel-')) return 8;
+  if (defId.startsWith('dist-')) return 15;
+  if (defId.startsWith('hist-')) return 20;
+  return 0;
+}

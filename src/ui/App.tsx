@@ -52,9 +52,11 @@ function Shell({ notice }: { notice: string | null }) {
   const arena = playerArena(s);
   useEffect(() => setAmbience(s.settings.ambience, arena), [s.settings.ambience, arena]);
   useEffect(() => {
-    document.documentElement.dataset.contrast = s.settings.highContrast ? 'high' : 'normal';
-    document.documentElement.style.setProperty('--arena-accent', '');
-  }, [s.settings.highContrast]);
+    const d = document.documentElement;
+    d.dataset.contrast = s.settings.highContrast ? 'high' : 'normal';
+    d.dataset.motion = s.settings.reduceMotion ? 'reduce' : 'full';
+    d.style.setProperty('--text-scale', String(s.settings.textScale ?? 1));
+  }, [s.settings.highContrast, s.settings.reduceMotion, s.settings.textScale]);
   const startVs = useCallback<Nav['startVs']>((oppId, o = {}) => {
     const c = getSave().world.competitors.find((x) => x.id === oppId);
     if (!c || getSave().active) return;
@@ -71,16 +73,21 @@ function Shell({ notice }: { notice: string | null }) {
     startVs,
   }), [tab, startVs]);
   const top = overlays[overlays.length - 1];
+  useEffect(() => {
+    document.querySelector('.content')?.scrollTo({ top: 0 });
+  }, [tab, playing]);
   const inGame = playing && (!!s.active);
   return (
     <NavCtx.Provider value={nav}>
       <div className={'app arena-' + arena} style={{ ['--backdrop' as string]: `url("${backdropUri(arena)}")` }}>
+        <div className="app-bg" aria-hidden />
         <Header />
         <main className="content">
           {msg && <div className="notice" onClick={() => setMsg(null)}>{msg}</div>}
           {inGame || (playing && !s.active) ? (
             <GameScreen
               onExit={() => setPlaying(false)}
+              onNext={() => { setPlaying(false); setTab('arena'); }}
               onAnalyse={(id) => { setPlaying(false); setTab('academy'); setOverlays([{ kind: 'analysis', gameId: id }]); }}
               onRematch={(oppId, tc) => { setPlaying(false); setTimeout(() => startVs(oppId, { kind: 'challenge', tcId: tc }), 0); }}
             />

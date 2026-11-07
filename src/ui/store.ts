@@ -6,12 +6,16 @@ import { persistSave, storeGame } from '../persist/save';
  * Single source of truth for the UI. All gameplay mutations go through
  * `mutate`, which bumps a version (re-render) and schedules a debounced,
  * checksummed save. Expensive work (engine, world creation) lives elsewhere.
+ *
+ * The persistence layer (src/persist) works out what changed: an in-game move
+ * writes only the active game; a finished game writes only changed parts of the
+ * world. Rolling backups are requested after every archived game and taken when
+ * the backup policy says one is due (every ~10 games or at a new season).
  */
 let save: Save | null = null;
 let version = 0;
 const subs = new Set<() => void>();
 let timer: ReturnType<typeof setTimeout> | null = null;
-let gamesSinceBackup = 0;
 
 export function getSave(): Save {
   if (!save) throw new Error('No save loaded');
@@ -54,7 +58,8 @@ export function flushSave() {
     clearTimeout(timer);
     timer = null;
   }
-  if (save) return persistSave(save);
+  // Page is going away: do a full (non-light) commit so nothing waits for a later save.
+  if (save) return persistSave(save, { full: true });
 }
 
 export async function archiveGame(g: GameRecord) {
@@ -62,7 +67,7 @@ export async function archiveGame(g: GameRecord) {
   mutate((s) => {
     if (!s.library.includes(g.id)) s.library.push(g.id);
     s.libraryMeta[g.id] = metaOf(g);
-  }, { backup: ++gamesSinceBackup % 5 === 0 });
+  }, { backup: true });
 }
 
 export function metaOf(g: GameRecord): LibraryMeta {

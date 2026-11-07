@@ -1,0 +1,48 @@
+/**
+ * Balanced opening set for engine matches: 40 common openings, 6–10 plies.
+ * Each was checked with Stockfish 19 (full net, 4 threads, 3 s): White's edge is
+ * −0.07 … +0.79 pawns, mean +0.35 (tests/bench/results/openings-check.json);
+ * every opening is played twice with colours reversed, which cancels the bias.
+ */
+export const BENCH_OPENINGS: { name: string; san: string }[] = [
+  { name: 'Ruy Lopez, Morphy', san: 'e4 e5 Nf3 Nc6 Bb5 a6' },
+  { name: 'Ruy Lopez, Berlin', san: 'e4 e5 Nf3 Nc6 Bb5 Nf6' },
+  { name: 'Italian, Giuoco Piano', san: 'e4 e5 Nf3 Nc6 Bc4 Bc5' },
+  { name: 'Scotch', san: 'e4 e5 Nf3 Nc6 d4 exd4 Nxd4' },
+  { name: 'Four Knights', san: 'e4 e5 Nf3 Nc6 Nc3 Nf6' },
+  { name: 'Petroff', san: 'e4 e5 Nf3 Nf6 Nxe5 d6 Nf3 Nxe4' },
+  { name: 'Sicilian Najdorf', san: 'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6' },
+  { name: 'Sicilian Dragon', san: 'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6' },
+  { name: 'Sicilian Open Nc6', san: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4' },
+  { name: 'Sicilian Taimanov/Kan', san: 'e4 c5 Nf3 e6 d4 cxd4 Nxd4' },
+  { name: 'Sicilian Accelerated Dragon', san: 'e4 c5 Nf3 g6 d4 cxd4 Nxd4 Nc6' },
+  { name: 'Sicilian Alapin', san: 'e4 c5 c3 Nf6 e5 Nd5' },
+  { name: 'Sicilian Closed', san: 'e4 c5 Nc3 Nc6 g3 g6' },
+  { name: 'French Classical', san: 'e4 e6 d4 d5 Nc3 Nf6' },
+  { name: 'French Advance', san: 'e4 e6 d4 d5 e5 c5' },
+  { name: 'French Tarrasch', san: 'e4 e6 d4 d5 Nd2 Nf6' },
+  { name: 'Caro-Kann Advance', san: 'e4 c6 d4 d5 e5 Bf5' },
+  { name: 'Caro-Kann Classical', san: 'e4 c6 d4 d5 Nc3 dxe4 Nxe4 Bf5' },
+  { name: 'Scandinavian', san: 'e4 d5 exd5 Qxd5 Nc3 Qa5' },
+  { name: 'Pirc', san: 'e4 d6 d4 Nf6 Nc3 g6' },
+  { name: 'Modern', san: 'e4 g6 d4 Bg7 Nc3 d6' },
+  { name: 'Alekhine', san: 'e4 Nf6 e5 Nd5 d4 d6' },
+  { name: 'QGD', san: 'd4 d5 c4 e6 Nc3 Nf6' },
+  { name: 'QGD Tarrasch', san: 'd4 d5 c4 e6 Nc3 c5' },
+  { name: 'Slav', san: 'd4 d5 c4 c6 Nf3 Nf6' },
+  { name: 'Semi-Slav', san: 'd4 d5 c4 c6 Nf3 Nf6 Nc3 e6' },
+  { name: 'QGA', san: 'd4 d5 c4 dxc4 Nf3 Nf6' },
+  { name: 'Catalan', san: 'd4 Nf6 c4 e6 g3 d5 Bg2' },
+  { name: 'Nimzo-Indian', san: 'd4 Nf6 c4 e6 Nc3 Bb4' },
+  { name: "Queen's Indian", san: 'd4 Nf6 c4 e6 Nf3 b6' },
+  { name: "King's Indian", san: 'd4 Nf6 c4 g6 Nc3 Bg7 e4 d6' },
+  { name: 'Grünfeld', san: 'd4 Nf6 c4 g6 Nc3 d5' },
+  { name: 'Benoni', san: 'd4 Nf6 c4 c5 d5 e6' },
+  { name: 'Dutch Leningrad', san: 'd4 f5 g3 Nf6 Bg2 g6' },
+  { name: 'London', san: 'd4 d5 Bf4 Nf6 e3 c5' },
+  { name: 'Trompowsky', san: 'd4 Nf6 Bg5 e6 e4 h6' },
+  { name: 'English, Reversed Sicilian', san: 'c4 e5 Nc3 Nf6 g3 d5' },
+  { name: 'English, Symmetrical', san: 'c4 c5 Nf3 Nc6 Nc3 g6' },
+  { name: 'Réti', san: 'Nf3 d5 g3 Nf6 Bg2 c6' },
+  { name: 'Queen Pawn, Bogo-Indian', san: 'd4 Nf6 c4 e6 Nf3 Bb4+' },
+];

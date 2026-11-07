@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { portraitUri, emblemUri } from '../art';
 import { RANKS, ARENAS } from '../../world/arenas';
 import { DAYS_PER_YEAR, type Competitor } from '../../world/types';
+import { IconClose } from './icons';
 
 export function Portrait({ seed, female, age = 30, arena = 0, size = 48, ring }: { seed: number; female?: boolean; age?: number; arena?: number; size?: number; ring?: string }) {
   return (
@@ -46,7 +47,7 @@ export function Sheet({ children, onClose, title, wide }: { children: ReactNode;
       <div className={'sheet' + (wide ? ' wide' : '')} onClick={(e) => e.stopPropagation()} role="dialog">
         <div className="sheet-head">
           <div className="sheet-title">{title}</div>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
+          <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
         </div>
         <div className="sheet-body">{children}</div>
       </div>

@@ -1,6 +1,7 @@
 import { generatePopulation, POPULATION_SIZE } from './population';
 import { initTitles, scheduleSeason, advanceDay, type PlayerHooks } from './calendar';
 import type { WorldState } from '../game/state';
+import { ensureWorldV2 } from './trophies';
 
 export const BURN_IN_SEASONS = 8;
 
@@ -10,6 +11,7 @@ export function emptyWorld(seed: number): WorldState {
     stats: { simGames: 0, retirements: 0, debuts: 0, promotions: 0, calibrations: 0 },
     titles: [], reigns: [], tournaments: [], invitations: [], season: 0, tournamentSerial: 0, history: [],
   };
+  ensureWorldV2(w);
   initTitles(w);
   scheduleSeason(w, 0);
   return w;

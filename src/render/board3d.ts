@@ -1,209 +1,256 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { Chess, type Square } from 'chess.js';
 import { pieceGeometries } from './pieces3d';
+import { loadPieceSet, type PieceGeoms } from './pieceAssets';
+import { FINISHES, pieceMaterials, studioEnvironment, type PieceFinish } from './materials';
+import { squaresTexture, frameTexture, glowTexture, type BoardTheme } from './boardTextures';
+import { Timeline, ease } from './animation';
 import type { Palette } from '../world/arenas';
 
 export type MoveAnim = { from: Square; to: Square; promotion?: string; captured?: boolean; castle?: { rookFrom: Square; rookTo: Square }; epSquare?: Square };
-export type Highlights = { selected: Square | null; targets: Square[]; captures: Square[]; lastMove: [Square, Square] | null; check: Square | null; hint?: [Square, Square] | null };
-export type AnimSpeedMs = { move: number; lift: number };
+export type Highlights = {
+  selected: Square | null; targets: Square[]; captures: Square[]; lastMove: [Square, Square] | null; check: Square | null;
+  hint?: [Square, Square] | null; cursor?: Square | null;
+};
 
-type PieceObj = { mesh: THREE.Mesh; type: string; color: 'w' | 'b'; square: Square };
-type Tween = { t0: number; dur: number; update: (k: number) => void; done?: () => void };
+type PieceObj = { group: THREE.Group; type: string; color: 'w' | 'b'; square: Square; mats: THREE.Material[] };
 
 const FILES = 'abcdefgh';
-
-function sqToXZ(sq: Square): [number, number] {
-  const f = FILES.indexOf(sq[0]);
-  const r = Number(sq[1]) - 1;
-  return [f - 3.5, 3.5 - r];
+const FRAME = 0.62; // frame width in squares
+export function sqToXZ(sq: Square): [number, number] {
+  return [FILES.indexOf(sq[0]) - 3.5, 3.5 - (Number(sq[1]) - 1)];
 }
 
-function ease(k: number) {
-  return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+function mixHex(a: string, b: string, t: number): string {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const ch = (sh: number) => Math.round(((pa >> sh) & 255) * (1 - t) + ((pb >> sh) & 255) * t);
+  return '#' + [16, 8, 0].map((sh) => ch(sh).toString(16).padStart(2, '0')).join('');
+}
+
+/** Board theme for the 2.5D board: squares are pushed apart in value so ivory and ebony pieces read on both. */
+export function themeFromPalette(p: Palette): BoardTheme {
+  return { light: mixHex(p.light, '#b89870', 0.22), dark: mixHex(p.dark, '#2a1408', 0.28), frame: p.frame, trim: '#d8a944', ink: '#f1d27a' };
 }
 
 /**
- * Interactive 2.5D board renderer. Owns no chess logic: it displays the FEN it
- * is given, animates the move it is told about, and reports square taps.
- * Renders on demand (only while something changes) to save battery.
+ * The 2.5D board: owns rendering and animation only. It displays the FEN it is
+ * given, animates the move it is told about, and reports square taps.
+ * Renders on demand. The authoritative game state lives elsewhere.
  */
 export class Board3D {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera: THREE.PerspectiveCamera;
   private pieces = new Map<Square, PieceObj>();
-  private squares: THREE.Mesh[] = [];
+  private ghosts = new Set<PieceObj>(); // captured pieces still animating out
   private hl = new THREE.Group();
-  private tweens: Tween[] = [];
+  private boardGroup = new THREE.Group();
+  private clockOverride: number | null = null;
+  private tl = new Timeline(() => this.clockOverride ?? performance.now());
   private raf = 0;
   private dirty = true;
-  private materials: Record<string, THREE.MeshStandardMaterial>;
-  private boardGroup = new THREE.Group();
   private ro: ResizeObserver;
   private fen = '';
   private orientation: 'w' | 'b' = 'w';
   private tilt = 0.55;
   private azimuth = 0;
+  private cam = { elev: 0, az: 0, dist: 0 };
+  private camTarget = { elev: 0, az: 0, dist: 0 };
   private palette: Palette;
-  private checkPulse: THREE.Mesh | null = null;
+  private finish: PieceFinish = FINISHES.legio;
+  private mats: ReturnType<typeof pieceMaterials>;
+  private geoms: PieceGeoms | null = null;
+  private pulse: THREE.Mesh | null = null;
+  private selectedSq: Square | null = null;
+  private showCoords = true;
   private quality: 'high' | 'low';
+  private boardPlane!: THREE.Mesh;
+  moveMs = 480;
+  renders = 0;
   onSquare: (sq: Square) => void = () => {};
-  speed: AnimSpeedMs = { move: 260, lift: 0.25 };
+  onReady: () => void = () => {};
 
-  constructor(private el: HTMLElement, palette: Palette, opts: { quality?: 'high' | 'low' } = {}) {
+  constructor(private el: HTMLElement, palette: Palette, opts: { quality?: 'high' | 'low'; finish?: string } = {}) {
     this.palette = palette;
-    this.quality = opts.quality ?? (window.devicePixelRatio > 2 || /iPhone|Android/.test(navigator.userAgent) ? 'low' : 'high');
+    if (opts.finish && FINISHES[opts.finish]) this.finish = FINISHES[opts.finish];
+    this.quality = opts.quality ?? (/iPhone|iPad|Android/.test(navigator.userAgent) ? 'low' : 'high');
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.quality === 'high' ? 2 : 1.75));
+    this.renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); console.warn('GLADIUS: WebGL context lost'); });
+    this.renderer.domElement.addEventListener('webglcontextrestored', () => { this.dirty = true; });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.quality === 'high' ? 2 : 2));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.0;
     el.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.touchAction = 'none';
-    this.camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-    this.materials = this.makeMaterials();
-    this.buildScene();
+    this.renderer.domElement.setAttribute('aria-hidden', 'true');
+    this.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+    this.scene.environment = studioEnvironment(this.renderer);
+    this.scene.environmentIntensity = 0.5;
+    this.mats = pieceMaterials(this.finish);
+    this.buildLights();
+    this.scene.add(this.boardGroup);
+    this.buildBoard();
+    this.scene.add(this.hl);
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(el);
     this.resize();
+    this.cam = { ...this.camTarget };
     this.renderer.domElement.addEventListener('pointerdown', this.onPointer);
+    void loadPieceSet('legio')
+      .then((g) => {
+        this.geoms = g;
+        const fen = this.fen;
+        this.clearPieces();
+        this.fen = '';
+        if (fen) this.setPosition(fen);
+        this.onReady();
+      })
+      .catch((e) => console.warn('Sculpted set unavailable, using fallback pieces', e));
+    (window as unknown as { __gladiusBoard?: Board3D }).__gladiusBoard = this;
     this.loop();
   }
 
-  private makeMaterials() {
-    const p = this.palette;
-    const metal = p.pieceMetal;
-    return {
-      w: new THREE.MeshStandardMaterial({ color: new THREE.Color(p.pieceLight), roughness: 0.38 - metal * 0.15, metalness: metal * 0.6 }),
-      b: new THREE.MeshStandardMaterial({ color: new THREE.Color(p.pieceDark), roughness: 0.32 - metal * 0.12, metalness: metal * 0.7 }),
-      light: new THREE.MeshStandardMaterial({ color: new THREE.Color(p.light), roughness: 0.55 }),
-      dark: new THREE.MeshStandardMaterial({ color: new THREE.Color(p.dark), roughness: 0.5 }),
-      frame: new THREE.MeshStandardMaterial({ color: new THREE.Color(p.frame), roughness: 0.45, metalness: 0.2 }),
-      trim: new THREE.MeshStandardMaterial({ color: new THREE.Color(p.accent2.startsWith('#e') || p.accent2.startsWith('#f') ? p.accent2 : '#d4a640'), roughness: 0.3, metalness: 0.85 }),
-    };
-  }
-
-  private buildScene() {
+  private buildLights() {
     const s = this.scene;
-    s.add(new THREE.HemisphereLight(0xfff4e0, 0x403020, 0.85));
-    const key = new THREE.DirectionalLight(0xffefd8, 2.2);
-    key.position.set(-4, 9, 5);
+    s.add(new THREE.HemisphereLight(0xfff3df, 0x5a3a28, 0.55));
+    const key = new THREE.DirectionalLight(0xfff0da, 2.3);
+    key.position.set(-4.5, 10, 6);
     key.castShadow = true;
-    const sm = this.quality === 'high' ? 2048 : 1024;
+    const sm = this.quality === 'high' ? 2048 : 1536;
     key.shadow.mapSize.set(sm, sm);
-    key.shadow.camera.left = -6;
-    key.shadow.camera.right = 6;
-    key.shadow.camera.top = 6;
-    key.shadow.camera.bottom = -6;
+    Object.assign(key.shadow.camera, { left: -6.5, right: 6.5, top: 6.5, bottom: -6.5, near: 1, far: 30 });
     key.shadow.bias = -0.0004;
+    key.shadow.normalBias = 0.02;
     key.shadow.radius = 4;
     s.add(key);
-    const rim = new THREE.DirectionalLight(0xbfd8ff, 0.6);
-    rim.position.set(5, 4, -6);
+    const rim = new THREE.DirectionalLight(0xc8dcff, 0.7);
+    rim.position.set(6, 5, -7);
     s.add(rim);
-    s.add(this.boardGroup);
-    this.buildBoard();
-    s.add(this.hl);
   }
 
   private buildBoard() {
     const g = this.boardGroup;
     g.clear();
-    this.squares = [];
-    const sqGeo = new THREE.BoxGeometry(1, 0.12, 1);
-    for (let f = 0; f < 8; f++)
-      for (let r = 0; r < 8; r++) {
-        const light = (f + r) % 2 === 1;
-        const m = new THREE.Mesh(sqGeo, light ? this.materials.light : this.materials.dark);
-        m.position.set(f - 3.5, -0.06, 3.5 - r);
-        m.receiveShadow = true;
-        m.userData.square = FILES[f] + (r + 1);
-        g.add(m);
-        this.squares.push(m);
-      }
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(9.1, 0.3, 9.1), this.materials.frame);
-    frame.position.y = -0.2;
-    frame.receiveShadow = true;
-    g.add(frame);
-    const trim = new THREE.Mesh(new THREE.BoxGeometry(8.24, 0.04, 8.24), this.materials.trim);
-    trim.position.y = -0.03;
+    const theme = themeFromPalette(this.palette);
+    const size = 8 + FRAME * 2;
+    const flipped = this.orientation === 'b';
+    // Upper slab with the painted frame on top.
+    const slabMat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(this.palette.frame).multiplyScalar(0.9), roughness: 0.5, clearcoat: 0.4 });
+    const topMat = new THREE.MeshPhysicalMaterial({ map: frameTexture(theme, this.showCoords, flipped, FRAME / size), roughness: 0.45, clearcoat: 0.4, clearcoatRoughness: 0.3, envMapIntensity: 0.4 });
+    const slab = new THREE.Mesh(new RoundedBoxGeometry(size, 0.34, size, 4, 0.09), slabMat);
+    slab.position.y = -0.17;
+    slab.receiveShadow = true;
+    slab.castShadow = true;
+    g.add(slab);
+    const top = new THREE.Mesh(new THREE.PlaneGeometry(size - 0.12, size - 0.12), topMat);
+    top.rotation.x = -Math.PI / 2;
+    top.position.y = 0.0015;
+    if (flipped) top.rotation.z = Math.PI;
+    top.receiveShadow = true;
+    g.add(top);
+    // Playing surface.
+    const sqMat = new THREE.MeshPhysicalMaterial({ map: squaresTexture(theme), roughness: 0.4, clearcoat: 0.45, clearcoatRoughness: 0.25, envMapIntensity: 0.35 });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), sqMat);
+    plane.rotation.x = -Math.PI / 2;
+    plane.position.y = 0.004;
+    plane.receiveShadow = true;
+    this.boardPlane = plane;
+    g.add(plane);
+    // Gold trim and lower plinth.
+    const gold = new THREE.MeshPhysicalMaterial({ color: '#d8a944', metalness: 1, roughness: 0.25 });
+    const trim = new THREE.Mesh(new RoundedBoxGeometry(size + 0.16, 0.08, size + 0.16, 3, 0.04), gold);
+    trim.position.y = -0.38;
     g.add(trim);
-    const plinth = new THREE.Mesh(new THREE.BoxGeometry(9.5, 0.25, 9.5), this.materials.frame);
-    plinth.position.y = -0.45;
+    const plinth = new THREE.Mesh(new RoundedBoxGeometry(size + 0.5, 0.36, size + 0.5, 4, 0.12), new THREE.MeshPhysicalMaterial({ color: new THREE.Color(this.palette.frame).multiplyScalar(0.6), roughness: 0.55, clearcoat: 0.3 }));
+    plinth.position.y = -0.6;
+    plinth.receiveShadow = true;
     g.add(plinth);
-    g.add(this.coordLabels());
-  }
-
-  private coordLabels(): THREE.Group {
-    const grp = new THREE.Group();
-    const mk = (txt: string) => {
-      const c = document.createElement('canvas');
-      c.width = c.height = 64;
-      const ctx = c.getContext('2d')!;
-      ctx.fillStyle = this.palette.accent2;
-      ctx.font = 'bold 40px Georgia, serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(txt, 32, 34);
-      const tex = new THREE.CanvasTexture(c);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.32), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
-      m.rotation.x = -Math.PI / 2;
-      return m;
-    };
-    for (let i = 0; i < 8; i++) {
-      const fl = mk(FILES[i]);
-      fl.position.set(i - 3.5, 0.06, 4.27);
-      grp.add(fl);
-      const rk = mk(String(i + 1));
-      rk.position.set(-4.27, 0.06, 3.5 - i);
-      grp.add(rk);
-    }
-    grp.name = 'coords';
-    return grp;
+    // Contact shadow under the whole board.
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(size * 1.5, size * 1.5), new THREE.MeshBasicMaterial({ map: glowTexture('soft'), color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }));
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = -0.79;
+    g.add(shadow);
   }
 
   setPalette(p: Palette) {
     this.palette = p;
-    this.materials = this.makeMaterials();
     this.buildBoard();
-    const fen = this.fen;
-    this.clearPieces();
-    this.fen = '';
-    this.setPosition(fen);
-  }
-
-  setCoords(show: boolean) {
-    const c = this.boardGroup.getObjectByName('coords');
-    if (c) c.visible = show;
     this.dirty = true;
   }
 
-  setOrientation(o: 'w' | 'b') {
+  setFinish(id: string) {
+    if (!FINISHES[id] || FINISHES[id] === this.finish) return;
+    this.finish = FINISHES[id];
+    this.mats = pieceMaterials(this.finish);
+    const fen = this.fen;
+    this.clearPieces();
+    this.fen = '';
+    if (fen) this.setPosition(fen);
+  }
+
+  setCoords(show: boolean) {
+    if (show === this.showCoords) return;
+    this.showCoords = show;
+    this.buildBoard();
+    this.dirty = true;
+  }
+
+  setOrientation(o: 'w' | 'b', snap = false) {
+    if (o === this.orientation && !snap) return;
     this.orientation = o;
-    this.updateCamera();
+    this.buildBoard();
+    this.updateCamera(snap);
   }
   setTilt(t: number) {
     this.tilt = t;
     this.updateCamera();
   }
-  /** Rotate the view around the board (radians, relative to the player's side). */
   setAzimuth(a: number) {
     this.azimuth = a;
     this.updateCamera();
   }
+  setMoveDuration(ms: number) {
+    this.moveMs = ms;
+  }
 
-  private updateCamera() {
-    const aspect = this.camera.aspect;
-    const elev = THREE.MathUtils.lerp(85, 38, this.tilt) * (Math.PI / 180);
-    const fitW = aspect < 1 ? 10.2 / aspect : 10.2;
-    const dist = fitW / (2 * Math.tan((this.camera.fov * Math.PI) / 360)) * (0.92 + 0.1 * this.tilt);
+  private updateCamera(snap = false) {
+    const elev = THREE.MathUtils.lerp(82, 40, this.tilt) * (Math.PI / 180);
     const az = this.azimuth + (this.orientation === 'w' ? 0 : Math.PI);
-    this.camera.position.set(Math.sin(az) * Math.cos(elev) * dist, Math.sin(elev) * dist, Math.cos(az) * Math.cos(elev) * dist);
-    this.camera.lookAt(0, -0.2, 0.25 * this.tilt * (this.orientation === 'w' ? 1 : -1) * Math.cos(this.azimuth));
+    // Fit: find the smallest distance at which every board corner projects inside the viewport.
+    const half = 4 + FRAME + 0.25;
+    const corners = [-half, half].flatMap((x) => [-half, half].flatMap((z) => [new THREE.Vector3(x, 0.05, z), new THREE.Vector3(x, -0.78, z)]));
+    corners.push(new THREE.Vector3(0, 1.25, -3.5), new THREE.Vector3(0, 1.25, 3.5)); // tall back-rank pieces
+    let lo = 4, hi = 60;
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      this.placeCamera(elev, az, mid);
+      const fits = corners.every((c) => {
+        const v = c.clone().project(this.camera);
+        return Math.abs(v.x) <= 0.97 && Math.abs(v.y) <= 0.97 && v.z < 1;
+      });
+      if (fits) hi = mid;
+      else lo = mid;
+    }
+    this.camTarget = { elev, az, dist: hi };
+    if (snap) this.cam = { ...this.camTarget };
+    this.placeCamera(this.cam.elev, this.cam.az, this.cam.dist);
     this.dirty = true;
+  }
+
+  private placeCamera(elev: number, az: number, dist: number) {
+    const lookZ = 0.3 * this.tilt * Math.cos(az);
+    const lookX = 0.3 * this.tilt * Math.sin(az);
+    this.camera.position.set(Math.sin(az) * Math.cos(elev) * dist + lookX, Math.sin(elev) * dist, Math.cos(az) * Math.cos(elev) * dist + lookZ);
+    this.camera.lookAt(lookX, -0.2, lookZ);
+    this.camera.updateMatrixWorld(true);
+  }
+
+  private applyCamera() {
+    this.placeCamera(this.cam.elev, this.cam.az, this.cam.dist);
   }
 
   resize() {
@@ -214,7 +261,7 @@ export class Board3D {
     this.renderer.domElement.style.height = h + 'px';
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    this.updateCamera();
+    this.updateCamera(this.cam.dist === 0);
   }
 
   private onPointer = (e: PointerEvent) => {
@@ -222,194 +269,382 @@ export class Board3D {
     const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     const ray = new THREE.Raycaster();
     ray.setFromCamera(ndc, this.camera);
-    // Intersect the board plane so taps on tall pieces map to their square.
-    const piecesHit = ray.intersectObjects([...this.pieces.values()].map((p) => p.mesh), false)[0];
-    if (piecesHit) {
-      const sq = (piecesHit.object.userData.square as Square) ?? null;
-      if (sq) return this.onSquare(sq);
+    const meshes: THREE.Object3D[] = [];
+    for (const p of this.pieces.values()) meshes.push(p.group);
+    const hitPiece = ray.intersectObjects(meshes, true)[0];
+    if (hitPiece) {
+      let o: THREE.Object3D | null = hitPiece.object;
+      while (o && !o.userData.square) o = o.parent;
+      if (o?.userData.square) return this.onSquare(o.userData.square as Square);
     }
-    const hit = ray.intersectObjects(this.squares, false)[0];
-    if (hit) this.onSquare(hit.object.userData.square as Square);
+    const hit = ray.intersectObject(this.boardPlane, false)[0];
+    if (hit) {
+      const f = Math.floor(hit.point.x + 4);
+      const rr = Math.floor(4 - hit.point.z);
+      if (f >= 0 && f < 8 && rr >= 0 && rr < 8) this.onSquare((FILES[f] + (rr + 1)) as Square);
+    }
   };
 
   private makePiece(type: string, color: 'w' | 'b', sq: Square): PieceObj {
-    const mesh = new THREE.Mesh(pieceGeometries()[type], this.materials[color]);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    const group = new THREE.Group();
+    const mats: THREE.Material[] = [];
+    const g = this.geoms?.[type];
+    if (g) {
+      const body = new THREE.Mesh(g.body, color === 'w' ? this.mats.w : this.mats.b);
+      body.castShadow = body.receiveShadow = true;
+      group.add(body);
+      mats.push(body.material as THREE.Material);
+      if (g.accent) {
+        const a = new THREE.Mesh(g.accent, color === 'w' ? this.mats.metalW : this.mats.metalB);
+        a.castShadow = true;
+        group.add(a);
+      }
+    } else {
+      const m = new THREE.Mesh(pieceGeometries()[type], color === 'w' ? this.mats.w : this.mats.b);
+      m.castShadow = true;
+      group.add(m);
+    }
     const [x, z] = sqToXZ(sq);
-    mesh.position.set(x, 0, z);
-    mesh.scale.setScalar(type === 'p' ? 0.95 : 1.05);
-    // Knights face the opponent.
-    if (type === 'n') mesh.rotation.y = color === 'w' ? -0.25 : Math.PI - 0.25;
-    mesh.userData.square = sq;
-    this.scene.add(mesh);
-    return { mesh, type, color, square: sq };
+    group.position.set(x, 0, z);
+    group.scale.setScalar(0.94);
+    // Knights show their sculpted profile, turned slightly toward the opponent.
+    if (type === 'n') group.rotation.y = color === 'w' ? 0.55 : Math.PI + 0.55;
+    group.userData.square = sq;
+    group.userData.baseRotY = group.rotation.y;
+    this.scene.add(group);
+    return { group, type, color, square: sq, mats };
   }
 
   private clearPieces() {
-    for (const p of this.pieces.values()) this.scene.remove(p.mesh);
+    this.tl.skip();
+    for (const p of this.pieces.values()) this.scene.remove(p.group);
+    for (const p of this.ghosts) this.scene.remove(p.group);
     this.pieces.clear();
+    this.ghosts.clear();
   }
 
-  private finishTweens() {
-    for (const t of this.tweens) {
-      t.update(1);
-      t.done?.();
-    }
-    this.tweens = [];
-  }
-
-  /** Display `fen`. If `anim` describes the move that led here, animate it. */
+  /** Display `fen`. If `anim` describes the move that produced it, animate that move. */
   setPosition(fen: string, anim?: MoveAnim | null, mate = false) {
-    this.finishTweens();
+    this.tl.begin(); // completes any previous animation first
+    const D = this.moveMs;
     const target = new Chess(fen);
-    if (anim && this.fen) {
+    let moverLanding = 0;
+    if (anim && this.fen && D > 0) {
       const mover = this.pieces.get(anim.from);
       if (mover) {
         const capSq = anim.epSquare ?? anim.to;
         const victim = this.pieces.get(capSq);
-        if (victim && victim !== mover) this.captureOut(victim);
         this.pieces.delete(anim.from);
-        if (capSq !== anim.to) this.pieces.delete(capSq);
+        if (victim && victim !== mover) this.pieces.delete(capSq);
         this.pieces.set(anim.to, mover);
-        this.slide(mover, anim.from, anim.to, mover.type === 'n' ? 0.6 : this.speed.lift, () => {
-          if (anim.promotion) this.promote(anim.to, anim.promotion);
-        });
+        moverLanding = this.animateMove(mover, anim, victim && victim !== mover ? victim : null);
         if (anim.castle) {
           const rook = this.pieces.get(anim.castle.rookFrom);
           if (rook) {
             this.pieces.delete(anim.castle.rookFrom);
             this.pieces.set(anim.castle.rookTo, rook);
-            this.slide(rook, anim.castle.rookFrom, anim.castle.rookTo, 0.35);
+            this.glide(rook, anim.castle.rookFrom, anim.castle.rookTo, D * 0.3, D * 0.9, 0.38);
+            moverLanding = Math.max(moverLanding, D * 1.2);
           }
         }
+        if (anim.promotion) this.animatePromotion(anim.to, anim.promotion, mover.color, moverLanding);
       }
     }
-    // Reconcile with the authoritative position (handles any desync / jumps).
+    // Reconcile with the authoritative position (handles jumps, undo, loads).
     const want = new Map<Square, { type: string; color: 'w' | 'b' }>();
     for (const row of target.board()) for (const p of row) if (p) want.set(p.square, { type: p.type, color: p.color });
     for (const [sq, obj] of [...this.pieces]) {
       const w = want.get(sq);
-      if (!w || w.color !== obj.color || (w.type !== obj.type && !(anim?.promotion && sq === anim.to))) {
-        this.scene.remove(obj.mesh);
+      const promoting = anim?.promotion && sq === anim.to;
+      if (!w || w.color !== obj.color || (w.type !== obj.type && !promoting)) {
+        this.scene.remove(obj.group);
         this.pieces.delete(sq);
       }
     }
     for (const [sq, w] of want) if (!this.pieces.has(sq)) this.pieces.set(sq, this.makePiece(w.type, w.color, sq));
     for (const [sq, obj] of this.pieces) {
       obj.square = sq;
-      obj.mesh.userData.square = sq;
+      obj.group.userData.square = sq;
+    }
+    if (!anim || D === 0) {
+      for (const [sq, obj] of this.pieces) {
+        const [x, z] = sqToXZ(sq);
+        obj.group.position.set(x, 0, z);
+        obj.group.rotation.set(0, obj.group.userData.baseRotY ?? 0, 0);
+      }
     }
     this.fen = fen;
-    if (mate) this.topple(target.turn());
+    if (mate) this.topple(target.turn(), moverLanding + D * 0.4);
     this.dirty = true;
   }
 
-  private slide(p: PieceObj, from: Square, to: Square, lift: number, done?: () => void) {
+  /** Returns the time at which the mover has landed. */
+  private animateMove(mover: PieceObj, a: MoveAnim, victim: PieceObj | null): number {
+    const D = this.moveMs;
+    const [x0, z0] = sqToXZ(a.from);
+    const [x1, z1] = sqToXZ(a.to);
+    const dist = Math.hypot(x1 - x0, z1 - z0);
+    const travel = D * (0.8 + 0.2 * Math.min(dist, 5) / 5);
+    const knight = mover.type === 'n';
+    const lift = knight ? 0.55 : 0.07;
+    if (!victim) {
+      this.glide(mover, a.from, a.to, 0, travel, lift);
+      return travel;
+    }
+    // Capture: approach → contact → victim falls → attacker settles.
+    const dx = (x1 - x0) / (dist || 1), dz = (z1 - z0) / (dist || 1);
+    const stop = Math.max(0, dist - 0.4);
+    const px = x0 + dx * stop, pz = z0 + dz * stop;
+    const tApproach = travel * 0.72;
+    const g = mover.group;
+    const baseRot = g.userData.baseRotY ?? 0;
+    this.tl.add(0, tApproach, (k) => {
+      const e = ease.inOutCubic(k);
+      g.position.set(x0 + (px - x0) * e, Math.sin(Math.PI * e) * lift, z0 + (pz - z0) * e);
+      g.rotation.set(Math.sin(Math.PI * e) * 0.07 * -dz, baseRot, Math.sin(Math.PI * e) * 0.07 * dx);
+    });
+    const [vx, vz] = sqToXZ(victim.square);
+    const vg = victim.group;
+    this.ghosts.add(victim);
+    const fade = victim.mats.map((m) => {
+      const c = (m as THREE.MeshPhysicalMaterial).clone();
+      c.transparent = true;
+      return c;
+    });
+    let swapped = false;
+    const vRot = vg.userData.baseRotY ?? 0;
+    this.tl.add(tApproach - D * 0.04, D * 0.62, (k) => {
+      if (!swapped) {
+        let i = 0;
+        vg.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (mesh.isMesh && i < fade.length && victim.mats.includes(mesh.material as THREE.Material)) mesh.material = fade[i++];
+        });
+        swapped = true;
+      }
+      const e = ease.outCubic(k);
+      vg.position.set(vx + dx * 0.32 * e, -0.08 * e + Math.sin(Math.PI * Math.min(1, k * 2)) * 0.05, vz + dz * 0.32 * e);
+      vg.rotation.set(e * 1.25 * dz, vRot, -e * 1.25 * dx);
+      const o = 1 - ease.inCubic(Math.max(0, (k - 0.35) / 0.65));
+      for (const m of fade) m.opacity = o;
+      vg.traverse((ob) => {
+        const mesh = ob as THREE.Mesh;
+        if (mesh.isMesh && !fade.includes(mesh.material as THREE.MeshPhysicalMaterial)) {
+          const mm = mesh.material as THREE.MeshPhysicalMaterial;
+          if (!mm.userData.faded) {
+            const c = mm.clone();
+            c.transparent = true;
+            c.userData.faded = true;
+            mesh.material = c;
+          }
+          (mesh.material as THREE.MeshPhysicalMaterial).opacity = o;
+        }
+      });
+    }, () => {
+      this.scene.remove(vg);
+      this.ghosts.delete(victim);
+    });
+    const tSettle = tApproach + D * 0.08;
+    const settleDur = travel * 0.38;
+    this.tl.add(tSettle, settleDur, (k) => {
+      const e = ease.outCubic(k);
+      g.position.set(px + (x1 - px) * e, 0, pz + (z1 - pz) * e);
+      g.rotation.set(0, baseRot, 0);
+    });
+    this.landing(g, tSettle + settleDur);
+    return tSettle + settleDur;
+  }
+
+  private glide(p: PieceObj, from: Square, to: Square, start: number, dur: number, lift: number) {
     const [x0, z0] = sqToXZ(from);
     const [x1, z1] = sqToXZ(to);
-    const dist = Math.hypot(x1 - x0, z1 - z0);
-    const dur = this.speed.move * (0.75 + Math.min(dist, 6) * 0.08);
-    this.tweens.push({
-      t0: performance.now(), dur,
-      update: (k) => {
-        const e = ease(k);
-        p.mesh.position.set(x0 + (x1 - x0) * e, Math.sin(Math.PI * e) * lift * Math.min(1, 0.4 + dist * 0.2), z0 + (z1 - z0) * e);
-      },
-      done,
+    const dist = Math.hypot(x1 - x0, z1 - z0) || 1;
+    const dx = (x1 - x0) / dist, dz = (z1 - z0) / dist;
+    const g = p.group;
+    const baseRot = g.userData.baseRotY ?? 0;
+    this.tl.add(start, dur, (k) => {
+      const e = ease.inOutCubic(k);
+      const arc = Math.sin(Math.PI * e);
+      g.position.set(x0 + (x1 - x0) * e, arc * lift, z0 + (z1 - z0) * e);
+      // Lean into the motion for a sense of weight.
+      const lean = Math.sin(Math.PI * k) * 0.06;
+      g.rotation.set(lean * -dz, baseRot, lean * dx);
+    });
+    this.landing(g, start + dur);
+  }
+
+  /** A tiny settle after arrival — the piece has weight. */
+  private landing(g: THREE.Group, at: number) {
+    this.tl.add(at, Math.min(160, this.moveMs * 0.3), (k) => {
+      const s = 1 - Math.sin(Math.PI * k) * 0.025;
+      g.scale.set(0.94 * (2 - s), 0.94 * s, 0.94 * (2 - s));
+      if (k >= 1) g.scale.setScalar(0.94);
     });
   }
 
-  private captureOut(v: PieceObj) {
-    const mat = (v.mesh.material as THREE.MeshStandardMaterial).clone();
-    mat.transparent = true;
-    v.mesh.material = mat;
-    const y0 = v.mesh.position.y;
-    this.tweens.push({
-      t0: performance.now(), dur: this.speed.move * 1.1,
-      update: (k) => {
-        mat.opacity = 1 - k;
-        v.mesh.position.y = y0 - k * 0.5;
-        v.mesh.rotation.z = k * 0.6;
-      },
-      done: () => this.scene.remove(v.mesh),
+  private animatePromotion(sq: Square, type: string, color: 'w' | 'b', at: number) {
+    const D = this.moveMs;
+    const [x, z] = sqToXZ(sq);
+    const flare = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), new THREE.MeshBasicMaterial({ map: glowTexture('soft'), color: 0xffd36a, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+    flare.rotation.x = -Math.PI / 2;
+    flare.position.set(x, 0.02, z);
+    this.scene.add(flare);
+    let fresh: PieceObj | null = null;
+    this.tl.add(at, D * 0.45, (k) => {
+      const old = this.pieces.get(sq);
+      if (old && old.type === 'p') old.group.scale.setScalar(0.94 * (1 - ease.inCubic(k)));
+      (flare.material as THREE.MeshBasicMaterial).opacity = Math.sin(Math.PI * k) * 0.9;
+    }, () => {
+      const old = this.pieces.get(sq);
+      if (old && old.type === 'p') {
+        this.scene.remove(old.group);
+        fresh = this.makePiece(type, color, sq);
+        this.pieces.set(sq, fresh);
+      }
     });
+    this.tl.add(at + D * 0.4, D * 0.55, (k) => {
+      const p = fresh ?? this.pieces.get(sq);
+      if (p) p.group.scale.setScalar(0.94 * Math.max(0.01, ease.outBack(k)));
+      (flare.material as THREE.MeshBasicMaterial).opacity = (1 - k) * 0.6;
+    }, () => this.scene.remove(flare));
   }
 
-  private promote(sq: Square, type: string) {
-    const old = this.pieces.get(sq);
-    if (!old) return;
-    this.scene.remove(old.mesh);
-    const np = this.makePiece(type, old.color, sq);
-    this.pieces.set(sq, np);
-    np.mesh.scale.setScalar(0.01);
-    this.tweens.push({ t0: performance.now(), dur: 420, update: (k) => np.mesh.scale.setScalar(0.01 + 1.04 * ease(k)) });
-  }
-
-  private topple(loser: 'w' | 'b') {
+  private topple(loser: 'w' | 'b', delay: number) {
     const k = [...this.pieces.values()].find((p) => p.type === 'k' && p.color === loser);
     if (!k) return;
-    this.tweens.push({ t0: performance.now() + this.speed.move, dur: 900, update: (t) => { k.mesh.rotation.z = (Math.PI / 2.2) * ease(Math.max(0, t)); k.mesh.position.y = 0.12 * ease(Math.max(0, t)); } });
+    const g = k.group;
+    const dur = Math.max(700, this.moveMs * 1.6);
+    const dir = loser === 'w' ? 1 : -1;
+    this.tl.add(delay, dur, (t) => {
+      const e = ease.outCubic(t);
+      g.rotation.x = dir * e * 1.42;
+      g.position.y = Math.sin(Math.PI * Math.min(1, t * 1.2)) * 0.06 + e * 0.1;
+    });
+  }
+
+  /** Resignation: the resigning king is laid down gently. */
+  resign(color: 'w' | 'b') {
+    this.tl.begin();
+    this.topple(color, 0);
+    this.dirty = true;
   }
 
   setHighlights(h: Highlights) {
     this.hl.clear();
-    this.checkPulse = null;
-    const add = (sq: Square, color: string, opacity: number, kind: 'fill' | 'dot' | 'ring' = 'fill') => {
+    this.pulse = null;
+    const add = (sq: Square, color: number, opacity: number, kind: 'soft' | 'ring' | 'dot' | 'square', scale = 1, y = 0.008, additive = false) => {
       const [x, z] = sqToXZ(sq);
-      let geo: THREE.BufferGeometry;
-      if (kind === 'dot') geo = new THREE.CircleGeometry(0.16, 24);
-      else if (kind === 'ring') geo = new THREE.RingGeometry(0.36, 0.47, 32);
-      else geo = new THREE.PlaneGeometry(0.98, 0.98);
-      const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false }));
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(scale, scale),
+        new THREE.MeshBasicMaterial({ map: glowTexture(kind), color, transparent: true, opacity, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending }),
+      );
       m.rotation.x = -Math.PI / 2;
-      m.position.set(x, 0.005, z);
+      m.position.set(x, y, z);
+      m.renderOrder = 2;
       this.hl.add(m);
       return m;
     };
     if (h.lastMove) {
-      add(h.lastMove[0], '#f4cf5a', 0.32);
-      add(h.lastMove[1], '#f4cf5a', 0.45);
+      add(h.lastMove[0], 0xf2c14e, 0.35, 'square', 0.98);
+      add(h.lastMove[1], 0xf2c14e, 0.5, 'square', 0.98);
     }
     if (h.hint) {
-      add(h.hint[0], '#4fb4ff', 0.4);
-      add(h.hint[1], '#4fb4ff', 0.55);
+      add(h.hint[0], 0x4aa8ff, 0.45, 'square', 0.98);
+      add(h.hint[1], 0x4aa8ff, 0.6, 'square', 0.98);
     }
-    if (h.selected) add(h.selected, '#7ad36b', 0.55);
-    for (const t of h.targets) add(t, '#1d3b12', 0.45, 'dot');
-    for (const t of h.captures) add(t, '#b0201a', 0.75, 'ring');
-    if (h.check) this.checkPulse = add(h.check, '#ff2a1a', 0.6);
+    if (h.selected) {
+      add(h.selected, 0xffe08a, 0.85, 'ring', 1.05, 0.01, true);
+      add(h.selected, 0xffd36a, 0.35, 'soft', 1.3, 0.009, true);
+    }
+    for (const t of h.targets) add(t, 0xfff2cf, 0.95, 'dot', 0.62, 0.012);
+    for (const t of h.captures) add(t, 0xe24a3a, 0.9, 'ring', 1.0, 0.012);
+    if (h.check) this.pulse = add(h.check, 0xff3020, 0.8, 'soft', 1.5, 0.011, true);
+    if (h.cursor) add(h.cursor, 0x6fd1ff, 0.9, 'ring', 1.0, 0.013);
+    this.selectedSq = h.selected;
     this.dirty = true;
   }
 
   private loop = () => {
     this.raf = requestAnimationFrame(this.loop);
     const now = performance.now();
-    if (this.tweens.length) {
-      const keep: Tween[] = [];
-      for (const t of this.tweens) {
-        const k = Math.min(1, Math.max(0, (now - t.t0) / t.dur));
-        t.update(k);
-        if (k >= 1) t.done?.();
-        else keep.push(t);
-      }
-      this.tweens = keep;
+    if (this.tl.tick()) this.dirty = true;
+    // Smooth camera transitions.
+    const c = this.cam, t = this.camTarget;
+    let daz = t.az - c.az;
+    while (daz > Math.PI) daz -= Math.PI * 2;
+    while (daz < -Math.PI) daz += Math.PI * 2;
+    if (Math.abs(daz) > 1e-4 || Math.abs(t.elev - c.elev) > 1e-4 || Math.abs(t.dist - c.dist) > 1e-3) {
+      c.az += daz * 0.12;
+      c.elev += (t.elev - c.elev) * 0.12;
+      c.dist += (t.dist - c.dist) * 0.12;
       this.dirty = true;
     }
-    if (this.checkPulse) {
-      (this.checkPulse.material as THREE.MeshBasicMaterial).opacity = 0.35 + 0.3 * Math.sin(now / 180);
+    // Lift the selected piece slightly.
+    for (const [sq, p] of this.pieces) {
+      if (this.tl.active) break;
+      const want = sq === this.selectedSq ? 0.07 : 0;
+      const y = p.group.position.y;
+      if (Math.abs(want - y) > 0.001) {
+        p.group.position.y = y + (want - y) * 0.25;
+        this.dirty = true;
+      }
+    }
+    if (this.pulse) {
+      (this.pulse.material as THREE.MeshBasicMaterial).opacity = 0.45 + 0.35 * Math.sin(now / 220);
       this.dirty = true;
     }
     if (this.dirty) {
+      this.applyCamera();
       this.renderer.render(this.scene, this.camera);
+      this.renders++;
       this.dirty = false;
     }
   };
 
-  /** Skip any running animation instantly. */
+  /** Finish every running animation instantly. */
   skipAnimations() {
-    this.finishTweens();
+    this.tl.skip();
     this.dirty = true;
+  }
+
+  get animating(): boolean {
+    return this.tl.active;
+  }
+
+  /** Debug/test hook: world position of the piece on a square (or ghost by type). */
+  probe(sq: Square): { x: number; y: number; z: number } | null {
+    const p = this.pieces.get(sq);
+    return p ? { x: p.group.position.x, y: p.group.position.y, z: p.group.position.z } : null;
+  }
+
+  /**
+   * Test hook: play `apply` (which must call setPosition with an animation)
+   * under a virtual clock and sample tracked squares at the given times (ms).
+   */
+  sampleTimeline(apply: () => void, times: number[], squares: Square[]): { t: number; pos: Record<string, [number, number, number] | null> }[] {
+    this.clockOverride = 0;
+    apply();
+    const out: { t: number; pos: Record<string, [number, number, number] | null> }[] = [];
+    for (const t of times) {
+      this.clockOverride = t;
+      this.tl.tick();
+      const pos: Record<string, [number, number, number] | null> = {};
+      for (const sq of squares) {
+        const p = this.pieces.get(sq);
+        pos[sq] = p ? [p.group.position.x, p.group.position.y, p.group.position.z] : null;
+      }
+      pos['ghosts'] = this.ghosts.size ? [this.ghosts.size, 0, 0] : null;
+      out.push({ t, pos });
+    }
+    this.clockOverride = null;
+    this.tl.skip();
+    this.dirty = true;
+    return out;
+  }
+
+  snapshot(): string {
+    this.renderer.render(this.scene, this.camera);
+    return this.renderer.domElement.toDataURL('image/png');
   }
 
   dispose() {
@@ -421,11 +656,17 @@ export class Board3D {
   }
 }
 
+let webglCached: boolean | null = null;
+/** Probe WebGL once, then release the probe context (contexts are a scarce resource). */
 export function webglAvailable(): boolean {
+  if (webglCached !== null) return webglCached;
   try {
     const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+    const gl = (c.getContext('webgl2') || c.getContext('webgl')) as WebGLRenderingContext | null;
+    webglCached = !!gl;
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
   } catch {
-    return false;
+    webglCached = false;
   }
+  return webglCached;
 }

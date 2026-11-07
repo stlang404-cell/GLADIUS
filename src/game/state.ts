@@ -1,5 +1,5 @@
 import type { RatingState, TimeControlPool } from '../rating/elo';
-import type { Competitor, ChronicleEntry, TitleState, TitleReign } from '../world/types';
+import type { Competitor, ChronicleEntry, TitleState, TitleReign, AwardRecord, HallOfRecords } from '../world/types';
 import type { SimContext } from '../world/sim';
 import type { TournamentState, Format } from '../tournament/formats';
 import type { ResultCode, Termination } from '../chess/rules';
@@ -17,7 +17,7 @@ export const TIME_CONTROLS: TimeControl[] = [
 ];
 
 export type BoardMode = '3d' | '2d';
-export type AnimSpeed = 'fast' | 'balanced' | 'cinematic';
+export type AnimSpeed = 'fast' | 'balanced' | 'majestic' | 'custom' | 'cinematic'; // 'cinematic' = legacy alias of 'majestic'
 
 export type Settings = {
   boardMode: BoardMode;
@@ -33,6 +33,8 @@ export type Settings = {
   careerPool: TimeControlPool;
   defaultTc: string;
   cameraTilt: number; // 0..1
+  animMs?: number; // custom move duration (150–1200)
+  textScale?: number; // 0.9–1.3 UI text scaling
   reduceMotion: boolean;
   highContrast: boolean;
 };
@@ -73,7 +75,68 @@ export type PlayerState = {
   openingsPlayed: Record<string, { w: number; d: number; l: number; color: 'w' | 'b' }>;
   streak: number;
   bestWinRating: number;
+  // ---- v0.2 (all optional; `ensureSaveV2` initialises them on old saves) ----
+  /** Authoritative counters for achievements, updated as games/analyses happen. */
+  ledger?: PlayerLedger;
+  /** Per-opponent rivalry model (capped). */
+  rivals?: Record<string, RivalRecord>;
+  /** Append-only legacy timeline, written as events happen. */
+  timeline?: TimelineEvent[];
+  /** Append-only season-end reports (one per season rollover). */
+  seasonReports?: SeasonReport[];
 };
+
+export type PlayerLedger = {
+  v: 1;
+  since: number; // world day the ledger started counting
+  /** Named counters (see game/achievements.ts for the keys). */
+  c: Record<string, number>;
+  /** Named distinct-value sets (openings won with, pools won in, ...). */
+  sets: Record<string, string[]>;
+  /** Game ids whose stored analysis has been processed by onGameAnalysed. */
+  analysed: Record<string, 1>;
+  /** Last game ids processed by finishPlayerGame (guards double processing). */
+  recentIds: string[];
+  /** Last 10 rated scores (1 / 0.5 / 0), newest last. */
+  recent: number[];
+  /** Highest rating reached in any pool once that pool was established (≥ 20 games). */
+  peakEstablished: number;
+  /** Season tracker for the season-end report. */
+  season?: SeasonTracker;
+};
+
+export type SeasonTracker = {
+  season: number; startDay: number; ratingStart: number; peak: number; rankStart: number;
+  games: number; w: number; d: number; l: number; awardsStart: number;
+  vs: Record<string, [number, number, number]>;
+  bestWin?: { gameId: string; oppId: string; oppName: string; oppRating: number; day: number };
+};
+
+export type SeasonReport = {
+  season: number; startDay: number; endDay: number;
+  ratingStart: number; ratingEnd: number; peak: number;
+  games: number; w: number; d: number; l: number;
+  tournaments: { id: string; name: string; place: number | null; arena: number }[];
+  trophies: string[]; // awardIds won this season
+  rankStart: number; rankEnd: number; rankChange: number;
+  rival: { id: string; name: string; w: number; d: number; l: number } | null;
+  bestWin: { gameId: string; oppId: string; oppName: string; oppRating: number; day: number } | null;
+};
+
+export type RivalGame = { gameId: string; day: number; result: 'w' | 'd' | 'l'; color: 'w' | 'b'; opening?: string; kind: GameKind; tournamentId?: string };
+export type RivalRecord = {
+  id: string; name: string; w: number; d: number; l: number;
+  games: RivalGame[]; // newest last, capped
+  tournamentEncounters: number;
+  championshipBattles: number;
+  significance: number; // raw (recency is applied by selectors)
+  lastOpening?: string; // last opening the player used against this opponent
+  openings: Record<string, { w: number; d: number; l: number }>; // player's results by opening vs this opponent
+  firstDay: number; lastDay: number;
+};
+
+export type TimelineKind = 'enlisted' | 'promotion' | 'demotion' | 'trophy' | 'title-won' | 'title-lost' | 'achievement' | 'rating-milestone' | 'notable-win' | 'season' | 'rival';
+export type TimelineEvent = { day: number; kind: TimelineKind; text: string; ref?: string; arena?: number };
 
 export type GameKind = 'ranked' | 'challenge' | 'casual' | 'trial' | 'tournament' | 'rivalry' | 'drill' | 'spectated';
 
@@ -151,7 +214,13 @@ export type Invitation = {
   stakes: string;
   expiresDay: number;
   createdDay: number;
+  /** v0.2: why this invitation exists (eligibility rule), for UI labels. */
+  context?: InvitationContext;
+  reason?: string;
 };
+export type InvitationContext =
+  | 'rival-rematch' | 'regional-championship' | 'open-registration' | 'elite-invitational' | 'invitational'
+  | 'seeded' | 'wildcard' | 'title-challenge' | 'exhibition' | 'challenge' | 'trial';
 
 export type TournamentKind = 'open' | 'cup' | 'gauntlet' | 'invitational' | 'league' | 'championship' | 'hosted';
 
@@ -176,6 +245,8 @@ export type WorldTournament = {
   gameIds: Record<string, string>; // pairing id -> GameRecord id (engine-played games only)
   size: number;
   hostId?: string;
+  /** v0.2: set once trophies for this tournament have been presented (idempotency guard). */
+  awarded?: boolean;
 };
 
 export type WorldState = SimContext & {
@@ -186,6 +257,14 @@ export type WorldState = SimContext & {
   season: number;
   tournamentSerial: number;
   history: TournamentSummary[];
+  // ---- v0.2 (optional; `ensureWorldV2` initialises them) ----
+  /** Permanent, append-only trophy registry. */
+  awards?: AwardRecord[];
+  /** Hall of Records: survives competitor pruning. */
+  hall?: HallOfRecords;
+  /** Seasonal points tally per "season:arena" until the seasonal award is presented. */
+  seasonTally?: Record<string, Record<string, number>>;
+  worldVersion?: number;
 };
 
 export type TournamentSummary = {

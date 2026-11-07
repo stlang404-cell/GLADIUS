@@ -2,7 +2,8 @@ import { createRng, mixSeed, clamp, type Rng } from '../core/rng';
 import { applyResult, expectedScore, PROVISIONAL_GAMES } from '../rating/elo';
 import { ARENAS, RANKS, decideRank } from './arenas';
 import { ageYears, createCompetitor, skillCurve, MIN_SKILL, MAX_SKILL } from './population';
-import { DAYS_PER_SEASON, type Competitor, type ChronicleEntry } from './types';
+import { DAYS_PER_SEASON, type Competitor, type ChronicleEntry, type HallOfRecords } from './types';
+import { archiveLegends, snapshotRivalries } from './records';
 
 /**
  * Off-screen statistical simulation ("abstract results").
@@ -20,6 +21,8 @@ export type SimContext = {
   nextSerial: number;
   chronicle: ChronicleEntry[];
   stats: { simGames: number; retirements: number; debuts: number; promotions: number; calibrations: number };
+  /** v0.2 Hall of Records (optional): pruned competitors are archived here first. */
+  hall?: HallOfRecords;
 };
 
 export const DAILY_ACTIVITY = 0.3;
@@ -85,6 +88,35 @@ export function findTrialOpponent(ctx: SimContext, targetArena: number, exclude:
 
 /** Rank movement for an AI competitor; promotion trials are resolved immediately. */
 export function updateCompetitorRank(ctx: SimContext, c: Competitor, rng: Rng) {
+  const arenaBefore = RANKS[c.rank].arena;
+  rankChange(ctx, c, rng);
+  const arenaAfter = RANKS[c.rank].arena;
+  if (arenaAfter !== arenaBefore) careerArcEvents(ctx, c, arenaBefore, arenaAfter);
+}
+
+/**
+ * Career-arc Chronicle entries from real rank changes (each arc once per
+ * competitor): a prodigy (under 22) entering the Senate Hall or above, and a
+ * fall from the elite (demoted out of the Imperial Palace tier).
+ */
+function careerArcEvents(ctx: SimContext, c: Competitor, before: number, after: number) {
+  if (after > before && after >= 6 && ageYears(c, ctx.day) < 22 && !c.arc?.prodigy) {
+    (c.arc ??= {}).prodigy = ctx.day;
+    pushChronicle(ctx, {
+      day: ctx.day, kind: 'promotion', tag: 'prodigy', arena: after, ids: [c.id],
+      text: `Prodigy: ${c.name} of ${c.origin}, aged ${Math.floor(ageYears(c, ctx.day))}, reaches ${ARENAS[after].name}.`,
+    });
+  }
+  if (before >= 9 && after < 9 && (!c.arc?.fell || ctx.day - c.arc.fell > DAYS_PER_SEASON * 8)) {
+    (c.arc ??= {}).fell = ctx.day;
+    pushChronicle(ctx, {
+      day: ctx.day, kind: 'promotion', tag: 'fall-from-elite', arena: before, ids: [c.id],
+      text: `${c.name} falls from the elite, leaving ${ARENAS[before].name} (rating ${c.rating}, peak ${c.peak}).`,
+    });
+  }
+}
+
+function rankChange(ctx: SimContext, c: Competitor, rng: Rng) {
   const dec = decideRank(c.rank, c.rating, c.games < PROVISIONAL_GAMES);
   switch (dec.kind) {
     case 'stay':
@@ -172,13 +204,15 @@ export function simulateDay(ctx: SimContext, opts: DayOptions = {}) {
   for (let i = 0; i < ctx.competitors.length; i++) {
     const c = ctx.competitors[i];
     if (c.retiredDay !== null) continue;
-    if (c.titles.length > 0) continue; // champions defend or lose their titles first
+    // Young champions defend or lose their titles first; veterans (38+) may retire as champions
+    // (the title is then vacated at the next championship, see calendar.startTournament).
+    if (c.titles.length > 0 && ageYears(c, ctx.day) < 38) continue;
     if (!rng.chance(retirementHazard(ageYears(c, ctx.day)))) continue;
     c.retiredDay = ctx.day;
     ctx.stats.retirements++;
     if (c.peakRank >= 24 || c.championships > 0) {
       pushChronicle(ctx, {
-        day: ctx.day, kind: 'retirement', ids: [c.id], arena: RANKS[c.peakRank].arena,
+        day: ctx.day, kind: 'retirement', tag: 'retirement', ids: [c.id], arena: RANKS[c.peakRank].arena,
         text: `${c.name} retires — peak ${c.peak}, ${c.championships} championship${c.championships === 1 ? '' : 's'}.`,
       });
     }
@@ -198,9 +232,8 @@ export function simulateDay(ctx: SimContext, opts: DayOptions = {}) {
     n.ratingHistory = [[ctx.day, n.rating]];
     ctx.competitors.push(n);
     ctx.stats.debuts++;
-    if (n.potential > 2500) {
-      pushChronicle(ctx, { day: ctx.day, kind: 'debut', ids: [n.id], text: `A gifted newcomer, ${n.name} of ${n.origin}, enters the Dust Pits.` });
-    }
+    // (v0.2) Debuts are no longer announced from hidden potential; prodigies
+    // are chronicled when their results carry them into the elite arenas.
   }
 
   if ((ctx.day + 1) % DAYS_PER_SEASON === 0) seasonBoundary(ctx);
@@ -228,6 +261,21 @@ export function seasonBoundary(ctx: SimContext) {
     for (const c of ctx.competitors) if (c.retiredDay === null) c.rating = Math.max(100, c.rating + shift);
     ctx.stats.calibrations++;
   }
+  // Breakthroughs: the season's largest real rating jumps into the upper arenas.
+  const jumps: { c: Competitor; d: number }[] = [];
+  for (const c of ctx.competitors) {
+    if (c.retiredDay !== null || c.games < 60 || c.rating < 1900) continue;
+    const last = c.ratingHistory[c.ratingHistory.length - 1];
+    if (!last || ctx.day - last[0] > DAYS_PER_SEASON + 1) continue;
+    const d = c.rating - last[1];
+    if (d >= 150 && (!c.arc?.breakthrough || ctx.day - c.arc.breakthrough > DAYS_PER_SEASON * 8)) jumps.push({ c, d });
+  }
+  jumps.sort((a, b) => b.d - a.d || (a.c.id < b.c.id ? -1 : 1));
+  for (const { c, d } of jumps.slice(0, 2)) {
+    (c.arc ??= {}).breakthrough = ctx.day;
+    pushChronicle(ctx, { day: ctx.day, kind: 'record', tag: 'breakthrough', ids: [c.id], arena: RANKS[c.rank].arena, text: `Breakthrough: ${c.name} gains ${d} points this season to reach ${c.rating}.` });
+  }
+  if (ctx.hall) snapshotRivalries(ctx.hall, ctx.competitors, ctx.day);
   // Prune retired competitors beyond a generous archive to bound save size.
   const retired = ctx.competitors.filter((c) => c.retiredDay !== null);
   if (retired.length > 1500) {
@@ -237,7 +285,10 @@ export function seasonBoundary(ctx: SimContext) {
         .slice(0, 1500)
         .map((c) => c.id),
     );
-    ctx.competitors = ctx.competitors.filter((c) => c.retiredDay === null || keep.has(c.id) || c.titles.length > 0);
+    const drop = (c: Competitor) => !(c.retiredDay === null || keep.has(c.id) || c.titles.length > 0);
+    // Records must survive pruning: archive compact snapshots first.
+    if (ctx.hall) archiveLegends(ctx.hall, ctx.competitors.filter(drop));
+    ctx.competitors = ctx.competitors.filter((c) => !drop(c));
   }
   for (const c of ctx.competitors) {
     if (c.retiredDay !== null) continue;

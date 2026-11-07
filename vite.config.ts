@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Heavy engine benchmarks (tests/bench/**/*.slow.test.ts) only run when asked for
+// explicitly (`npm run bench`, or a path under tests/bench), never in `npm test`.
+const benchRun = process.argv.some((a) => a.includes('tests/bench')) || !!process.env.GLADIUS_BENCH;
+
 // Relative base so the build works from any static host sub-path
 // (GitHub Pages project sites, Netlify, a local launcher, etc.).
 export default defineConfig({
@@ -40,6 +44,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**', ...(benchRun ? [] : ['tests/bench/**/*.slow.test.ts'])],
     testTimeout: 60000,
   },
 });

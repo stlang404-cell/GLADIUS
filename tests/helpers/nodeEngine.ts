@@ -1,15 +1,40 @@
 import { createRequire } from 'node:module';
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
-import { UciEngine, type UciTransport } from '../../src/engine/uci';
+import { UciEngine, type UciTransport, type EngineOptions } from '../../src/engine/uci';
+import { BUILDS, type BuildId } from '../../src/engine/builds';
 
 const require = createRequire(import.meta.url);
 
-export function nodeEngine(): UciEngine {
-  const factory = require(path.resolve(__dirname, '../../public/engine/stockfish-19-lite-single.js'));
+/**
+ * Where to find Stockfish builds for tests and benchmarks:
+ *   1. public/engine (what the app ships),
+ *   2. $GLADIUS_SF_DIR (e.g. the bin/ folder of `npm pack stockfish@19.0.1`),
+ *   3. node_modules/stockfish/bin.
+ * The folder must contain a package.json with {"type":"commonjs"} for in-process use.
+ */
+export function findBuild(id: BuildId): string | null {
+  const file = BUILDS[id].js;
+  const dirs = [
+    path.resolve(__dirname, '../../public/engine'),
+    process.env.GLADIUS_SF_DIR,
+    path.resolve(__dirname, '../../node_modules/stockfish/bin'),
+  ].filter(Boolean) as string[];
+  for (const d of dirs) {
+    const p = path.join(d, file);
+    if (fs.existsSync(p) && fs.existsSync(p.replace(/\.js$/, '.wasm'))) return p;
+  }
+  return null;
+}
+
+/** In-process transport (single-threaded builds only). */
+export function inProcessTransport(jsPath: string): UciTransport {
+  const factory = require(jsPath);
   const eng = factory();
   let listener: (l: string) => void = () => {};
   eng.listener = (l: string) => listener(l);
-  const t: UciTransport = {
+  return {
     send: (c) => eng.processCommand(c),
     setListener: (cb) => (listener = cb),
     terminate: () => {
@@ -20,5 +45,73 @@ export function nodeEngine(): UciEngine {
       }
     },
   };
-  return new UciEngine(t);
+}
+
+/**
+ * Child-process transport: `node stockfish-19*.js` speaks UCI on stdin/stdout.
+ * Works for every build including the multi-threaded ones (worker_threads).
+ */
+export function processTransport(jsPath: string): UciTransport & { pid?: number } {
+  const ch = spawn(process.execPath, [jsPath], { stdio: ['pipe', 'pipe', 'ignore'] });
+  let listener: (l: string) => void = () => {};
+  let onErr: (e: Error) => void = () => {};
+  let buf = '';
+  let dead = false;
+  ch.stdout.setEncoding('utf8');
+  ch.stdout.on('data', (d: string) => {
+    buf += d;
+    let i;
+    while ((i = buf.indexOf('\n')) >= 0) {
+      const l = buf.slice(0, i).trim();
+      buf = buf.slice(i + 1);
+      if (l) listener(l);
+    }
+  });
+  ch.on('exit', (code) => {
+    dead = true;
+    onErr(new Error(`engine process exited (${code})`));
+  });
+  ch.on('error', (e) => onErr(e));
+  ch.stdin.on('error', () => undefined);
+  return {
+    pid: ch.pid,
+    send: (c) => {
+      if (!dead) ch.stdin.write(c + '\n');
+    },
+    setListener: (cb) => (listener = cb),
+    setErrorListener: (cb) => (onErr = cb),
+    terminate: () => {
+      onErr = () => {};
+      if (!dead) {
+        try {
+          ch.stdin.write('quit\n');
+        } catch {
+          /* ignore */
+        }
+        setTimeout(() => ch.kill('SIGKILL'), 200).unref();
+      }
+    },
+  };
+}
+
+/** Resident memory of a process in MB (Linux), or -1. */
+export function processRssMB(pid?: number): number {
+  if (!pid) return -1;
+  try {
+    const s = fs.readFileSync(`/proc/${pid}/status`, 'utf8');
+    return Math.round(Number(s.match(/VmRSS:\s+(\d+)/)![1]) / 1024);
+  } catch {
+    return -1;
+  }
+}
+
+/**
+ * Default test engine: Stockfish 19 lite single-threaded, in-process (as before).
+ * Pass a build id to get another build; non-default builds run as child processes.
+ */
+export function nodeEngine(build: BuildId = 'lite-single', opts: EngineOptions & { process?: boolean } = {}): UciEngine {
+  const p = findBuild(build);
+  if (!p) throw new Error(`Stockfish build ${build} not found (set GLADIUS_SF_DIR)`);
+  const useProcess = opts.process ?? (build !== 'lite-single');
+  return new UciEngine(() => (useProcess ? processTransport(p) : inProcessTransport(p)), opts);
 }
