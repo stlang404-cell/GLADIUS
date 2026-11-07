@@ -1,43 +1,39 @@
-# Implementation status — GLADIUS v0.2 "Imperial Reforging"
+# Implementation status — GLADIUS v0.2 (final: 2D White Imperial, untimed)
 
-Only items verified in this repository are marked done. Screenshots: `docs/screenshots/`.
+Only items verified in this repository are marked done. Screenshots: `docs/screenshots/` (desktop 1440×900 `desktop-*`, iPhone 13 emulation `phone-*`, art sheets).
 
 ## How to run
-`npm install && npm run dev` · production: `npm run build && npm run preview` · Windows: `npm run package:win` · iPhone: see DEPLOY.md · re-bake art: `npm run bake:pieces`, `npm run bake:trophies` · benchmarks: `npm run bench` · long world soak: `npm run soak`.
+`npm install && npm run dev` · production: `npm run build && npm run preview` · Windows: `npm run package:win` · iPhone: see DEPLOY.md · re-bake art (dev only, uses three.js + Playwright): `npm run bake:sprites` · brand kit: `npm run build:brand` · benchmarks: `npm run bench` · world soak: `npm run soak`.
 
-## Phase gates
-| Phase | State | Evidence |
+## Final override acceptance
+| Requirement | State | Evidence |
 |---|---|---|
-| **A — Visual vertical slice** | ✅ | New SDF-sculpted "Legio" set (close-ups, both colours on both square colours, iPhone size); new board renderer; new UI language; new header, opponent card, post-game ceremony. Screenshots desktop + iPhone 13. |
-| **A — Animation** | ✅ | Timeline system with Fast/Balanced/Majestic/Custom; capture contact, castling, e.p., promotion flare, mate/resign topple, landing settle, skip, reduce motion. Deterministic sampling of 19 moves (captures, both castles, e.p., promotion): 0 regressions, exact landing, max 0.6 square/16 ms. |
-| **B — Chess intelligence** | ✅ (desktop evidence) | Full-net vs lite-net at equal time: **+89 Elo [95% CI +59, +120], 160 games**; v0.2 top tier vs v0.1 top tier: **+57 [+24, +91], 80 games**; 62-position verified tactical suite; monotone persona ladder; capability tiers, scheduler (play > spectate > analysis), crash/hang restart, clock-aware allocation, eight styles, rival opening preparation. Threads match, persona-ladder matches and endgame suite implemented but not run. No Elo-vs-humans claim. See ENGINE.md. |
-| **C — Living empire** | ✅ | Trophy registry (60 defs), 139 achievements with eligibility & analysis gating, hall of records, rivalry model, objectives, season reports, prestige-driven invitations; 50-season soak with invariants (WORLD.md). |
-| **D — Twelve arenas** | ✅ (stylized, see limits) | 12 distinct 3D environments + scenic framing; arena portraits used across the UI; arena reveal ceremony. |
-| **E — Career & polish** | ✅ mostly | Legacy timeline, season ceremony, objectives, Hall of Honors with 2.5D trophies, achievements UI, split persistence with migration, background broadcasts, keyboard play, text scaling, reduced motion, contrast; offline verified. |
+| No human time limit anywhere | ✅ | `CLOCKS_ENABLED = false`; every game kind starts untimed with no clock; clock UI never shown. `tests/untimed.test.ts`. |
+| Pause / save / resume without forfeit | ✅ | Test leaves a game 30 days (fake clock), reloads the save, game is not over, finishes normally. Browser: offline reload → RESUME restores the position. |
+| Engine bounded & cancellable | ✅ | Own node/time budget; `AbortController` cancels on leave. |
+| Fully 2D, no 3D board in gameplay | ✅ | `src/board2d/` + DOM sprites; 3D renderer files deleted. |
+| Three.js removed from runtime | ✅ | No runtime import (grep); `three` is a devDependency for the offline bake only; bundle 1.34 MB → ≈678 KB (210 KB gz). |
+| Original 2D piece sets | ✅ | Ivory & Bronze (default), Imperial Gold & Crimson, Carrara & Nero Marble; unlocked by arena. |
+| Boards | ✅ | 12 signature boards (incl. Ivory Marble, Imperial Gold, Legion Bronze, Colosseum Sandstone, Senate Mosaic, Praetorian Crimson, Caesar's Obsidian) + Eternal Laurel; "Arena signature" option. |
+| Majestic 2D animation default | ✅ | Frame sampling (production build): glides 46–53 moving frames, 0 teleports/regressions, arrival 730–870 ms; captures keep the victim visible ≈67 frames; castling rook hop verified. Fast/Balanced/Custom + skip + reduced motion. |
+| White Imperial UI, exactly 5 tabs | ✅ | Arena · Empire · Academy · Spectate · Legacy, every tab captured desktop + iPhone; no console errors. |
+| Official logo & icons | ✅ | `public/brand/` SVG masters + PNG rasters, maskable/Apple icons, favicon, `gladius.ico`; used in header, splash, onboarding, manifest, Windows package. |
+| 12 illustrated arenas + crests | ✅ | `arenas-1-6.png`, `arenas-7-12.png`, `arena-crests.png`; backdrops on the Arena stage, game stage, Spectate, Empire cards, arena reveal. |
+| Empire systems preserved | ✅ | All 304 tests pass (rules/perft, engine, Elo, tournaments, persistence & migration, career, trophies/achievements, world sims). |
+| Offline after build | ✅ | SW controlling → offline reload → resume: 32/32 piece sprites loaded, 0 failed requests. |
 
 ## Tests actually executed
-- `npm test`: **296 passing, 17 files** (chess rules & perft, engine integration, strength ladder, Elo, tournaments fuzz, openings/puzzles, art, persistence incl. split-format migration/crash/corruption, career, trophies/achievements/legacy, population & world sims).
-- Engine benches & soak: see ENGINE.md and WORLD.md for commands, sample sizes and results.
-- Browser E2E (Playwright, Chromium + SwiftShader WebGL, no real GPU):
-  - Desktop 1440×900 and iPhone 13 emulation: onboarding → world creation → Arena → 2.5D game (scenic and focused) → 2D game → Empire (arena cards, tournament sheet, records, competitor profile) → Legacy (Hall of Honors, achievements) → ceremonies. **No console errors.**
-  - Keyboard/3D tap input previously verified; deterministic animation sampling on the real renderer.
-  - **Offline**: production build, service worker controlling, network disabled, reload → game auto-resumes with sculpted pieces and fonts; **0 failed requests** after adding `.bin`/`.woff2` to the precache (4.9 MB).
-  - Broadcast survival: left a live broadcast at move 6, returned at move 13 to the same game.
-
-## Fixed during v0.2 verification
-- WebGL probe leaked a context on every React render → phone board went blank ("Too many active WebGL contexts").
-- Game screen inherited the Arena scroll position on phones.
-- Offline precache missed baked models and fonts.
-- Smooth-subtraction sign error in the SDF kit (broke knight/rook/bishop meshes).
+- `npm test`: **304 passing, 18 files**. `tsc --noEmit` clean. `vite build` OK (precache 185 entries, 5.3 MB).
+- Browser E2E (Playwright Chromium, desktop 1440×900 and iPhone 13 emulation): onboarding → Arena → game → Empire (arena cards, arena sheet, tournaments, champions, competitor) → Academy → Spectate (live broadcast) → Legacy (profile, Hall of Honors, achievements, timeline, collection, settings) → promotion and arena-reveal ceremonies. No console errors.
+- Engine benchmarks (unchanged from v0.2, see ENGINE.md): full net vs lite net **+89 Elo [95% CI +59, +120], 160 games**; v0.2 top tier vs v0.1 top tier **+57 [+24, +91], 80 games**. No Elo-vs-humans claim.
 
 ## Known limitations (honest)
-- **Art is code-generated.** Pieces, trophies and arenas are original SDF/three.js work and look coherent and premium-stylized, but arenas are low-poly kits with flat lighting (no baked GI or hand-painted textures); portraits remain the v0.1 procedural SVG family (one face template).
-- **Performance on real devices is unmeasured.** All rendering checks ran on software WebGL (SwiftShader), where frames take ~0.2–2 s; render-on-demand keeps idle cost at zero, but frame rate, battery and memory on a real iPhone/Windows GPU were not measured.
-- Scenic framing makes the board smaller; it is auto-disabled under 700 px width (setting: Arena scenery).
-- Achievements that existed before v0.2 counters (ledger) cannot be back-dated; trophies before v0.2 are back-filled from tournament history without match scores.
-- Persistence light commits during a game skip unseen changes until the next full commit (see PERSISTENCE.md).
-- Not tested on a physical iPhone or Windows PC.
-- The 99 MB big-net engine is git-ignored (GitHub file limit); fresh clones/hosts run the lite net until it is copied in (ENGINE.md §8). It is never used on phones.
+- 2D promotion and mate/resign topple animations are implemented but were not frame-sampled in the 2D renderer (the old 3D versions were).
+- Art is code-generated (SVG illustrations, SDF sculpts baked to sprites): polished stylized vector, not painterly. Portrait nose types differ little at 48 px.
+- On an iPhone-sized screen the PLAY button on the Arena home sits at the fold under the board and may need a short scroll.
+- Not tested on a physical iPhone or Windows PC; frame rate and battery are unmeasured.
+- Old saves keep their history; their stored timed/3D settings are ignored.
+- The 99 MB big-net engine is git-ignored (GitHub file limit); fresh clones run the lite net until it is copied in (ENGINE.md §8).
 
 ## Next recommended milestone
-Real-device pass (iPhone Safari PWA + Windows Edge): frame-time and memory budgets, big-net download UX; hand-painted texture/lighting pass for the twelve arenas; 3D portrait busts to replace SVG portraits; larger engine match samples on desktop hardware.
+Real-device pass (iPhone Safari PWA + Windows Edge), frame-sample 2D promotion/topple, phone Arena layout tuning so PLAY is above the fold, hand-painted arena variants.

@@ -3,7 +3,7 @@ import { ARENAS, RANKS } from '../world/arenas';
 import { TROPHY_BY_ID } from '../world/trophies';
 import type { SeasonReport } from '../game/state';
 import type { AwardRecord } from '../world/types';
-import { emblemUri } from './art';
+import { emblemUri, crestUri } from './art';
 import { useArenaArt } from './components/ArenaArt';
 import type React from 'react';
 import { TrophyImage } from './components/TrophyImage';
@@ -48,6 +48,21 @@ export function CeremonyHost() {
     return () => window.removeEventListener('keydown', key);
   }, [item]);
   if (!item) return null;
+  if (item.kind === 'arena') {
+    return (
+      <div onClick={advance} role="dialog" aria-live="assertive" style={{ cursor: 'pointer' }}>
+        <ArenaReveal arena={item.arena}>
+          <div>
+            <img src={crestUri(item.arena)} alt="" />
+            <div className="kicker">Arena {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][item.arena]}</div>
+            <h1>{ARENAS[item.arena].name}</h1>
+            <p>{ARENAS[item.arena].motto}</p>
+            <div className="next" style={{ marginTop: 10, display: 'inline-block' }}>{item.next}</div>
+          </div>
+        </ArenaReveal>
+      </div>
+    );
+  }
   return (
     <div className="ceremony" onClick={advance} role="dialog" aria-live="assertive">
       <div className="ceremony-rays" />
@@ -60,16 +75,7 @@ export function CeremonyHost() {
           <div className="next">Next: {item.next}</div>
         </div>
       )}
-      {item.kind === 'arena' && (
-        <ArenaReveal arena={item.arena}>
-          <div>
-            <div className="kicker" style={{ color: '#f2cf6e' }}>Arena {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][item.arena]}</div>
-            <h1>{ARENAS[item.arena].name}</h1>
-            <p>{ARENAS[item.arena].motto}</p>
-            <div className="next" style={{ display: 'inline-block' }}>{item.next}</div>
-          </div>
-        </ArenaReveal>
-      )}
+
       {item.kind === 'trophy' && (
         <div className="ceremony-card">
           <div className="ceremony-emblem"><TrophyImage defId={item.award.defId} arena={item.award.arena} size={170} /></div>

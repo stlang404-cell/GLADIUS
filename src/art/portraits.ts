@@ -66,6 +66,7 @@ function sym(cx: number, top: number, right: Pt[], bottom: number): Pt[] {
 const path = (d: string, fill: string, extra = '') => `<path d="${d}" fill="${fill}"${extra}/>`;
 const stroke = (d: string, col: string, w: number, extra = '') => `<path d="${d}" stroke="${col}"${w === 1.1 ? '' : ` stroke-width="${n(w)}"`}${extra}/>`;
 const op = (o: number) => ` opacity="${n(o)}"`;
+const ell = (x: number, y: number, rx: number, ry: number) => `M${P(x - rx, y)}a${n(rx)},${n(ry)} 0 1 0 ${n(2 * rx)},0a${n(rx)},${n(ry)} 0 1 0 ${n(-2 * rx)},0`;
 const circ = (x: number, y: number, r: number, fill: string, extra = '') => `<circle cx="${n(x)}" cy="${n(y)}" r="${n(r)}" fill="${fill}"${extra}/>`;
 const lin = (id: string, a: string, b: string, c: string, x2 = 0, y2 = 1, m = 0.5) =>
   `<linearGradient id="${id}" x2="${n(x2)}" y2="${n(y2)}"><stop stop-color="${a}"/><stop offset="${n(m)}" stop-color="${b}"/><stop offset="1" stop-color="${c}"/></linearGradient>`;
@@ -239,7 +240,7 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
   const bald = baldStage > 0.75 ? 2 : baldStage > 0.3 ? 1 : 0; // 1 receding, 2 horseshoe
   if (bald && hs === 'longm') hs = 'wavy';
   const vol = 1 + uVol * 3;
-  const veil = cloth === 'palla' && gu[2] < 0.45 && !helm && gear !== 'diadem' && gear !== 'imperial';
+  const veil = cloth === 'palla' && gu[2] < 0.45 && gear === 'none';
 
   // ---------- beard
   type BS = 'none' | 'stubble' | 'short' | 'full' | 'philo' | 'goatee' | 'stache';
@@ -262,13 +263,13 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
   s += circ(60, 60, 60, `url(#${id}b)`);
   // laurel branches framing the lower medallion (one side drawn, the other mirrored)
   let bl = `M${P(60 + Math.cos(Math.PI * 0.56) * 50, 60 + Math.sin(Math.PI * 0.56) * 50)}A50,50 0 0 1 ${P(60 + Math.cos(Math.PI * 1.22) * 50, 60 + Math.sin(Math.PI * 1.22) * 50)}`;
-  for (let i = 0; i < 5; i++) {
-    const a = Math.PI * (0.62 + i * 0.125);
+  for (let i = 0; i < 4; i++) {
+    const a = Math.PI * (0.63 + i * 0.16);
     const x = 60 + Math.cos(a) * 50, y = 60 + Math.sin(a) * 50, t = a + Math.PI / 2;
-    for (const k of [-0.55, 0.55]) bl += `M${P(x, y)}l${P(Math.cos(t + k) * 4.4, Math.sin(t + k) * 4.4)}`;
+    for (const k of [-0.5, 0.5]) bl += `M${P(x, y)}l${P(Math.cos(t + k) * 5.4, Math.sin(t + k) * 5.4)}`;
   }
-  s += `<path id="${id}l" d="${bl}" fill="none" stroke="${W}" stroke-width="1.9" stroke-linecap="round"${op(0.28)}/><use href="#${id}l" transform="matrix(-1 0 0 1 120 0)"/>`;
-  s += `<g clip-path="url(#${id}o)" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><g transform="matrix(1.2 0 0 1.2 -12 -11)">`;
+  s += `<path id="${id}l" d="${bl}" stroke="${W}" stroke-width="2.2"${op(0.28)}/><use href="#${id}l" transform="matrix(-1 0 0 1 120 0)"/>`;
+  s += `<g clip-path="url(#${id}o)"><g transform="matrix(1.2 0 0 1.2 -12 -11)">`;
 
   let uid = 0;
   /** Same path stroked several times (outline, fill, highlight) without repeating its data. */
@@ -289,14 +290,15 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
 
   // ======================= back hair layer
   const hb = (): string => {
-    if (helm) return '';
+    if (helm && !female) return '';
     let b = '';
-    if (hs === 'long' || hs === 'longm' || hs === 'curlsf') {
+    if (hs === 'long' || hs === 'longm' || hs === 'curlsf' || helm) {
       const wd = fw + (hs === 'curlsf' ? 7 : 4.5);
       const bot = hs === 'longm' ? 92 : 106;
       const d = `M${P(cx - wd + 1, browY)}C${P(cx - wd - 3, T)} ${P(cx + wd + 3, T)} ${P(cx + wd - 1, browY)}C${P(cx + wd + 2, 75)} ${P(cx + wd + 3, 95)} ${P(cx + wd - 2, bot)}L${P(cx - wd + 2, bot)}C${P(cx - wd - 3, 95)} ${P(cx - wd - 2, 75)} ${P(cx - wd + 1, browY)}Z`;
       b += path(d, hairPaint, hairOut);
     }
+    if (helm || veil) return b;
     if (hs === 'bun' || hs === 'flavian') {
       b += circ(cx + (hs === 'bun' ? 0 : 0), T - 3, 9.5, hairPaint, hairOut);
       b += stroke(`M${P(cx - 7, T - 5)}Q${P(cx, T - 11)} ${P(cx + 7, T - 5)}M${P(cx - 6, T)}Q${P(cx, T - 5)} ${P(cx + 6, T)}`, hairD, 0.9, op(0.6));
@@ -425,11 +427,11 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
   s += `<use href="#${id}f" fill="url(#${id}s)"${out(sh)}/>`;
   let fs = '';
   // eye sockets + cheek blush + side shadow
-  if (female || age < 24 || expr.sq > 0.3) fs += stroke(`M${P(cx - eyeDX - 4, noseY - 1)}h3M${P(cx + eyeDX + 1, noseY - 1)}h3`, '#e8606a', 6, op(dark ? 0.15 : 0.22));
+  if (female || age < 24 || expr.sq > 0.3) fs += stroke(`M${P(cx - eyeDX - 4, noseY - 1)}h3M${P(cx + eyeDX + 1, noseY - 1)}h3`, '#e8606a', 6, op(si >= 9 ? 0.08 : dark ? 0.13 : 0.22));
   // cheekbone / jaw definition for strong faces
   if (shape === 'square' || shape === 'long' || age > 50) fs += stroke(`M${P(cx + cw - 2, eyeY + 6)}Q${P(cx + cw - 6, noseY + 3)} ${P(cx + jw - 4, mouthY + 1)}M${P(cx - cw + 2, eyeY + 6)}Q${P(cx - cw + 6, noseY + 3)} ${P(cx - jw + 4, mouthY + 1)}`, sh, 2.4, op(0.18));
   // under-lip + chin shading
-  fs += `<ellipse cx="${n(cx + 0.5)}" cy="${n(mouthY + 4.5)}" rx="${n(mw * 0.55)}" ry="1.6" fill="${sh}"${op(0.28)}/>`;
+  fs += path(ell(cx + 0.5, mouthY + 4.5, mw * 0.55, 1.6) + ell(cx + 1, noseY + 1.6, [3.2, 3.4, 5, 3.4, 3.4, 2.8, 4.2][noseT] + 0.5, 1.5), sh, op(0.3));
   if ((shape === 'square' || (!female && uMark2 < 0.25)) && (beard === 'none' || beard === 'stache')) fl += `M${P(cx, chinY - 3.6)}v1.6`; // cleft
   // age: smile lines, crow's feet, forehead lines, eye bags
   const al = Math.max(0, Math.min(1, (age - 32) / 30));
@@ -447,9 +449,8 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
     fs += stroke(fr, sh, 1, op(0.55));
   } else if (uMark < 0.28) fs += circ(cx + (uMark2 < 0.5 ? -1 : 1) * (mw + 2), mouthY - 2.5, 0.75, line, op(0.75));
   // hair shadow on forehead
-  fs += `<ellipse cx="${cx + 2}" cy="${n(T + 4)}" rx="${n(fw + 2)}" ry="${n(browY - T - 3)}" fill="${sh}"${op(helm || bald === 2 ? 0.18 : 0.3)}/>`;
   // cel shadow on the far side + rim light
-  fs += path(`M${P(cx + fw * 0.5, T - 2)}C${P(cx + cw * 0.72, browY)} ${P(cx + cw * 0.5, eyeY + 4)} ${P(cx + cw * 0.62, noseY)}C${P(cx + cw * 0.72, mouthY)} ${P(cx + jw * 0.85, chinY - 4)} ${P(cx + jw * 0.75, chinY + 3)}H${n(cx + cw + 6)}V${n(T - 2)}Z`, sh, op(0.22));
+  fs += path(`M${P(cx + fw * 0.5, T - 2)}C${P(cx + cw * 0.72, browY)} ${P(cx + cw * 0.5, eyeY + 4)} ${P(cx + cw * 0.62, noseY)}C${P(cx + cw * 0.72, mouthY)} ${P(cx + jw * 0.85, chinY - 4)} ${P(cx + jw * 0.75, chinY + 3)}H${n(cx + cw + 6)}V${n(T - 2)}Z` + ell(cx + 2, T + 4, fw + 2, browY - T - 3), sh, op(helm || bald === 2 ? 0.2 : 0.25));
   fs += stroke(spline([[R, browY - 5], [cx + cw, eyeY + 3.5], [cx + jw, jawY], [cx + jw * 0.6, chinY - 2.5]], false), mix(rim, skin, 0.4), 2.4, op(0.55));
   s += `<g clip-path="url(#${id}k)">${fs}</g>`;
 
@@ -486,7 +487,8 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
     mo += path(`M${P(cx - mw + 1, my + up + 0.4)}Q${P(cx, my + 1)} ${P(cx + mw - 1, my + up + 0.4)}L${P(cx + mw - 1.6, my + up + 1.6)}Q${P(cx, my + 2.8)} ${P(cx - mw + 1.6, my + up + 1.6)}Z`, '#fbf6ee');
     if (expr.m === 'laugh') mo += `<ellipse cx="${cx}" cy="${n(my + 4.6)}" rx="${n(mw * 0.45)}" ry="1.4" fill="#d0606a"/>`;
   } else {
-    const c = { neutral: [0, 0.7, 0], soft: [-0.6, 1.5, -0.6], smile: [-1.6, 2.6, -1.6], smirk: [0.3, 1, -1.8], stern: [0.9, -0.6, 0.9], grit: [0.6, -0.2, 0.6] }[expr.m] ?? [0, 0.7, 0];
+    const MC: Partial<Record<Mouth, number[]>> = { neutral: [0, 0.7, 0], soft: [-0.6, 1.5, -0.6], smile: [-1.6, 2.6, -1.6], smirk: [0.3, 1, -1.8], stern: [0.9, -0.6, 0.9], grit: [0.6, -0.2, 0.6] };
+    const c = MC[expr.m] ?? [0, 0.7, 0];
     const ml = `M${P(cx - mw, my + c[0])}Q${P(cx, my + c[1])} ${P(cx + mw, my + c[2])}`;
     if (female || uLips < 0.3) {
       const lc = female ? lipC : mix(skin, sh, 0.5);
@@ -512,7 +514,6 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
   const nY = noseY;
   const nwid = [3.2, 3.4, 5, 3.4, 3.4, 2.8, 4.2][noseT];
   let no = '';
-  no += `<ellipse cx="${cx + 1}" cy="${n(nY + 1.6)}" rx="${n(nwid + 0.5)}" ry="1.5" fill="${sh}"${op(0.32)}/>`;
   const bridge =
     noseT === 1 ? `M${P(cx + 1.4, eyeY + 1)}Q${P(cx + 3.6, eyeY + nlen * 0.45)} ${P(cx + 2.4, nY - 1)}`
       : noseT === 4 || noseT === 5 ? `M${P(cx + 1.2, browY + 3)}L${P(cx + 2, nY - 1.6)}`
@@ -645,9 +646,9 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
       fh += stroke(`M${P(cx - 9, T + 5)}Q${P(cx - 4, T + 2)} ${P(cx + 2, T + 2.5)}`, W, 2.2, op(0.45));
     } else {
       const buzz = hs === 'buzz';
-      const top = buzz ? T - 1 : capTop - (hs === 'tousled' ? 1.5 : 0);
+      const top = buzz ? T - 1 : capTop;
       const ext = buzz ? 0.7 : hs === 'curly' ? 1.8 : 1.6;
-      const o = arc(ext, top, hs === 'tousled' ? 10 : 6, hs === 'tousled' ? 0.09 : 0.02, eyeY - 1);
+      const o = arc(ext, top, hs === 'tousled' ? 9 : 6, hs === 'tousled' ? 0.07 : 0.02, eyeY - 1);
       const hl = hy + (bald === 1 ? -3 : 0);
       const sp = cx + (uPart - 0.5) * 12;
       let edge: string;
@@ -709,7 +710,7 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
   const bandY = browY - 3;
   if (gear === 'cap') {
     const lc = mix('#8a5a32', pal.stoneDark, 0.2);
-    hg += path(`M${P(L - 3, bandY + 2)}C${P(L - 4, T - 6)} ${P(R + 4, T - 6)} ${P(R + 3, bandY + 2)}Z`, lc, out(lc));
+    hg += path(`M${P(L - 3, bandY + 2)}C${P(L - 4, T - 10)} ${P(R + 4, T - 10)} ${P(R + 3, bandY + 2)}Z`, lc, out(lc));
     hg += path(`M${P(L - 3.5, bandY + 3.5)}Q${P(cx, bandY - 2.5)} ${P(R + 3.5, bandY + 3.5)}L${P(R + 3.2, bandY - 0.5)}Q${P(cx, bandY - 6.5)} ${P(L - 3.2, bandY - 0.5)}Z`, shade(lc, 0.2), out(lc));
     hg += stroke(`M${P(cx, T - 1.6)}V${n(bandY - 4)}M${P(cx - 10, T + 2)}Q${P(cx - 12, bandY - 6)} ${P(cx - 13, bandY - 3)}M${P(cx + 10, T + 2)}Q${P(cx + 12, bandY - 6)} ${P(cx + 13, bandY - 3)}`, shade(lc, -0.4), 0.8, ' stroke-dasharray="1.6 1.4"');
     hg += stroke(`M${P(cx - fw * 0.55, T + 1)}Q${P(cx - 4, T - 2.8)} ${P(cx + 3, T - 3)}`, W, 1.6, op(0.3));
@@ -740,7 +741,7 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
       for (let i = 0; i < 4; i++) holes += `M${P(cx + cw - 1.6 + (i % 2) * 1.2, bandY + 5 + i * 3.6)}h0`;
       hg += mirror(path(`M${P(R + 3, bandY)}L${P(cx + cw + 3, eyeY + 13)}Q${P(cx + cw - 1, eyeY + 17)} ${P(cx + cw - 6, eyeY + 13)}L${P(cx + cw - 5, bandY + 3)}Z`, mp, mo2) + stroke(holes, '#2a1a12', 1.7));
     }
-    hg += path(`M${P(L - 3.5, bandY + 2)}C${P(L - 4, T - 7)} ${P(R + 4, T - 7)} ${P(R + 3.5, bandY + 2)}Z`, mp, mo2);
+    hg += path(`M${P(L - 3.5, bandY + 2)}C${P(L - 4.5, T - 11)} ${P(R + 4.5, T - 11)} ${P(R + 3.5, bandY + 2)}Z`, mp, mo2);
     if (gear === 'glad') hg += path(`M${P(L - 11, bandY + 5)}Q${P(cx, bandY - 4)} ${P(R + 11, bandY + 5)}Q${P(R + 12, bandY + 1)} ${P(R + 4, bandY - 1)}Q${P(cx, bandY - 8)} ${P(L - 4, bandY - 1)}Q${P(L - 12, bandY + 1)} ${P(L - 11, bandY + 5)}Z`, mp, mo2);
     else hg += path(`M${P(L - 4.5, bandY + 4)}Q${P(cx, bandY - 2)} ${P(R + 4.5, bandY + 4)}L${P(R + 4.2, bandY + 0.5)}Q${P(cx, bandY - 5.5)} ${P(L - 4.2, bandY + 0.5)}Z`, shade(metal, -0.15), mo2);
     hg += stroke(`M${P(cx - fw * 0.6, T + 2)}Q${P(cx - 5, T - 3.5)} ${P(cx + 2, T - 4)}`, W, 2, op(0.7));
@@ -771,13 +772,13 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
   s += hg;
 
   s += '</g></g>';
-  s += circ(60, 60, 58.3, 'none', ` stroke="${ring}" stroke-width="3.4"`) + circ(60, 60, 56.6, 'none', ` stroke="${shade(ring, 0.5)}" stroke-width=".6"`);
+  s += `<circle cx="60" cy="60" r="58.3" stroke="${ring}" stroke-width="3.4"/></g>`;
   let defs = `<radialGradient id="${id}b" cx=".5" cy=".4" r=".6"><stop stop-color="${bgIn}"/><stop offset="1" stop-color="${bgOut}"/></radialGradient>`;
   defs += lin(id + 's', hi, skin, sh, 1, 0.35, 0.45);
   if (s.includes(id + 'h)')) defs += lin2(id + 'h', shade(hairC, 0.2), hairD);
   if (s.includes(id + 'c)')) defs += lin2(id + 'c', shade(cc, 0.15), shade(cc, -0.3), 1, 0.4);
   if (s.includes(id + 'm)')) defs += lin(id + 'm', shade(metal, 0.5), metal, shade(metal, -0.45), 1, 0.6, 0.4);
   defs += `<path id="${id}f" d="${headD}"/><clipPath id="${id}k"><use href="#${id}f"/></clipPath><clipPath id="${id}o"><circle cx="60" cy="60" r="57"/></clipPath>`;
-  s = `<defs>${defs}</defs>` + s;
+  s = `<defs>${defs}</defs><g fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">` + s;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">${s}</svg>`;
 }

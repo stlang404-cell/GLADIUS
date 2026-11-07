@@ -8,4 +8,4 @@ An offline-first Roman chess career game. Real FIDE chess against a living empir
 
 Five tabs: **Arena · Empire · Academy · Spectate · Legacy**.
 
-License: GPL-3.0-or-later (bundles Stockfish, GPL-3.0). Art is procedurally generated and original.
+License: GPL-3.0-or-later (bundles Stockfish, GPL-3.0). Fully 2D, untimed chess with a White Imperial UI. All art (logo, arenas, crests, pieces, portraits) is original and generated in this repository.

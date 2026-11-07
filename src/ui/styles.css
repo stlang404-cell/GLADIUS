@@ -428,3 +428,4 @@ html[data-motion='reduce'] *, html[data-motion='reduce'] *::before, html[data-mo
 .stage-side .opp-elo { font-size: 1.5rem; align-self: flex-start; }
 .stage-side .opp-banner { align-items: flex-start; }
 @media (max-width: 640px) { .stage-main { padding: 10px; border-radius: 18px; } .content { padding: 10px 10px calc(92px + var(--safe-b)); } .player-bar.opp { margin-bottom: 8px; } .player-bar.me { margin-top: 8px; } }
+.arena-transition .next { background: #fff; border-radius: 12px; padding: 8px 14px; box-shadow: var(--shadow); font-size: .92rem; }

@@ -682,15 +682,40 @@ function tufts(s: S, x0: number, x1: number, y0: number, y1: number, count: numb
   return path(dk, dark) + path(lt, light);
 }
 
+/** Inlaid floor medallion seen in perspective (rings + star). */
+function medallion(cx: number, cy: number, r: number, squash: number, ring: string, inner: string, star: string): string {
+  return (
+    `<g transform="translate(${n(cx)} ${n(cy)}) scale(1 ${n(squash)})">` +
+    `<circle r="${n(r)}" fill="${ring}"/><circle r="${n(r * 0.88)}" fill="${inner}"/>` +
+    `<circle r="${n(r * 0.8)}" fill="none" stroke="${ring}" stroke-width="${n(r * 0.03)}"/>` +
+    `<path d="${starPath8(0, 0, r * 0.72, r * 0.3)}" fill="${star}"/><circle r="${n(r * 0.16)}" fill="${ring}"/></g>`
+  );
+}
+
+function starPath8(cx: number, cy: number, r: number, ri: number): string {
+  let d = '';
+  for (let i = 0; i < 16; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 8;
+    const rr = i % 2 ? ri : r;
+    d += (i ? 'L' : 'M') + P(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+  }
+  return d + 'Z';
+}
+
+/** Soaring eagle silhouette. */
+function soaringEagle(x: number, y: number, sc: number, color: string): string {
+  return path(
+    `M${P(x, y)}c${n(-10 * sc)},${n(-6 * sc)} ${n(-30 * sc)},${n(-14 * sc)} ${n(-56 * sc)},${n(-10 * sc)}l${n(8 * sc)},${n(4 * sc)}l${n(-6 * sc)},${n(2 * sc)}l${n(8 * sc)},${n(3 * sc)}l${n(-4 * sc)},${n(3 * sc)}c${n(18 * sc)},${n(0)} ${n(34 * sc)},${n(4 * sc)} ${n(48 * sc)},${n(10 * sc)}l${n(-2 * sc)},${n(12 * sc)}l${n(6 * sc)},${n(-4 * sc)}l${n(6 * sc)},${n(4 * sc)}l${n(-2 * sc)},${n(-12 * sc)}c${n(14 * sc)},${n(-6 * sc)} ${n(30 * sc)},${n(-10 * sc)} ${n(48 * sc)},${n(-10 * sc)}l${n(-4 * sc)},${n(-3 * sc)}l${n(8 * sc)},${n(-3 * sc)}l${n(-6 * sc)},${n(-2 * sc)}l${n(8 * sc)},${n(-4 * sc)}c${n(-26 * sc)},${n(-4 * sc)} ${n(-46 * sc)},${n(4 * sc)} ${n(-56 * sc)},${n(10 * sc)}z` +
+      `M${P(x - 3 * sc, y - 1 * sc)}q${n(3 * sc)},${n(-8 * sc)} ${n(7 * sc)},${n(-2 * sc)}z`,
+    color,
+  );
+}
+
 /** Subtle warm frame vignette (never muddy). */
 function vignette(s: S, color: string, strength = 0.35): void {
   s.add(rect(0, 0, W, H, s.rgu([[0.55, color, 0], [0.85, color, strength * 0.6], [1, color, strength]], W / 2, H * 0.48, W * 0.62, 0.78)));
 }
 
-/** Gentle centre calm-down glow behind the board card. */
-function centerGlow(s: S, color: string, strength = 0.35, cy = 470): void {
-  s.add(`<ellipse cx="800" cy="${n(cy)}" rx="520" ry="330" fill="${s.rgu([[0, color, strength], [0.6, color, strength * 0.5], [1, color, 0]], 800, cy, 520, 330 / 520)}"/>`);
-}
 
 // ================================================================== scenes
 
@@ -863,7 +888,7 @@ function tent(s: S, x: number, base: number, w: number, h: number, vp: [number, 
 
 /** Side wing of a building receding toward vp: returns quad + arched bays. */
 function wing(
-  s: S, sideSign: 1 | -1, vp: [number, number], xNear: number, yTop: number, yBot: number, T: number,
+  sideSign: 1 | -1, vp: [number, number], xNear: number, yTop: number, yBot: number, T: number,
   bays: number, wall: string, hole: string, ratio = 0.6,
 ): string {
   const A = toward(xNear, yTop, vp[0], vp[1], T);
@@ -957,7 +982,8 @@ function legionCamp(s: S): void {
   cloud(s, 1260, 120, 470, 130, '#ffffff', '#aecbe6');
   cloud(s, 1000, 260, 240, 60, '#ffffff', '#c4dcee', 0.9);
   cloud(s, 140, 290, 300, 60, '#ffffff', '#c8def0', 0.85);
-  birds(s, 900, 200, 5, 60, '#3a5a7a', 8);
+  birds(s, 1000, 220, 5, 60, '#3a5a7a', 8);
+  s.add(soaringEagle(780, 170, 1.4, '#3a3040'));
   mountains(s, HY - 40, [[140, 150, 230], [420, 200, 260], [700, 130, 210], [1000, 170, 240], [1290, 230, 260], [1540, 160, 220]], '#7ea6c8', '#b4d0e6', '#f4f8fc');
   haze(s, 260, HY - 20, '#e4f0f4', 0, 0.6);
   s.add(hills(s, HY - 30, 40, 5, '#88b07e'));
@@ -1016,6 +1042,9 @@ function legionCamp(s: S): void {
   for (let i = 0; i < 6; i++) men += figure(470 + i * 22, 600 + i * 3, 36, '#5a3a24', i % 2 ? '#c0392b' : '#b8342a', true, 1);
   for (let i = 0; i < 5; i++) men += figure(1050 + i * 24, 600 - i * 2, 36, '#5a3a24', '#c0392b', true, -1);
   s.add(men);
+  // shield and crossed pila planted by the road (phone foreground)
+  s.add(stroke('M880,900L940,700M960,900L900,700', '#6a4a2a', 5, 'stroke-linecap="round"'), path('M936,700l4,-24l4,24zM896,700l4,-24l4,24z', '#c8d0d8'));
+  s.add(g(rect(-34, -110, 68, 110, s.lg([[0, '#e05040'], [0.5, '#c0392b'], [1, '#7a1f1a']], 0, 0, 1, 0), 'rx="10"') + stroke('M0,-110V0M-34,-55H34', '#f0c048', 5) + `<circle cy="-55" r="12" fill="#f0c048"/>` + path('M-14,-90l14,-10l14,10M-14,-20l14,10l14,-10', 'none', 'stroke="#f0c048" stroke-width="3"'), 'transform="translate(700 890) rotate(-6)"'));
   // foreground: meadow with flowers, pila stack, crate + helmet
   s.add(tufts(s, -20, 420, 820, 910, 12, '#4f7a2e', '#9cc45a', 70), tufts(s, 1180, 1620, 820, 910, 12, '#4f7a2e', '#9cc45a', 70));
   let fl = '';
@@ -1086,7 +1115,11 @@ function ironCitadel(s: S): void {
   haze(s, 200, 640, '#eef0f0', 0, 0.6);
   // the citadel on its crag (upper centre, visible in the phone crop)
   const crag = `M520,560L600,420L660,380L700,300L760,262L840,262L900,300L940,380L1000,420L1080,560Z`;
-  s.add(path(crag, s.lg([[0, '#8a8c92'], [1, '#6a6e78']], 0, 0, 1, 0)), path('M760,262L700,300L660,380L600,420L520,560L700,560L760,400Z', '#a8acb4', op(0.6)));
+  s.add(path(crag, s.lg([[0, '#8a8c92'], [1, '#6a6e78']], 0, 0, 1, 0)), path('M760,262L700,300L660,380L600,420L520,560L700,560L760,400Z', '#c4c8cc', op(0.6)));
+  s.add(path('M840,262L900,300L940,380L1000,420L1080,560L960,560L880,380Z', '#4a5060', op(0.35)));
+  let rf = '';
+  for (let i = 0; i < 9; i++) rf += fir(560 + i * 60 + s.rnd(-10, 10), 560 - Math.abs(i - 4) * 18 + s.rnd(0, 10), s.rnd(30, 46), '#5a7a6a', '#8aa890');
+  s.add(rf);
   const stoneF = patStone(s, 22, 10, '#2a2e36', '#ffffff', 0.3, 0.15);
   const tc = { lit: '#c8ccd4', mid: '#9aa0aa', dark: '#6a707c', roof: '#5a6878' };
   s.add(rect(690, 214, 220, 70, s.lg([[0, '#9aa0aa'], [1, '#c4c8d0']], 0, 0, 1, 0)), rect(690, 214, 220, 70, stoneF), path(crenels(690, 910, 214, 10, 9), '#b4bac4'));
@@ -1110,14 +1143,19 @@ function ironCitadel(s: S): void {
   s.add(firs);
   haze(s, 520, 700, '#f2efe8', 0, 0.5);
   // ground: stone causeway
-  s.add(rect(0, 640, W, 260, s.lg([[0, '#b8b4a8'], [1, '#7e7c76']])));
+  s.add(rect(0, 640, W, 260, s.lg([[0, '#9aae8a'], [1, '#5e7a52']])));
+  s.add(path('M640,640H960L1180,900H420Z', s.lg([[0, '#e2d6c0'], [1, '#b0a48e']])));
   let pav = '';
   for (let i = 0; i < 9; i++) {
-    const y = 650 + i * i * 3.2 + i * 10;
-    pav += `M0,${n(y)}H1600`;
+    const y = 646 + i * i * 3.2 + i * 10;
+    const t = (y - 640) / 260;
+    pav += `M${n(640 - 220 * t)},${n(y)}H${n(960 + 220 * t)}`;
   }
-  for (let i = -12; i <= 12; i++) pav += `M${n(800 + i * 30)},640L${n(800 + i * 210)},900`;
-  s.add(stroke(pav, '#5a5a58', 1.5, op(0.3)));
+  for (let i = -5; i <= 5; i++) pav += `M${n(800 + i * 30)},640L${n(800 + i * 70)},900`;
+  s.add(stroke(pav, '#6a6050', 1.5, op(0.35)));
+  s.add(path('M760,640H840L900,900H700Z', '#fff4dc', op(0.25)));
+  s.add(tufts(s, 330, 640, 660, 900, 10, '#4c6a40', '#8aaa6a', 40), tufts(s, 960, 1270, 660, 900, 10, '#4c6a40', '#8aaa6a', 40));
+  s.add(medallion(800, 838, 120, 0.22, '#a33b2b', '#d6c8ae', '#d6a54a'));
   // foreground fortress walls left/right with iron gates
   const big = patStone(s, 64, 26, '#20242a', '#ffffff', 0.35, 0.18);
   const wallC = { lit: '#b8bec8', mid: '#8a919c', dark: '#565c68' };
@@ -1185,8 +1223,8 @@ function gladiatorsCourt(s: S): void {
   for (const side of [-1, 1] as const) {
     const xn = side < 0 ? -10 : 1610;
     const wallG = s.lg(side < 0 ? [[0, sand.mid], [1, sand.lit]] : [[0, sand.dark], [1, sand.mid]], 0, 0, 1, 0);
-    s.add(wing(s, side, vp, xn, 60, 360, 0.62, 5, wallG, '#7a3e1a', 0.6));
-    s.add(wing(s, side, vp, xn, 360, 830, 0.62, 5, wallG, s.lg([[0, '#5a2a10'], [1, '#a05a2a']]), 0.62));
+    s.add(wing(side, vp, xn, 60, 360, 0.62, 5, wallG, '#7a3e1a', 0.6));
+    s.add(wing(side, vp, xn, 360, 830, 0.62, 5, wallG, s.lg([[0, '#5a2a10'], [1, '#a05a2a']]), 0.62));
     // cornice lines
     const a = toward(xn, 360, vp[0], vp[1], 0.62);
     const b = toward(xn, 60, vp[0], vp[1], 0.62);
@@ -1218,7 +1256,7 @@ function gladiatorsCourt(s: S): void {
   for (let j = 0; j < 9; j++) tiles += `M0,${n(500 + j * j * 5 + j * 6)}H1600`;
   s.add(stroke(tiles, '#a86a36', 1.4, op(0.3)));
   // central mosaic ring
-  s.add(ell(800, 640, 420, 110, 'none', `stroke="#2c7a7b" stroke-width="10" opacity=".5"`), ell(800, 640, 380, 96, 'none', `stroke="#c8302a" stroke-width="5" opacity=".45"`));
+  s.add(medallion(800, 640, 400, 0.26, '#2c7a7b', '#f6dcaa', '#c8302a'));
   // long sunlight band across floor
   s.add(path('M300,490L1300,490L1500,620L80,700Z', '#fff6dc', op(0.18)));
   // palms
@@ -1246,7 +1284,7 @@ const HORSE =
   'M2,16C4,10 10,9 16,10L27,9C29,4 31,0 35,-1L40,1L43,5L41,8L37,6L35,10C36,14 37,17 36,20L41,13L44,15L38,24L35,26L34,40L31,40L30,27L16,27L13,40L10,40L10,27C6,25 4,22 3,19L-2,28L-4,27Z';
 
 /** Bronze quadriga: four rearing horses, chariot and laurelled victor. */
-function quadriga(s: S, x: number, base: number, sc: number, fill: string): string {
+function quadriga(x: number, base: number, sc: number, fill: string): string {
   let o = '';
   for (let i = 0; i < 4; i++) {
     const dx = (i - 1.5) * 15 * sc;
@@ -1286,9 +1324,9 @@ function triumphalArch(s: S, cx: number, base: number, w: number, h: number, m: 
   o += rect(x0 - w * 0.03, top + attic, w * 1.06, h * 0.035, shade(m.lit, 0.3));
   o += rect(x0 + w * 0.02, top + h * 0.02, w * 0.96, attic, s.lg([[0, m.lit], [0.7, m.mid], [1, m.dark]], 0, 0, 1, 0));
   o += rect(x0 + w * 0.2, top + h * 0.045, w * 0.6, attic * 0.7, shade(m.mid, -0.06));
-  o += inscription('SPQR', cx, top + h * 0.065, attic * 0.42, m.gold, 'stroke-linecap="butt"');
+  o += inscription('SPQR', cx, top + h * 0.065, attic * 0.42, m.gold);
   o += rect(x0, top, w, h * 0.025, shade(m.lit, 0.25));
-  o += quadriga(s, cx, top, w * 0.006, m.gold);
+  o += quadriga(cx, top, w * 0.006, m.gold);
   // victories on the corners
   for (const fx of [0.04, 0.96]) o += path(`M${P(x0 + w * fx - 6, top)}l3,-22h6l3,22z`, m.gold) + `<circle cx="${n(x0 + w * fx)}" cy="${n(top - 26)}" r="4" fill="${m.gold}"/>`;
   return o;
@@ -1318,7 +1356,7 @@ function laurelRing(cx: number, cy: number, r: number, len: number, count: numbe
 }
 
 /** Honorific column with golden statue. */
-function honorColumn(s: S, x: number, base: number, h: number, colId: string, gold: string, stone: string): string {
+function honorColumn(x: number, base: number, h: number, colId: string, gold: string, stone: string): string {
   let o = rect(x - h * 0.06, base - h * 0.12, h * 0.12, h * 0.12, stone) + col(colId, x, base - h * 0.12, h * 0.8, 1.1);
   o += path(`M${P(x - h * 0.02, base - h * 0.93)}l${n(h * 0.008)},${n(-h * 0.06)}h${n(h * 0.024)}l${n(h * 0.008)},${n(h * 0.06)}z`, gold);
   o += `<circle cx="${n(x)}" cy="${n(base - h * 1.005)}" r="${n(h * 0.014)}" fill="${gold}"/>`;
@@ -1371,7 +1409,7 @@ function forumOfTriumph(s: S): void {
   s.add(temple(s, 1500, 790, 560, 380, 6, { stone: '#f2ece0', light: '#ffffff', dark: '#8a96aa', roof: '#c88a5a', gold: '#e2a83a', colId: bigCol, inner: '#6a7890' }, { steps: 4 }));
   // honorific columns & cypresses
   s.add(cypress(s, 620, 520, 170, 34, '#2f5a3a', '#5e8a52'), cypress(s, 980, 520, 160, 32, '#2f5a3a', '#5e8a52'), cypress(s, 1120, 540, 220, 40, '#2f5a3a', '#5e8a52'));
-  s.add(honorColumn(s, 560, 560, 300, midCol, '#e2a83a', '#e6e0d4'), honorColumn(s, 1050, 560, 300, midCol, '#e2a83a', '#e6e0d4'));
+  s.add(honorColumn(560, 560, 300, midCol, '#e2a83a', '#e6e0d4'), honorColumn(1050, 560, 300, midCol, '#e2a83a', '#e6e0d4'));
   // red triumph banners on the colonnade
   for (const bx of [420, 1150]) s.add(hangingBanner(s, bx, 398, 34, 84, '#b8342a', '#e8b84a'));
   // festival petals drifting
@@ -1418,8 +1456,9 @@ function praetorianBastion(s: S): void {
     st += circ(x, y, s.rnd(0.6, 1.8));
   }
   s.add(path(st, '#fff4e0', op(0.85)));
-  s.add(`<path d="M1230,92a34,34 0 1,0 30,52a28,28 0 1,1 -30,-52z" fill="#fff2d0"/>`);
-  s.add(`<circle cx="1240" cy="120" r="140" fill="${s.rgu([[0, '#fff2d0', 0.25], [1, '#fff2d0', 0]], 1240, 120, 140)}"/>`);
+  s.add(`<circle cx="870" cy="110" r="160" fill="${s.rgu([[0, '#fff2d0', 0.3], [1, '#fff2d0', 0]], 870, 110, 160)}"/>`);
+  s.add(`<path d="M860,82a34,34 0 1,0 30,52a28,28 0 1,1 -30,-52z" fill="#fff2d0"/>`);
+  birds(s, 700, 170, 4, 40, '#2a1a3a', 8);
   sun(s, 880, HY - 10, 60, '#ffe6a0', '#ff9a50', 700, 0.7);
   // long glowing cloud streaks
   cloud(s, 420, 300, 600, 50, '#ffb080', '#8a4a78', 0.9, 8);
@@ -1445,6 +1484,8 @@ function praetorianBastion(s: S): void {
   for (let j = 0; j < 9; j++) pv += `M0,${n(HY + 40 + j * j * 4.4 + j * 8)}H1600`;
   s.add(stroke(pv, '#1e0e10', 1.4, op(0.4)));
   s.add(ell(800, HY + 60, 600, 80, s.rgu([[0, '#ffb070', 0.5], [1, '#ffb070', 0]], 800, HY + 60, 600, 0.14)));
+  s.add(path(`M770,${HY + 30}H830L1000,900H600Z`, s.lg([[0, '#9a2a3a'], [1, '#5a0e22']])), stroke(`M770,${HY + 30}L600,900M830,${HY + 30}L1000,900`, '#e0b050', 5));
+  s.add(medallion(800, 820, 110, 0.24, '#e0b050', '#7b1e3a', '#e0b050'));
   // massive bastion walls (left and right) — dark red brick
   const brick = patStone(s, 30, 12, '#1e0a0c', '#ff9a6a', 0.45, 0.12);
   const wallFill = (side: number) => s.lg(side < 0 ? [[0, '#3a1218'], [0.75, '#6a1e26'], [1, '#a8423a']] : [[0, '#a8423a'], [0.25, '#6a1e26'], [1, '#3a1218']], 0, 0, 1, 0);
@@ -1728,6 +1769,7 @@ function consularPalace(s: S): void {
   s.add(stroke(tiles, '#3a0d0d', 1.4, op(0.35)));
   s.add(ell(800, 640, 560, 70, s.rgu([[0, '#ffd090', 0.55], [1, '#ffd090', 0]], 800, 640, 560, 0.13)));
   s.add(balustrade(s, 0, W, 612, 70, '#f2d8b8', '#9a4a3a'));
+  s.add(medallion(800, 800, 200, 0.22, '#e8c060', '#7a1a1a', '#f6d888'));
   // palace wings with crimson columns + gold capitals
   const cId = defColumn(s, '#ff9a7a', '#c0463c', '#6a1616', 'corinth', '#f0c860', false);
   for (const side of [-1, 1]) {
@@ -2080,7 +2122,7 @@ function hallOfCaesars(s: S): void {
   // back wall with glowing doorway and golden eagle
   const bL = pj(-WX, SY, ZB);
   const bR = pj(WX, FY, ZB);
-  const [bcx, bcy] = pj(0, SY, ZB);
+  const bcy = pj(0, SY, ZB)[1];
   const br = (WX * f) / ZB;
   s.add(path(`M${P(bL[0], bR[1])}V${n(bcy)}A${n(br)},${n(br)} 0 0,1 ${P(bR[0], bcy)}V${n(bR[1])}Z`, s.lg([[0, '#2a6a74'], [1, '#1a4a54']])));
   const d0 = pj(-170, -420, ZB);
@@ -2100,6 +2142,7 @@ function hallOfCaesars(s: S): void {
   for (const X of [-600, -300, 0, 300, 600]) inl += `M${P(...pj(X, FY, ZN))}L${P(...pj(X, FY, ZB))}`;
   for (let z = ZN; z < ZB; z *= 1.28) inl += `M${P(...pj(-WX, FY, z))}L${P(...pj(WX, FY, z))}`;
   s.add(stroke(inl, '#e8c060', 2, op(0.5)));
+  s.add(medallion(VX, 820, 190, 0.2, '#e8c060', '#1f5058', '#f4d888'));
   s.add(path(`M${P(...pj(-170, FY, ZB))}L${P(...pj(170, FY, ZB))}L${P(...pj(500, FY, ZN))}L${P(...pj(-500, FY, ZN))}Z`, s.lg([[0, '#ffe0a0', 0.55], [1, '#ffe0a0', 0]])));
   // niches + colossal statues along both walls (far to near)
   const items: string[] = [];

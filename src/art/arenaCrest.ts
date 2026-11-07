@@ -70,7 +70,7 @@ const SHIELDS: string[] = [
   'M80,14L98,40L128,44L114,72L128,100L98,106L80,132L62,106L32,100L46,72L32,44L62,40Z',
 ];
 
-function charge(i: number, c: Ctx, ink: string, light: string, accent: string): string {
+function charge(i: number, ink: string, light: string, accent: string): string {
   const st = (d: string, col: string, w: number, extra = '') => `<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}"${extra}/>`;
   const f = (d: string, col: string, extra = '') => `<path d="${d}" fill="${col}"${extra}/>`;
   const halo = (d: string, w: number) => st(d, OUT, w, ' stroke-linecap="round" stroke-linejoin="round" opacity=".55"');
@@ -192,7 +192,7 @@ export function arenaCrestSvg(arenaIndex: number): string {
   o += `<path d="${sh}" fill="${grad(c, [[0, f0], [1, f1]])}" transform="translate(80 74) scale(.86) translate(-80 -74)"/>`;
   // sheen
   o += `<path d="${sh}" fill="${grad(c, [[0, '#ffffff'], [0.45, '#ffffff'], [0.46, f0], [1, f0]], 1, 1)}" opacity=".14" transform="translate(80 74) scale(.86) translate(-80 -74)"/>`;
-  o += charge(i, c, shade(pal.stoneDark, -0.2), light, accent);
+  o += charge(i, shade(pal.stoneDark, -0.2), light, accent);
   // ribbon with numeral
   const num = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][i];
   const ribbon = luma(pal.accent) > 0.45 ? (luma(pal.accent2) < 0.4 ? pal.accent2 : '#8e1b1b') : shade(pal.accent, -0.05);

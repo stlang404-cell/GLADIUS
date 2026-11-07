@@ -27,7 +27,8 @@ describe('persistence', () => {
     delete old.coach;
     const m = migrate(old);
     expect(m.schema).toBe(SAVE_SCHEMA);
-    expect(m.settings.boardMode).toBe('3d');
+    expect(m.settings.boardMode).toBe('2d');
+    expect(m.settings.defaultTc).toBe('untimed');
     expect(m.coach.positions).toEqual([]);
     expect(() => migrate({ ...s, schema: 999 })).toThrow(/newer/);
   });

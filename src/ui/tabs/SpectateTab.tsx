@@ -9,7 +9,8 @@ import { pendingPairings } from '../../tournament/formats';
 import { PLAYER_ID } from '../../world/calendar';
 import type { Save } from '../../game/state';
 import { broadcastStore, startBroadcast, setPaused, setSpeed, type Feature } from '../broadcast';
-import { IconPause, IconPlay, IconRotate } from '../components/icons';
+import { IconPause, IconPlay } from '../components/icons';
+import { backdropUri, crestUri } from '../art';
 
 function features(s: Save): Feature[] {
   const byId = new Map(s.world.competitors.map((c) => [c.id, c]));
@@ -60,7 +61,7 @@ export function SpectateTab() {
         </Card>
       )}
       {list.filter((f) => f.id !== current?.feature.id).map((f) => (
-        <Card key={f.id} className="feature" onClick={() => { startBroadcast(f); setViewing(true); }}>
+        <Card key={f.id} className="feature tappable" onClick={() => { startBroadcast(f); setViewing(true); }}>
           <div className="kicker">{f.label} · {ARENAS[f.arena].name}</div>
           <div className="vs-row">
             <div className="vs-side"><CompetitorPortrait c={f.white} day={s.world.day} size={48} /><b>{f.white.name}</b><span className="muted"><Emblem rank={f.white.rank} size={14} /> {f.white.rating}</span></div>
@@ -89,32 +90,41 @@ function LiveBroadcast({ onExit }: { onExit: () => void }) {
   useSyncExternalStore(broadcastStore.subscribe, broadcastStore.version);
   const b = broadcastStore.get();
   const [showEval, setShowEval] = useState(true);
-  const [azimuth, setAz] = useState(0);
   if (!b) return null;
   const f = b.feature;
   return (
-    <div className="game spectate">
-      <div className="game-main">
-        <div className="game-ctx"><span className="live-dot" /> {b.doneGameId ? 'FINAL' : 'LIVE'} · {f.label}</div>
-        <div className="player-bar opp"><CompetitorPortrait c={f.black} day={s.world.day} size={44} /><div className="pb-name"><div>{f.black.name}</div><div className="pb-sub">{RANKS[f.black.rank].name} · {f.black.rating}</div></div></div>
-        <div className="an-board">
+    <div className="stage">
+      <div className="stage-main" style={{ ['--backdrop' as string]: `url("${backdropUri(f.arena)}")` }}>
+        <div className="stage-title">
+          <img className="stage-crest" src={crestUri(f.arena)} alt="" />
+          <div className="grow">
+            <div className="stage-arena"><span className="live-dot" />{b.doneGameId ? 'Final' : 'Live'} · {ARENAS[f.arena].name}</div>
+            <div className="stage-motto">{f.label}</div>
+          </div>
+        </div>
+        <div className="player-bar opp"><CompetitorPortrait c={f.black} day={s.world.day} size={42} /><div className="pb-name"><div>{f.black.name}</div><div className="pb-sub"><Emblem rank={f.black.rank} size={16} /> {RANKS[f.black.rank].name}</div></div><span className="pb-elo">{f.black.rating}</span></div>
+        <div className="an-board" style={{ maxWidth: 760, margin: '0 auto' }}>
           {showEval && <EvalBar e={b.evalScore} orientation="w" />}
-          <div className="an-board-inner"><Board fen={b.fen} orientation="w" interactive={false} lastMove={b.last} settings={s.settings} set={f.arena} arena={f.arena} azimuth={azimuth} /></div>
+          <div className="an-board-inner"><Board fen={b.fen} orientation="w" interactive={false} lastMove={b.last} settings={s.settings} set={f.arena} arena={f.arena} /></div>
         </div>
-        <div className="player-bar me"><CompetitorPortrait c={f.white} day={s.world.day} size={44} /><div className="pb-name"><div>{f.white.name}</div><div className="pb-sub">{RANKS[f.white.rank].name} · {f.white.rating}</div></div></div>
+        <div className="player-bar me"><CompetitorPortrait c={f.white} day={s.world.day} size={42} /><div className="pb-name"><div>{f.white.name}</div><div className="pb-sub"><Emblem rank={f.white.rank} size={16} /> {RANKS[f.white.rank].name}</div></div><span className="pb-elo">{f.white.rating}</span></div>
       </div>
-      <div className="game-side">
-        <div className="move-strip">{b.san.map((m, i) => <span key={i}>{i % 2 === 0 ? `${i / 2 + 1}. ` : ''}{m} </span>)}</div>
-        {b.doneGameId && <div className="notice">Final: {b.result}. <button className="btn small gold" onClick={() => nav.open({ kind: 'analysis', gameId: b.doneGameId! })}>Review</button></div>}
+      <div className="stage-side">
+        <div className="move-strip">{b.san.length ? b.san.map((m, i) => <span key={i}>{i % 2 === 0 ? `${i / 2 + 1}. ` : ''}{m} </span>) : <span className="muted">The players take their seats…</span>}</div>
+        {b.doneGameId && <div className="card"><b>Final: {b.result}</b> <button className="btn small gold" style={{ marginLeft: 8 }} onClick={() => nav.open({ kind: 'analysis', gameId: b.doneGameId! })}>Review</button></div>}
         {s.active && !b.doneGameId && <div className="notice">Paused while your own game is in progress.</div>}
-        <div className="game-actions">
-          <button className="btn" onClick={() => setPaused(!b.paused)} disabled={!!b.doneGameId}>{b.paused ? <><IconPlay size={18} /> Resume</> : <><IconPause size={18} /> Pause</>}</button>
-          {SPEEDS.map((x) => <button key={x} className={'btn small' + (b.speed === x ? ' gold' : '')} onClick={() => setSpeed(x)}>{x}×</button>)}
-          <button className={'btn small' + (showEval ? ' gold' : '')} onClick={() => setShowEval((v) => !v)}>Eval</button>
-          <button className="btn small" aria-label="Rotate view" onClick={() => setAz((a) => (a > 0.5 ? -0.6 : a + 0.6))}><IconRotate size={18} /></button>
-          <button className="btn" onClick={onExit}>Back</button>
+        <div className="card">
+          <div className="card-title">Playback</div>
+          <div className="game-actions">
+            <button className="btn" onClick={() => setPaused(!b.paused)} disabled={!!b.doneGameId}>{b.paused ? <><IconPlay size={18} /> Resume</> : <><IconPause size={18} /> Pause</>}</button>
+            {SPEEDS.map((x) => <button key={x} className={'chip' + (b.speed === x ? ' on' : '')} onClick={() => setSpeed(x)}>{x}×</button>)}
+          </div>
+          <div className="row gap">
+            <button className={'chip' + (showEval ? ' on' : '')} onClick={() => setShowEval((v) => !v)}>Evaluation</button>
+            <button className="btn small" onClick={onExit}>Back</button>
+          </div>
+          {!b.doneGameId && <div className="muted small" style={{ marginTop: 8 }}>The game keeps playing if you leave.</div>}
         </div>
-        {!b.doneGameId && <div className="muted small center">The game continues in the background if you leave.</div>}
       </div>
     </div>
   );

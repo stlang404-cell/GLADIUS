@@ -14,7 +14,6 @@ import { exportAll, importAll, listBackups, restoreBackup, wipeAll } from '../..
 import { requestPersistence } from '../../persist/db';
 import { downloadText } from '../AnalysisView';
 import { engineStatus, configureEngines, prefetchBigNet } from '../../engine/browserEngine';
-import { POOLS } from '../../rating/elo';
 import type { Settings } from '../../game/state';
 import { PLAYER_ID } from '../../world/calendar';
 
@@ -91,7 +90,7 @@ export function Profile() {
         </div>
         <div className="form-row">{form.map((f, i) => <span key={i} className={'form ' + f}>{f.toUpperCase()}</span>)}</div>
         <Sparkline values={hist.slice(-120)} w={320} h={60} color="#9c1f1a" />
-        <div className="muted small">{POOLS.map((pl) => `${pl} ${p.ratings[pl].rating}${p.ratings[pl].games < 20 ? '?' : ''}`).join(' · ')} · best ever {bestRating(s)}</div>
+        <div className="muted small">Best ever {bestRating(s)} · peak {r.peak}</div>
       </Card>
       {rivals.length > 0 && (
         <Card title="Rivalries">
