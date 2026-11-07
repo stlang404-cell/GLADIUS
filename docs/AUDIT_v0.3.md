@@ -40,3 +40,6 @@ Audited on the v0.2 final commit (`f651004`) before any v0.3 change. Every item 
 3. **Phase C — living empire:** 25,000 competitors, regions, career stages/ambitions, generations, rivalries, indexed simulation, compact saves, migration.
 4. **Phase D — competition & honours:** regional circuits and new event kinds, region-aware trophies, Hall of Fame, Chronicle filters.
 5. **Phase E — Academy & release:** defensible classifications, puzzles from real mistakes, weakness tracking, improvement charts, integrity separation; performance report; docs.
+
+## Outcome
+All five plan items were implemented; the gates and measurements are in [STATUS.md](STATUS.md). The 24-arena / 72-rank expansion was added mid-release and is included (old arena *i* → 2*i*, Eternal Throne → 23).

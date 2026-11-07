@@ -287,6 +287,11 @@ export async function removeInstalled(baseUrl: string, cache: CacheLike, names: 
  * HEAD probe; SPA fallbacks answering index.html are detected by content type.
  */
 export async function probeBundled(baseUrl: string, name: string, bytes: number, f: FetchLike = fetch): Promise<boolean> {
+  // A remote PWA host cannot answer while the device is offline; the Windows launcher
+  // serves from the local machine, so the probe still runs there when offline.
+  const g = globalThis as { navigator?: { onLine?: boolean }; location?: { hostname?: string } };
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(g.location?.hostname ?? 'localhost');
+  if (g.navigator?.onLine === false && !local) return false;
   try {
     const r = await f(wasmUrl(baseUrl, name), { method: 'HEAD', cache: 'no-cache' });
     const type = r.headers.get('content-type') ?? '';

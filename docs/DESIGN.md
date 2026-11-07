@@ -1,4 +1,4 @@
-# GLADIUS — Design & Architecture (v0.2 "Imperial Reforging", final 2D White Imperial)
+# GLADIUS — Design & Architecture (v0.3 "Imperial Ascension")
 
 Companion documents: [ART_BIBLE.md](ART_BIBLE.md) (visual language) · [ENGINE.md](ENGINE.md) (chess intelligence & benchmarks) · [WORLD.md](WORLD.md) (trophies, achievements, records, rivalries, invitations, objectives) · [PERSISTENCE.md](PERSISTENCE.md) (save format) · [STATUS.md](STATUS.md) (what is verified).
 
@@ -7,6 +7,16 @@ CHALLENGE → PLAY → RESULT → ANALYZE → IMPROVE → ADVANCE. The Arena tab
 
 ## Five tabs (unchanged)
 Arena · Empire · Academy · Spectate · Legacy. New depth lives in segments and sheets inside them (e.g. Legacy → Hall of Honors / Achievements / Timeline), never as new tabs.
+
+## v0.3 decisions
+| Area | Decision | Evidence |
+|---|---|---|
+| Scale | 24 arenas × 3 grades = 72 ranks (24 titles in gladiatorial / legion / civic / imperial families); 25,000 competitors; 8 regional circuits | WORLD.md v0.3, migration test |
+| Pieces | Hand-drawn layered-SVG piece sets baked to WebP (Legio primary, Senate Marble, Praetorian Guard) | ART_BIBLE, contact sheets |
+| Mobile | Board sized by width *and* height; game controls inside the stage on phones; landscape two-column stage | STATUS mobile gate |
+| Engine | Full-net engine as a chunked, SHA-verified pack; accurate labels; worker cap; analysis held during games | ENGINE.md v0.3 |
+| Analysis | MultiPV-3 post-game analysis, documented accuracy & classes, skill profile, puzzles from real mistakes | ANALYSIS.md |
+| Legacy | Hall of Fame and full career statistics computed from stored games (`game/careerStats.ts`) | tests/careerStats.test.ts |
 
 ## v0.2 decisions (final overrides applied)
 | Area | Decision | Evidence |
@@ -28,4 +38,4 @@ Arena · Empire · Academy · Spectate · Legacy. New depth lives in segments an
 Unchanged rules from v0.1 (see WORLD.md for audited details): grades follow Elo inside an arena; entering a new arena needs a Promotion Trial win or +150 dominance; 100-point demotion buffer; placement over the first 20 games moves ≤2 grades per game. Influence is earned from results and honours, decays 15 %/season, buys hosting and formal challenges, never affects chess. Opponent strength never scales with the player's results; rival preparation only changes opening choices.
 
 ## Module map
-`chess/` rules, openings (433 lines), endgames, puzzles · `engine/` UCI client, scheduler, builds, personas · `rating/` Elo · `world/` population, sim, calendar, trophies, records · `tournament/` six formats · `analysis/` · `game/` career, legacy, ledger, achievements, influence · `persist/` split saves, backups · `board2d/` animation timeline, board themes · `render/` bake-only SDF sculpts (dev) · `art/` logo, arena backdrops & crests, portraits, emblems · `ui/` React.
+`chess/` rules, openings (433 lines), endgames, puzzles · `engine/` UCI client, scheduler, builds, personas · `rating/` Elo · `world/` population, sim, calendar, trophies, records · `tournament/` six formats · `analysis/` · `game/` career, legacy, ledger, achievements, influence · `persist/` split saves, backups · `board2d/` animation timeline, board themes, piece sets · `render/` bake-only SDF sculpts (dev) · `art/` logo, arena backdrops & crests, portraits, emblems · `ui/` React.

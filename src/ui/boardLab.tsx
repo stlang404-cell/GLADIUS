@@ -20,7 +20,10 @@ function Lab() {
       return { fen: c.fen(), last: m, mate: c.isCheckmate(), resigned: null };
     }),
     resign: (side: 'w' | 'b') => setSt((s) => ({ ...s, resigned: side })),
+    unmount: () => root.unmount(),
   };
+  (window as unknown as { __labFen: () => string }).__labFen = () => st.fen;
   return <Board fen={st.fen} orientation="w" interactive={false} lastMove={st.last} settings={{ ...DEFAULT_SETTINGS }} set={0} arena={0} mate={st.mate} resigned={st.resigned} />;
 }
-createRoot(document.getElementById('root')!).render(<Lab />);
+const root = createRoot(document.getElementById('root')!);
+root.render(<Lab />);
