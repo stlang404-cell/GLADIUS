@@ -39,7 +39,7 @@ export function App() {
     // Warm up the opponent engine so the first move is fast.
     setTimeout(() => void getEngine('play').whenReady(), 800);
   }, []);
-  if (boot === 'loading') return <div className="splash"><div className="splash-title">GLADIUS</div></div>;
+  if (boot === 'loading') return <div className="splash"><img src={new URL('brand/logo-stacked.svg', document.baseURI).href} alt="GLADIUS" /></div>;
   if (boot === 'new' || !hasSave())
     return <Onboarding notice={bootMsg} onDone={(s) => { setSave(s); void persistSave(s, { backup: true }); setBoot('ready'); }} />;
   return <Shell notice={bootMsg} />;

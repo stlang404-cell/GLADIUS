@@ -120,8 +120,27 @@ export function Board(props: BoardProps) {
   const [cursor, setCursor] = useState<Square | null>(null);
   const [promo, setPromo] = useState<{ from: Square; to: Square } | null>(null);
   const [announce, setAnnounce] = useState('');
-  const [sprites, setSprites] = useState<Sprite[]>(() => nextSprites([], chess, null));
-  const prevFen = useRef(fen);
+  // Sprite identities are derived synchronously with the position so the
+  // layout effect below sees the new arrangement in the same commit.
+  const spritesRef = useRef<Sprite[] | null>(null);
+  const spriteFen = useRef<string>('');
+  if (spritesRef.current === null) {
+    spritesRef.current = nextSprites([], chess, null);
+    spriteFen.current = fen;
+  } else if (spriteFen.current !== fen) {
+    const last = props.lastMove && props.lastMove.after === fen && props.lastMove.before === spriteFen.current ? props.lastMove : null;
+    spritesRef.current = nextSprites(spritesRef.current, chess, last);
+    spriteFen.current = fen;
+  }
+  const sprites = spritesRef.current;
+  const [, forceRender] = useState(0);
+  const setSprites = (f: (s: Sprite[]) => Sprite[]) => {
+    const next = f(spritesRef.current ?? []);
+    if (next !== spritesRef.current) {
+      spritesRef.current = next;
+      forceRender((n) => n + 1);
+    }
+  };
   const lastAnimFen = useRef(fen);
   const boardRef = useRef<HTMLDivElement>(null);
   const els = useRef(new Map<number, HTMLImageElement>());
@@ -149,14 +168,6 @@ export function Board(props: BoardProps) {
     setSel(null);
     setPromo(null);
     if (props.lastMove && props.lastMove.after === fen) setAnnounce(`${props.lastMove.color === 'w' ? 'White' : 'Black'} ${props.lastMove.san}`);
-  }, [fen]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Sprite bookkeeping when the position changes.
-  useEffect(() => {
-    if (prevFen.current === fen) return;
-    const last = props.lastMove && props.lastMove.after === fen && props.lastMove.before === prevFen.current ? props.lastMove : null;
-    prevFen.current = fen;
-    setSprites((s) => nextSprites(s, chess, last));
   }, [fen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const runLoop = () => {
@@ -279,7 +290,7 @@ export function Board(props: BoardProps) {
     // Sprites that didn't move stay put (new ones fade in on jumps).
     void byId;
     runLoop();
-  }, [sprites, fen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mate / resignation: the beaten king topples.
   useEffect(() => {
@@ -358,7 +369,11 @@ export function Board(props: BoardProps) {
     if (interactive && pc && pc.color === chess.turn()) {
       const s = sprites.find((x) => !x.dying && x.sq === sq);
       if (s) drag.current = { id: s.id, from: sq, x0: e.clientX, y0: e.clientY, active: false };
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      try {
+        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      } catch {
+        /* synthetic or already-released pointer */
+      }
     }
     tap(sq);
   };
@@ -445,7 +460,7 @@ export function Board(props: BoardProps) {
       aria-label={props.label ?? 'Chessboard. Arrow keys move the cursor, Enter selects.'}
       onKeyDown={onKey}
       onBlur={() => setCursor(null)}
-      style={{ ['--trim' as string]: theme.trim, ['--ink' as string]: theme.ink }}
+      style={{ ['--trim' as string]: theme.trim, ['--coord' as string]: theme.ink }}
     >
       <div className="b2-frame" style={{ backgroundImage: `url(${imgs.frame})` }}>
         {settings.showCoords && <div className="b2-ranks" aria-hidden>{ranks.map((r) => <span key={r}>{r}</span>)}</div>}
@@ -475,6 +490,7 @@ export function Board(props: BoardProps) {
                     if (el) els.current.set(s.id, el);
                     else els.current.delete(s.id);
                   }}
+                  data-sid={s.id}
                   className={'pc' + (sel === s.sq && !s.dying ? ' lifted' : '') + (s.dying ? ' dying' : '')}
                   src={pieceSrc(style, s.color, s.type)}
                   alt=""

@@ -12,6 +12,8 @@ import type { Save, WorldTournament } from '../../game/state';
 import { compAge } from '../components/common';
 import { TrophyImage } from '../components/TrophyImage';
 import { useArenaArt } from '../components/ArenaArt';
+import { crestUri } from '../art';
+import { signatureTheme } from '../../board2d/themes';
 import { TROPHY_BY_ID } from '../../world/trophies';
 import { recordLeaders, RECORD_LABELS, ALL_RECORD_KEYS, competitorHonours, type RecordKey } from '../../world/records';
 import { rivalPrep } from '../../game/legacy';
@@ -67,14 +69,14 @@ function Arenas() {
         const locked = a.index > mine && !s.player.unlockedSets.includes(a.index);
         return (
           <ArenaCard key={a.id} index={a.index} mine={a.index === mine} onClick={() => nav.open({ kind: 'arena', index: a.index })}>
-            <div className="ac-shade" />
+            <div className="ac-num">{['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][a.index]}</div>
+            {locked && <div className="ac-lock"><IconShield size={16} /></div>}
+            {a.index === mine && <div className="ac-here">YOU ARE HERE</div>}
             <div className="ac-body">
-              <div className="ac-num">{['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][a.index]}</div>
+              <img className="ac-crest" src={crestUri(a.index)} alt="" />
               <div className="ac-name">{a.name}</div>
               <div className="ac-meta">{a.floor}+ Elo · {counts[a.index]} competitors</div>
-              <div className="ac-champ"><IconCrown size={14} /> {nameOf(s, title.holder)}</div>
-              {locked && <div className="ac-lock"><IconShield size={16} /></div>}
-              {a.index === mine && <div className="ac-here">YOU ARE HERE</div>}
+              <div className="ac-champ"><IconCrown size={13} /> {nameOf(s, title.holder)}</div>
             </div>
           </ArenaCard>
         );
@@ -94,8 +96,11 @@ export function ArenaSheet({ index, onClose }: { index: number; onClose: () => v
   return (
     <Sheet title={a.name} onClose={onClose} wide>
       <div className="arena-banner" style={{ backgroundImage: art }}>
-        <TrophyImage defId={`sig-${index}`} arena={index} size={96} alt={a.trophy} />
-        <div><div className="kicker">{a.trophy}</div><i>{a.motto}</i></div>
+        <div className="ab-card">
+          <img src={crestUri(index)} width={56} height={56} alt="" />
+          <TrophyImage defId={`sig-${index}`} arena={index} size={72} alt={a.trophy} />
+          <div><div className="kicker">{a.trophy}</div><i>{a.motto}</i><div className="muted small">Signature board: {signatureTheme(index).name}</div></div>
+        </div>
       </div>
       <div className="ranks3">
         {[0, 1, 2].map((t) => {

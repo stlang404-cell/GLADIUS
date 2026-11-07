@@ -21,3 +21,11 @@ export const emblemUri = (rank: number) => memo(`e${rank}`, () => rankEmblemSvg(
 export const trophyUri = (arena: number) => memo(`t${arena}`, () => arenaTrophySvg(arena));
 export const pieceUri = (type: string, color: 'w' | 'b', set: number) => memo(`pc${type}${color}${set}`, () => pieceSvg(type as 'p', color, set));
 export const backdropUri = (arena: number) => memo(`b${arena}`, () => arenaBackdropSvg(arena));
+
+// Arena crests (2D illustration module). Falls back to the arena's top rank emblem.
+import * as artIndex from '../art/index';
+export const crestUri = (arena: number) =>
+  memo(`c${arena}`, () => {
+    const fn = (artIndex as unknown as Record<string, ((i: number) => string) | undefined>).arenaCrestSvg;
+    return fn ? fn(arena) : rankEmblemSvg(arena * 3 + 2);
+  });

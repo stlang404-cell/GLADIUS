@@ -10,7 +10,7 @@ import { getSave, mutate, archiveGame, useSave, pushToast } from './store';
 import { Board, animMs } from './components/Board';
 import { Portrait, Emblem, Record as WDL } from './components/common';
 import { RANKS, ARENAS } from '../world/arenas';
-import { TIME_CONTROLS, type GameRecord } from '../game/state';
+import { TIME_CONTROLS, CLOCKS_ENABLED, type GameRecord } from '../game/state';
 import { finishPlayerGame, opponentPersonaElo, playerArena, type PostGame } from '../game/career';
 import { PLAYER_ID } from '../world/calendar';
 import { queueAnalysis } from './analysisQueue';
@@ -19,7 +19,8 @@ import { PostGameSheet } from './PostGame';
 import { queueCeremonies, type CeremonyItem } from './Ceremony';
 import { objectives, rivalPrep } from '../game/legacy';
 import { STYLE_LABEL } from '../engine/styles';
-import { IconFlag, IconHalf, IconUndo, IconRotate, IconPause, IconTrophy } from './components/icons';
+import { IconFlag, IconHalf, IconUndo, IconPause, IconTrophy } from './components/icons';
+import { backdropUri, crestUri } from './art';
 
 function fmtClock(ms: number) {
   if (ms <= 0) return '0:00';
@@ -40,7 +41,6 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
   const [resigned, setResigned] = useState<'w' | 'b' | null>(null);
   const [, force] = useState(0);
   const [confirm, setConfirm] = useState<'resign' | null>(null);
-  const [azimuth, setAzimuth] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const cancelled = useRef(false);
 
@@ -50,7 +50,8 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
   const color = rec?.playerColor ?? 'w';
   const opp = useMemo(() => (active ? s.world.competitors.find((c) => c.id === active.opponentId) : undefined), [active?.opponentId]); // eslint-disable-line react-hooks/exhaustive-deps
   const tc = TIME_CONTROLS.find((t) => t.id === rec?.tc) ?? TIME_CONTROLS[2];
-  const timed = tc.baseSec > 0;
+  // Untimed by design: clocks exist only behind the disabled CLOCKS_ENABLED flag.
+  const timed = CLOCKS_ENABLED && tc.baseSec > 0;
 
   useEffect(() => {
     if (game) setFen(game.fen());
@@ -238,23 +239,30 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
           setFen(game.fen());
         }}><IconUndo size={18} /> Undo</button>
       )}
-      {s.settings.boardMode === '3d' && <button className="btn" aria-label="Rotate view" onClick={() => setAzimuth((a) => (a > 0.5 ? -0.6 : a + 0.6))}><IconRotate size={18} /></button>}
-      <button className="btn" onClick={onExit} title="Saved — resume any time"><IconPause size={18} /> Later</button>
+      <button className="btn" onClick={onExit} title="Saved — resume any time, no clock"><IconPause size={18} /> Pause & leave</button>
     </div>
   );
 
+  const arenaIdx = tournament ? tournament.arena : playerArena(s);
+  const myTurn = !disabled && game.turn() === color;
   return (
-    <div className="game">
-      <div className="game-main">
-        <div className="game-ctx">{tournament && <IconTrophy size={14} />}{kindLabel}</div>
+    <div className="stage">
+      <div className="stage-main" style={{ ['--backdrop' as string]: `url("${backdropUri(arenaIdx)}")` }}>
+        <div className="stage-title">
+          <img className="stage-crest" src={crestUri(arenaIdx)} alt="" />
+          <div className="grow">
+            <div className="stage-arena">{ARENAS[arenaIdx].name}</div>
+            <div className="stage-motto">{tournament && <IconTrophy size={14} />} {kindLabel}</div>
+          </div>
+        </div>
         <div className="player-bar opp">
-          <Portrait seed={them.portraitSeed ?? 1} female={them.female} arena={RANKS[them.rank].arena} size={44} />
+          <Portrait seed={them.portraitSeed ?? 1} female={them.female} arena={RANKS[them.rank].arena} size={42} />
           <div className="pb-name">
             <div>{them.name}</div>
-            <div className="pb-sub"><Emblem rank={them.rank} size={16} /> {RANKS[them.rank].name} · {them.rating}</div>
+            <div className="pb-sub"><Emblem rank={them.rank} size={16} /> {RANKS[them.rank].name}</div>
           </div>
-          {thinking && <div className="thinking" aria-label="thinking"><span /><span /><span /></div>}
-          {timed && <div className={'clock' + (game.turn() === oppSide && !disabled ? ' on' : '') + (liveClock(oppSide) < 20000 ? ' low' : '')}>{fmtClock(liveClock(oppSide))}</div>}
+          {thinking ? <div className="thinking" aria-label="thinking"><span /><span /><span /></div> : <span className="pb-elo">{them.rating}</span>}
+          {timed && <div className={'clock' + (game.turn() === oppSide && !disabled ? ' on' : '')}>{fmtClock(liveClock(oppSide))}</div>}
         </div>
         <Board
           fen={fen || game.fen()}
@@ -263,23 +271,40 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
           onMove={(u) => applyMove(u)}
           lastMove={lastMove}
           settings={s.settings}
-          set={tournament ? tournament.arena : playerArena(s)}
-          arena={tournament ? tournament.arena : playerArena(s)}
+          set={arenaIdx}
+          arena={arenaIdx}
           mate={st.termination === 'checkmate'}
           resigned={resigned}
-          azimuth={azimuth}
         />
         <div className="player-bar me">
-          <Portrait seed={me.portraitSeed ?? 1} female={me.female} arena={RANKS[me.rank].arena} size={44} />
+          <Portrait seed={me.portraitSeed ?? 1} female={me.female} arena={RANKS[me.rank].arena} size={42} />
           <div className="pb-name">
             <div>{me.name}</div>
-            <div className="pb-sub"><Emblem rank={me.rank} size={16} /> {RANKS[me.rank].name} · {me.rating}</div>
+            <div className="pb-sub"><Emblem rank={me.rank} size={16} /> {RANKS[me.rank].name}</div>
           </div>
-          {timed && <div className={'clock' + (game.turn() === color && !disabled ? ' on' : '') + (liveClock(color) < 20000 ? ' low' : '')}>{fmtClock(liveClock(color))}</div>}
+          {myTurn ? <span className="turn-tag">Your move</span> : <span className="pb-elo">{me.rating}</span>}
+          {timed && <div className={'clock' + (game.turn() === color && !disabled ? ' on' : '')}>{fmtClock(liveClock(color))}</div>}
         </div>
+      </div>
+      <div className="stage-side">
+        <div className="card">
+          <div className="row">
+            <Portrait seed={them.portraitSeed ?? 1} female={them.female} arena={RANKS[them.rank].arena} size={52} />
+            <div className="grow">
+              <b>{them.name}</b>
+              <div className="muted small">{opp ? `${STYLE_LABEL[opp.style] ?? opp.style} · ${opp.origin}` : ''}</div>
+              {opp && <div className="small"><WDL w={opp.w} d={opp.d} l={opp.l} /></div>}
+            </div>
+          </div>
+          {h2h && <div className={isRival ? 'rival-line' : 'muted small'} style={{ marginTop: 10, marginBottom: 0 }}>{isRival ? 'Rival · ' : 'You vs them · '}<WDL {...h2h} /></div>}
+        </div>
+        <div className="move-strip" aria-label="Moves">
+          {san.length === 0 ? <span className="muted">No moves yet — take all the time you need.</span> : san.map((m, i) => (i % 2 === 0 ? <span key={i} className="ms-pair"><i>{i / 2 + 1}.</i> {m} {san[i + 1] ?? ''}</span> : null))}
+        </div>
+        {actions}
         {notice && <div className="notice" onClick={() => setNotice(null)}>{notice}</div>}
         {s.player.w + s.player.d + s.player.l === 0 && san.length < 4 && (
-          <div className="notice small">Tap a piece, then its square. Arrow keys + Enter work too. Double-tap the board to skip an animation.</div>
+          <div className="notice small">Drag a piece or tap it, then its square. No clock — think as long as you like, or leave and resume later.</div>
         )}
         {confirm === 'resign' && (
           <div className="confirm">
@@ -288,23 +313,6 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
             <button className="btn small" onClick={() => setConfirm(null)}>Cancel</button>
           </div>
         )}
-      </div>
-      <div className="game-side">
-        <div className="card side-card">
-          <div className="kicker">{ARENAS[tournament ? tournament.arena : playerArena(s)].name}</div>
-          <div className="row" style={{ marginTop: 6 }}>
-            <div className="grow">
-              <b>{them.name}</b>
-              <div className="muted small">{opp ? `${STYLE_LABEL[opp.style] ?? opp.style} · ${opp.origin}` : ''}</div>
-            </div>
-            {opp && <div className="small"><WDL w={opp.w} d={opp.d} l={opp.l} /></div>}
-          </div>
-          {h2h && <div className={isRival ? 'rival-line' : 'muted small'} style={{ marginTop: 6 }}>{isRival ? 'Rival · ' : 'You vs them · '}<WDL {...h2h} /></div>}
-        </div>
-        <div className="move-strip" aria-label="Moves">
-          {san.length === 0 ? <span className="muted">The game begins.</span> : san.map((m, i) => (i % 2 === 0 ? <span key={i} className="ms-pair"><i>{i / 2 + 1}.</i> {m} {san[i + 1] ?? ''}</span> : null))}
-        </div>
-        {actions}
       </div>
     </div>
   );

@@ -41,8 +41,7 @@ export function Onboarding({ onDone, notice }: { onDone: (s: Save) => void; noti
   return (
     <div className="onboard" style={{ backgroundImage: `url("${backdropUri(0)}")` }}>
       <div className="onboard-card">
-        <div className="splash-title">GLADIUS</div>
-        <div className="muted center">The Eternal Chess Empire</div>
+        <img className="logo" src={new URL('brand/logo-horizontal-tagline.svg', document.baseURI).href} alt="GLADIUS — The Eternal Chess Empire" />
         {progress === null ? (
           <>
             <div className="center"><Portrait seed={seed} female={female} age={22} arena={0} size={96} ring="#e8b04b" /></div>

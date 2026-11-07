@@ -7,7 +7,8 @@ import { achievementProgress, CATEGORY_LABELS } from '../../game/achievements';
 import { awardsFor, trophyCabinet, rarityOf, allAwards, awardsByDef, TROPHY_BY_ID } from '../../world/trophies';
 import { legacyTimeline, rivalries, championshipPrivileges } from '../../game/legacy';
 import { TrophyImage } from '../components/TrophyImage';
-import { pieceUri } from '../art';
+import { PIECE_STYLES, pieceSrc, type PieceStyle } from '../components/Board';
+import { ALL_THEMES, boardImages } from '../../board2d/themes';
 import { careerRating, bestRating } from '../../game/career';
 import { exportAll, importAll, listBackups, restoreBackup, wipeAll } from '../../persist/save';
 import { requestPersistence } from '../../persist/db';
@@ -273,26 +274,57 @@ function Timeline() {
   );
 }
 
+/** Cosmetic collections: boards unlock with arenas, piece sets with career milestones. Never affects chess. */
+function pieceUnlocked(s: ReturnType<typeof useSave>, id: string): boolean {
+  const top = Math.max(...s.player.unlockedSets, RANKS[s.player.peakRank].arena);
+  return id === 'classical' || (id === 'marble' && top >= 2) || (id === 'imperial' && top >= 5);
+}
+
 function Collection() {
   const s = useSave();
+  const unlockedArenas = new Set([...s.player.unlockedSets, ...Array.from({ length: RANKS[s.player.peakRank].arena + 1 }, (_, i) => i)]);
+  const current = s.settings.boardTheme ?? 'arena';
+  const pieces = s.settings.pieceStyle ?? 'board';
+  const reachedThrone = RANKS[s.player.peakRank].arena >= 11 || s.player.titles.includes('title-11');
   return (
-    <Card title="Boards & pieces">
-      <div className="muted small">One collection per arena. Unlock by entering an arena or winning its tournaments — unlocks are permanent, even after demotion.</div>
-      <div className="sets">
-        {ARENAS.map((a) => {
-          const has = s.player.unlockedSets.includes(a.index);
-          const on = s.settings.pieceSet === a.index;
-          return (
-            <button key={a.index} className={'set' + (on ? ' on' : '') + (has ? '' : ' locked')} disabled={!has} onClick={() => mutate((x) => { x.settings.pieceSet = a.index; x.settings.boardSet = a.index; })}>
-              <div className="set-board" style={{ background: `linear-gradient(135deg, ${a.palette.light} 50%, ${a.palette.dark} 50%)`, borderColor: a.palette.frame }}>
-                <img src={pieceUri('k', 'w', a.index)} alt="" /><img src={pieceUri('n', 'b', a.index)} alt="" />
-              </div>
-              <span>{a.name.replace('The ', '')}{has ? '' : ' · locked'}</span>
-            </button>
-          );
-        })}
-      </div>
-    </Card>
+    <>
+      <Card title="Piece sets">
+        <div className="sets">
+          {[{ id: 'board', name: "Board's own" }, ...PIECE_STYLES].map((p) => {
+            const has = p.id === 'board' || pieceUnlocked(s, p.id);
+            return (
+              <button key={p.id} className={'set' + (pieces === p.id ? ' on' : '') + (has ? '' : ' locked')} disabled={!has} onClick={() => mutate((x) => (x.settings.pieceStyle = p.id))}>
+                <div className="set-board" style={{ background: 'linear-gradient(135deg, #F3EEE3 50%, #CFC4AE 50%)' }}>
+                  {p.id === 'board' ? <span className="muted small">Matches each board</span> : <><img src={pieceSrc(p.id as PieceStyle, 'w', 'k')} alt="" /><img src={pieceSrc(p.id as PieceStyle, 'b', 'n')} alt="" /><img src={pieceSrc(p.id as PieceStyle, 'w', 'q')} alt="" /></>}
+                </div>
+                <span>{p.name}{has ? '' : p.id === 'marble' ? ' · Iron Citadel' : ' · Praetorian Bastion'}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+      <Card title="Boards">
+        <div className="sets">
+          <button className={'set' + (current === 'arena' ? ' on' : '')} onClick={() => mutate((x) => (x.settings.boardTheme = 'arena'))}>
+            <div className="set-board" style={{ background: 'linear-gradient(135deg, #FAF8F3, #E6E1D6)' }}><span className="muted small">Each arena's signature board</span></div>
+            <span>Arena signature</span>
+          </button>
+          {ALL_THEMES.map((t) => {
+            const has = t.id === 'laurel' ? reachedThrone : unlockedArenas.has(t.arena);
+            const img = boardImages(t, 256);
+            return (
+              <button key={t.id} className={'set' + (current === t.id ? ' on' : '') + (has ? '' : ' locked')} disabled={!has} onClick={() => mutate((x) => (x.settings.boardTheme = t.id))}>
+                <div className="set-board" style={{ backgroundImage: `url(${img.squares})`, boxShadow: `0 0 0 4px ${t.frame}` }}>
+                  <img src={pieceSrc(t.pieces, 'w', 'k')} alt="" /><img src={pieceSrc(t.pieces, 'b', 'q')} alt="" />
+                </div>
+                <span>{t.name}{has ? '' : ` · ${t.id === 'laurel' ? 'Eternal Throne' : ARENAS[t.arena].name.replace('The ', '')}`}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="muted small">Cosmetic only. Unlocked collections are kept forever, even after demotion.</div>
+      </Card>
+    </>
   );
 }
 
@@ -322,14 +354,10 @@ function SettingsPanel() {
   const s = useSave();
   return (
     <Card title="Settings">
-      <Choice k="boardMode" label="Board" options={[['3d', '2.5D sculpted'], ['2d', 'Classical 2D']]} />
-      <Choice k="scenery" label="Arena scenery (2.5D)" options={[['auto', 'Auto'], ['scenic', 'Scenic'], ['focused', 'Board only']]} />
       <Choice k="animSpeed" label="Piece movement" options={[['fast', 'Fast'], ['balanced', 'Balanced'], ['majestic', 'Majestic'], ['custom', 'Custom']]} />
       {s.settings.animSpeed === 'custom' && <div className="choice"><span>Move duration · {s.settings.animMs ?? 480} ms</span><input type="range" min={150} max={1200} step={10} value={s.settings.animMs ?? 480} onChange={(e) => mutate((x) => (x.settings.animMs = Number(e.target.value)))} /></div>}
       <div className="choice"><span>Text size · {Math.round((s.settings.textScale ?? 1) * 100)}%</span><input type="range" min={0.9} max={1.3} step={0.05} value={s.settings.textScale ?? 1} onChange={(e) => mutate((x) => (x.settings.textScale = Number(e.target.value)))} /></div>
-      <div className="choice"><span>Camera tilt</span><input type="range" min={0} max={1} step={0.05} value={s.settings.cameraTilt} onChange={(e) => mutate((x) => (x.settings.cameraTilt = Number(e.target.value)))} /></div>
       <Choice k="opponentPace" label="Opponent pace" options={[['natural', 'Natural'], ['instant', 'Instant']]} />
-      <Choice k="careerPool" label="Career rating" options={[['blitz', 'Blitz'], ['rapid', 'Rapid'], ['classical', 'Classical']]} />
       <Toggle k="showLegal" label="Show legal moves" />
       <Toggle k="showCoords" label="Coordinates" />
       <Toggle k="autoQueen" label="Auto-queen" />
@@ -338,7 +366,7 @@ function SettingsPanel() {
       <Toggle k="reduceMotion" label="Reduce motion" />
       <Toggle k="highContrast" label="High contrast" />
       <EngineCard />
-      <div className="muted small">Your career rank follows the chosen career rating. Each time control keeps its own rating pool.</div>
+      <div className="muted small">GLADIUS is untimed: you always have unlimited thinking time, and games can be left and resumed without penalty.</div>
     </Card>
   );
 }
