@@ -5,7 +5,7 @@ import { getEngine } from '../engine/browserEngine';
 import { chooseMove, humanDelay, type Persona } from '../engine/persona';
 import { createRng, mixSeed, hashString } from '../core/rng';
 import { identifyOpening } from '../chess/openings';
-import { getSave, mutate, archiveGame, useSave } from './store';
+import { getSave, mutate, archiveGame, useSave, pushToast } from './store';
 import { Board, animMs } from './components/Board';
 import { Portrait, Emblem, Record as WDL } from './components/common';
 import { RANKS, ARENAS } from '../world/arenas';
@@ -90,6 +90,7 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
       for (const a of P.trophies ?? []) items.push({ kind: 'trophy', award: a });
       if (P.seasonReport) items.push({ kind: 'season', report: P.seasonReport });
       if (items.length) queueCeremonies(items);
+      for (const a of P.achievements) pushToast(a, 'achievement');
     }, wait);
   }, []);
 
@@ -270,6 +271,9 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
           {timed && <div className={'clock' + (game.turn() === color && !disabled ? ' on' : '') + (liveClock(color) < 20000 ? ' low' : '')}>{fmtClock(liveClock(color))}</div>}
         </div>
         {notice && <div className="notice" onClick={() => setNotice(null)}>{notice}</div>}
+        {s.player.w + s.player.d + s.player.l === 0 && san.length < 4 && (
+          <div className="notice small">Tap a piece, then its square. Arrow keys + Enter work too. Double-tap the board to skip an animation.</div>
+        )}
         {confirm === 'resign' && (
           <div className="confirm">
             <span>Resign?</span>

@@ -428,3 +428,6 @@ html[data-motion='reduce'] *, html[data-motion='reduce'] *::before, html[data-mo
 .arena-card .ac-num { position: absolute; top: 10px; left: 12px; }
 .arena-card .ac-lock, .arena-card .ac-here { position: absolute; top: 12px; right: 12px; }
 .arena-card .ac-body { position: static; }
+.ceremony { background: radial-gradient(circle at 50% 45%, rgba(110, 40, 12, .9), rgba(25, 9, 4, .96) 70%); backdrop-filter: blur(8px); overflow: hidden; }
+.ceremony-rays { opacity: .55; }
+.ceremony-card { position: relative; z-index: 1; }
