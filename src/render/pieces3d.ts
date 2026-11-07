@@ -103,8 +103,8 @@ function knight(): THREE.BufferGeometry {
   s.moveTo(pts[0][0], pts[0][1]);
   const sm = smooth([...pts, pts[0]], 2);
   for (const [x, y] of sm.slice(1)) s.lineTo(x, y);
-  const head = new THREE.ExtrudeGeometry(s, { depth: 0.16, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.035, bevelSegments: 3, curveSegments: 6 });
-  head.translate(0, 0, -0.08);
+  const head = new THREE.ExtrudeGeometry(s, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.03, bevelSegments: 3, curveSegments: 6 });
+  head.translate(0, 0, -0.1);
   // eye dimples are implied by lighting; add a mane crest
   const mane = new THREE.BoxGeometry(0.05, 0.4, 0.07);
   mane.rotateZ(0.5);

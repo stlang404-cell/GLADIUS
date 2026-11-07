@@ -28,7 +28,8 @@ function play(s: Save, oppId: string, score: number, kind: GameRecord['kind'] = 
 describe('rank rules', () => {
   it('provisional players are placed by rating', () => {
     expect(decideRank(0, 1250, true)).toEqual({ kind: 'grade-up', to: 2 });
-    expect(decideRank(10, 1250, true)).toEqual({ kind: 'grade-up', to: 12 });
+    expect(decideRank(10, 1250, true)).toEqual({ kind: 'grade-up', to: 11 });
+    expect(decideRank(2, 1250, true)).toEqual({ kind: 'grade-up', to: 4 });
   });
   it('crossing an arena needs a trial unless dominant', () => {
     const top = 5; // Principalis, top of Legion Camp (700-899)

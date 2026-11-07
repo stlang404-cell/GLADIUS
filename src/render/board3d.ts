@@ -240,7 +240,7 @@ export class Board3D {
     mesh.position.set(x, 0, z);
     mesh.scale.setScalar(type === 'p' ? 0.95 : 1.05);
     // Knights face the opponent.
-    if (type === 'n') mesh.rotation.y = color === 'w' ? -0.45 : Math.PI + 0.45;
+    if (type === 'n') mesh.rotation.y = color === 'w' ? -0.25 : Math.PI - 0.25;
     mesh.userData.square = sq;
     this.scene.add(mesh);
     return { mesh, type, color, square: sq };
