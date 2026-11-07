@@ -42,7 +42,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,wasm,txt,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,wasm,txt,webmanifest,woff2,bin}'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         navigateFallback: 'index.html',
         // Optional engine builds (big net ≈99 MB, threaded builds) are never precached:

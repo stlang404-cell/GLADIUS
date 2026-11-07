@@ -16,7 +16,7 @@ import { queueAnalysis } from './analysisQueue';
 import { sfx } from './sound';
 import { PostGameSheet } from './PostGame';
 import { queueCeremonies, type CeremonyItem } from './Ceremony';
-import { objectives } from '../game/legacy';
+import { objectives, rivalPrep } from '../game/legacy';
 import { STYLE_LABEL } from '../engine/styles';
 import { IconFlag, IconHalf, IconUndo, IconRotate, IconPause, IconTrophy } from './components/icons';
 
@@ -136,7 +136,10 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
     const a = getSave().active;
     const oppClock = a && timed ? a.clockMs[game.turn()] - (Date.now() - a.lastTick) : Infinity;
     const pace = oppClock < 60000 ? 'instant' : getSave().settings.opponentPace;
-    void chooseMove(getEngine('play'), game.fen(), game.uciHistory, persona, { pace, startFen: rec.startFen === START_FEN ? undefined : rec.startFen })
+    const side = game.turn();
+    const clock = a && timed ? { myMs: oppClock, oppMs: a.clockMs[side === 'w' ? 'b' : 'w'], incMs: tc.incSec * 1000, moveNumber: Math.floor(game.ply() / 2) + 1 } : undefined;
+    const prep = rivalPrep(getSave(), opp.id); // legitimate preparation only: opening choice, never strength
+    void chooseMove(getEngine('play', { elo: persona.elo }), game.fen(), game.uciHistory, persona, { pace, clock, prep, startFen: rec.startFen === START_FEN ? undefined : rec.startFen })
       .then(async (mv) => {
         const rng = createRng(mixSeed(persona.seed, game.ply()));
         // Wait at least for the player's move animation to land, so motion never overlaps.

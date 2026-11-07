@@ -1,0 +1,592 @@
+{
+ "meta": {
+  "date": "2026-11-07T21:19:25.945Z",
+  "node": "v22.23.4",
+  "cpus": 4,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "memGB": 16
+ },
+ "data": {
+  "name": "top-new-vs-old",
+  "note": "Persona ≥3000 path (book + single-PV search) on the desktop elite slot vs the v0.1 configuration",
+  "movetimeMs": 500,
+  "line": "top v0.2 (full-single, H128, 500ms) vs top v0.1 (lite-single, H16, 500ms): +15 =63 -2 (n=80) score 58.1%  Elo +57 [95% CI +24, +91]  LOS 99.9%",
+  "a": "top v0.2 (full-single, H128, 500ms)",
+  "b": "top v0.1 (lite-single, H16, 500ms)",
+  "w": 15,
+  "d": 63,
+  "l": 2,
+  "games": [
+   {
+    "opening": "Ruy Lopez, Berlin",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 70
+   },
+   {
+    "opening": "Ruy Lopez, Morphy",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "Ruy Lopez, Morphy",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 81
+   },
+   {
+    "opening": "Ruy Lopez, Berlin",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 98
+   },
+   {
+    "opening": "Italian, Giuoco Piano",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 85
+   },
+   {
+    "opening": "Italian, Giuoco Piano",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 110
+   },
+   {
+    "opening": "Scotch",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 148
+   },
+   {
+    "opening": "Four Knights",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 92
+   },
+   {
+    "opening": "Four Knights",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "Sicilian Najdorf",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 50
+   },
+   {
+    "opening": "Petroff",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 65
+   },
+   {
+    "opening": "Petroff",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 88
+   },
+   {
+    "opening": "Sicilian Najdorf",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 64
+   },
+   {
+    "opening": "Sicilian Dragon",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "Scotch",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "max plies",
+    "plies": 300
+   },
+   {
+    "opening": "Sicilian Dragon",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 157
+   },
+   {
+    "opening": "Sicilian Open Nc6",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 136
+   },
+   {
+    "opening": "Sicilian Taimanov/Kan",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 69
+   },
+   {
+    "opening": "Sicilian Accelerated Dragon",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 90
+   },
+   {
+    "opening": "Sicilian Open Nc6",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 152
+   },
+   {
+    "opening": "Sicilian Taimanov/Kan",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 132
+   },
+   {
+    "opening": "Sicilian Accelerated Dragon",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 103
+   },
+   {
+    "opening": "Sicilian Alapin",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "Sicilian Alapin",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 95
+   },
+   {
+    "opening": "Sicilian Closed",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "French Classical",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 62
+   },
+   {
+    "opening": "Sicilian Closed",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 92
+   },
+   {
+    "opening": "French Tarrasch",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 52
+   },
+   {
+    "opening": "French Classical",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 108
+   },
+   {
+    "opening": "French Advance",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 95
+   },
+   {
+    "opening": "French Advance",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 151
+   },
+   {
+    "opening": "Caro-Kann Advance",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 102
+   },
+   {
+    "opening": "French Tarrasch",
+    "aWhite": false,
+    "result": "0-1",
+    "reason": "adjudicated",
+    "plies": 127
+   },
+   {
+    "opening": "Caro-Kann Advance",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 103
+   },
+   {
+    "opening": "Caro-Kann Classical",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 122
+   },
+   {
+    "opening": "Scandinavian",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "Caro-Kann Classical",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 97
+   },
+   {
+    "opening": "Pirc",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 84
+   },
+   {
+    "opening": "Pirc",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 103
+   },
+   {
+    "opening": "Modern",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 122
+   },
+   {
+    "opening": "Scandinavian",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 216
+   },
+   {
+    "opening": "QGD",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "Alekhine",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 97
+   },
+   {
+    "opening": "Modern",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 167
+   },
+   {
+    "opening": "QGD",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 71
+   },
+   {
+    "opening": "QGD Tarrasch",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 49
+   },
+   {
+    "opening": "Alekhine",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 200
+   },
+   {
+    "opening": "Slav",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 55
+   },
+   {
+    "opening": "Slav",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 74
+   },
+   {
+    "opening": "Semi-Slav",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "Semi-Slav",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "QGD Tarrasch",
+    "aWhite": false,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 186
+   },
+   {
+    "opening": "QGA",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 140
+   },
+   {
+    "opening": "QGA",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 96
+   },
+   {
+    "opening": "Catalan",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 109
+   },
+   {
+    "opening": "Nimzo-Indian",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 60
+   },
+   {
+    "opening": "Nimzo-Indian",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 84
+   },
+   {
+    "opening": "Catalan",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 122
+   },
+   {
+    "opening": "Queen's Indian",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "Grünfeld",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 47
+   },
+   {
+    "opening": "Queen's Indian",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 118
+   },
+   {
+    "opening": "King's Indian",
+    "aWhite": false,
+    "result": "0-1",
+    "reason": "adjudicated",
+    "plies": 109
+   },
+   {
+    "opening": "Grünfeld",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "King's Indian",
+    "aWhite": true,
+    "result": "0-1",
+    "reason": "adjudicated",
+    "plies": 206
+   },
+   {
+    "opening": "Benoni",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 147
+   },
+   {
+    "opening": "Dutch Leningrad",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 170
+   },
+   {
+    "opening": "London",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 37
+   },
+   {
+    "opening": "London",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 120
+   },
+   {
+    "opening": "Dutch Leningrad",
+    "aWhite": false,
+    "result": "0-1",
+    "reason": "adjudicated",
+    "plies": 131
+   },
+   {
+    "opening": "Trompowsky",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "English, Reversed Sicilian",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "Benoni",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "max plies",
+    "plies": 300
+   },
+   {
+    "opening": "English, Reversed Sicilian",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 106
+   },
+   {
+    "opening": "English, Symmetrical",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 101
+   },
+   {
+    "opening": "Trompowsky",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 207
+   },
+   {
+    "opening": "Réti",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "repetition",
+    "plies": 66
+   },
+   {
+    "opening": "Queen Pawn, Bogo-Indian",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 80
+   },
+   {
+    "opening": "Queen Pawn, Bogo-Indian",
+    "aWhite": true,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 88
+   },
+   {
+    "opening": "English, Symmetrical",
+    "aWhite": true,
+    "result": "1-0",
+    "reason": "adjudicated",
+    "plies": 227
+   },
+   {
+    "opening": "Réti",
+    "aWhite": false,
+    "result": "1/2-1/2",
+    "reason": "adjudicated draw",
+    "plies": 120
+   }
+  ],
+  "wallMs": 1120922,
+  "stats": {
+   "n": 80,
+   "score": 0.58125,
+   "elo": 56.96325834124352,
+   "lo": 23.651109004953224,
+   "hi": 91.35033807122392,
+   "se": 0.024115202025900593,
+   "los": 0.999191822605921
+  }
+ }
+}
