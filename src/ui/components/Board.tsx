@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEve
 import { Chess, type Square, type Move } from 'chess.js';
 import { Timeline, ease, moveDuration } from '../../board2d/animation';
 import { boardImages, signatureTheme, themeById, type BoardTheme } from '../../board2d/themes';
+import { DEFAULT_PIECE_SET, PIECE_SETS, normalizePieceStyle, pieceSetById, type PieceSetId } from '../../board2d/pieceSets';
 import type { Settings } from '../../game/state';
 import { sfx } from '../sound';
 
@@ -27,15 +28,13 @@ export type BoardProps = {
   azimuth?: number; // legacy prop (ignored)
 };
 
-export type PieceStyle = 'classical' | 'imperial' | 'marble';
-export const PIECE_STYLES: { id: PieceStyle; name: string }[] = [
-  { id: 'classical', name: 'Ivory & Bronze' },
-  { id: 'imperial', name: 'Imperial Gold & Crimson' },
-  { id: 'marble', name: 'Carrara & Nero Marble' },
-];
+export type PieceStyle = PieceSetId;
+/** Piece collections, derived from src/board2d/pieceSets.ts (kept here for compatibility). */
+export const PIECE_STYLES: { id: PieceStyle; name: string; description: string }[] = PIECE_SETS.map((p) => ({ id: p.id, name: p.name, description: p.description }));
 
-export function pieceSrc(style: PieceStyle, color: 'w' | 'b', type: string): string {
-  return new URL(`pieces/${style}/${color}${type}.webp`, document.baseURI).href;
+export function pieceSrc(style: PieceStyle | string, color: 'w' | 'b', type: string): string {
+  const set = pieceSetById(style) ?? pieceSetById(DEFAULT_PIECE_SET)!;
+  return new URL(`pieces/${set.folder}/${color}${type}.webp`, document.baseURI).href;
 }
 
 export function animMs(s: Settings): number {
@@ -47,8 +46,8 @@ export function resolveTheme(s: Settings, arena: number): BoardTheme {
   return chosen ?? signatureTheme(arena);
 }
 export function resolvePieces(s: Settings, theme: BoardTheme): PieceStyle {
-  const p = s.pieceStyle;
-  return p && p !== 'board' ? (p as PieceStyle) : theme.pieces;
+  const p = normalizePieceStyle(s.pieceStyle);
+  return p !== 'board' ? p : theme.pieces;
 }
 
 export function moveAnimFrom(m: Move | null | undefined) {

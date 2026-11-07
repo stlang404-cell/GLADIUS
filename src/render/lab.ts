@@ -8,7 +8,14 @@ const params = new URLSearchParams(location.search);
 const el = document.getElementById('c')!;
 const W = window as unknown as Record<string, unknown>;
 
-if (params.get('mode') === 'sprites') {
+if (params.get('mode') === 'boards') {
+  void import('./boardLab').then((m) => {
+    m.mountBoardLab(el, params);
+    setTimeout(() => (W.__ready = true), 1500);
+  });
+} else if (params.get('mode') === 'none') {
+  W.__ready = true;
+} else if (params.get('mode') === 'sprites') {
   // Bake 2D sprites: one transparent render per piece per finish.
   void (async () => {
     const SIZE = Number(params.get('size') ?? 320);
@@ -64,7 +71,10 @@ if (params.get('mode') === 'sprites') {
     const { renderTrophy } = await import('./trophyRenderer');
     const { TROPHY_DEFS } = await import('../world/trophies');
     const out: Record<string, string> = {};
-    for (const d of TROPHY_DEFS) {
+    // ?ids=sig-a1,sig-a3 bakes only those sprites (e.g. new art without touching existing files)
+    const only = params.get('ids');
+    const defs = only ? only.split(',').map((id) => ({ id, arena: undefined as number | undefined, arenaTier: undefined as number | undefined })) : TROPHY_DEFS;
+    for (const d of defs) {
       const png = await renderTrophy(d.id, { size: 256, arena: d.arena, arenaTier: d.arenaTier });
       // re-encode as WebP via canvas
       const img = new Image();
