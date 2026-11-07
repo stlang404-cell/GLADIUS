@@ -239,14 +239,28 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
           setFen(game.fen());
         }}><IconUndo size={18} /> Undo</button>
       )}
-      <button className="btn" onClick={onExit} title="Saved — resume any time, no clock"><IconPause size={18} /> Pause & leave</button>
+      <button className="btn" onClick={onExit} title="Saved — resume any time, no clock"><IconPause size={18} /> <span className="lbl-long">Pause & leave</span><span className="lbl-short">Pause</span></button>
     </div>
+  );
+
+  const controls = (
+    <>
+      {actions}
+      {notice && <div className="notice" onClick={() => setNotice(null)}>{notice}</div>}
+      {confirm === 'resign' && (
+        <div className="confirm">
+          <span>Resign?</span>
+          <button className="btn red small" onClick={() => { game.resign(color); setResigned(color); setConfirm(null); finish(); }}>Resign</button>
+          <button className="btn small" onClick={() => setConfirm(null)}>Cancel</button>
+        </div>
+      )}
+    </>
   );
 
   const arenaIdx = tournament ? tournament.arena : playerArena(s);
   const myTurn = !disabled && game.turn() === color;
   return (
-    <div className="stage">
+    <div className="stage in-game">
       <div className="stage-main" style={{ ['--backdrop' as string]: `url("${backdropUri(arenaIdx)}")` }}>
         <div className="stage-title">
           <img className="stage-crest" src={crestUri(arenaIdx)} alt="" />
@@ -285,6 +299,7 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
           {myTurn ? <span className="turn-tag">Your move</span> : <span className="pb-elo">{me.rating}</span>}
           {timed && <div className={'clock' + (game.turn() === color && !disabled ? ' on' : '')}>{fmtClock(liveClock(color))}</div>}
         </div>
+        <div className="stage-controls">{controls}</div>
       </div>
       <div className="stage-side">
         <div className="card">
@@ -301,17 +316,9 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
         <div className="move-strip" aria-label="Moves">
           {san.length === 0 ? <span className="muted">No moves yet — take all the time you need.</span> : san.map((m, i) => (i % 2 === 0 ? <span key={i} className="ms-pair"><i>{i / 2 + 1}.</i> {m} {san[i + 1] ?? ''}</span> : null))}
         </div>
-        {actions}
-        {notice && <div className="notice" onClick={() => setNotice(null)}>{notice}</div>}
+        <div className="side-controls">{controls}</div>
         {s.player.w + s.player.d + s.player.l === 0 && san.length < 4 && (
           <div className="notice small">Drag a piece or tap it, then its square. No clock — think as long as you like, or leave and resume later.</div>
-        )}
-        {confirm === 'resign' && (
-          <div className="confirm">
-            <span>Resign?</span>
-            <button className="btn red small" onClick={() => { game.resign(color); setResigned(color); setConfirm(null); finish(); }}>Resign</button>
-            <button className="btn small" onClick={() => setConfirm(null)}>Cancel</button>
-          </div>
         )}
       </div>
     </div>
