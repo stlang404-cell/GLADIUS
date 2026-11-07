@@ -7,6 +7,8 @@ import { Emblem } from './components/common';
 import { RANKS } from '../world/arenas';
 import { CLASS_META } from '../analysis/classify';
 import { getGame } from '../persist/save';
+import { postGameReport } from '../analysis/report';
+import { analysisStatus } from './analysisQueue';
 
 const TERM: Record<string, string> = {
   checkmate: 'by checkmate', stalemate: 'by stalemate', 'insufficient-material': 'insufficient material', 'fivefold-repetition': 'fivefold repetition',
@@ -44,7 +46,8 @@ export function PostGameSheet({ pg, rec, onAnalyse, onRematch, onNext }: { pg: P
   const title = pg.outcome === 'win' ? 'VICTORIA' : pg.outcome === 'loss' ? 'DEFEAT' : 'DRAW';
   const promoted = pg.rankAfter > pg.rankBefore;
   const counts = full?.analysis && rec.playerColor ? (full.analysis.counts[rec.playerColor] as Record<string, number>) : null;
-  const insight = full?.analysis && rec.playerColor ? keyInsight(full.analysis.moves, rec.playerColor, full.startFen) : null;
+  const report = full ? postGameReport(full, analysisStatus(rec.id)) : null;
+  const insight = report?.critical ? `Critical move — ${report.critical.san} (${report.critical.label}): ${report.critical.text}` : full?.analysis && rec.playerColor ? keyInsight(full.analysis.moves, rec.playerColor, full.startFen) : null;
   return (
     <div className={'postgame ' + pg.outcome} role="dialog" aria-label={title}>
       <Laurel />
@@ -62,7 +65,7 @@ export function PostGameSheet({ pg, rec, onAnalyse, onRematch, onNext }: { pg: P
         )}
         <div>
           {meta?.accuracy !== undefined ? (
-            <><div className="big num">{meta.accuracy.toFixed(1)}%</div><div className="lbl">Accuracy</div></>
+            <><div className="big num">{meta.accuracy.toFixed(1)}%</div><div className="lbl">Est. accuracy{report?.accuracy ? ` · opp ${report.accuracy.opponent.toFixed(0)}%` : ''}</div></>
           ) : (
             <><div className="meter"><span style={{ width: `${Math.round(p * 100)}%` }} /></div><div className="lbl">Analysing {Math.round(p * 100)}%</div></>
           )}
@@ -77,6 +80,7 @@ export function PostGameSheet({ pg, rec, onAnalyse, onRematch, onNext }: { pg: P
         </div>
       )}
       {insight && <div className="pg-insight"><b>Insight</b><span>{insight}</span></div>}
+      {report?.recommendation && <div className="pg-insight"><b>Next</b><span>{report.recommendation}</span></div>}
       {pg.rankNote && (
         <div className={'pg-rank' + (promoted ? ' up' : '')}>
           <Emblem rank={pg.rankAfter} size={52} />
@@ -86,7 +90,7 @@ export function PostGameSheet({ pg, rec, onAnalyse, onRematch, onNext }: { pg: P
       {[...pg.events, ...pg.achievements.map((a) => `Achievement: ${a}`)].map((e, i) => <div key={i} className="pg-event">{e}</div>)}
       <div className="pg-actions">
         <button className="btn" onClick={onRematch} disabled={rec.kind === 'tournament' || rec.kind === 'trial'}>REMATCH</button>
-        <button className="btn" onClick={onAnalyse}>ANALYZE</button>
+        <button className="btn" onClick={onAnalyse}>FULL ANALYSIS</button>
         <button className="btn crimson" onClick={onNext} autoFocus>NEXT CHALLENGE</button>
       </div>
     </div>

@@ -8,6 +8,7 @@ import { TabBar } from './TabBar';
 import { ArenaTab } from './tabs/ArenaTab';
 import { EmpireTab, ArenaSheet, TournamentSheet, CompetitorSheet } from './tabs/EmpireTab';
 import { AcademyTab } from './tabs/AcademyTab';
+import { resumePendingAnalysis } from './analysisQueue';
 import { SpectateTab } from './tabs/SpectateTab';
 import { LegacyTab, PassportSheet, TrophySheet } from './tabs/LegacyTab';
 import { GameScreen } from './GameScreen';
@@ -29,6 +30,8 @@ export function App() {
       if (save) {
         setSave(save);
         setBoot('ready');
+        // Unfinished post-game analyses restart in the background (never for a game in progress).
+        setTimeout(() => resumePendingAnalysis(), 4000);
         if (recovered) setBootMsg('Your save was damaged; the newest backup was restored.');
       } else {
         if (error) setBootMsg(`Could not read save: ${error}`);

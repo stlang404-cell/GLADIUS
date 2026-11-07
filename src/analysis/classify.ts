@@ -1,31 +1,67 @@
-import { Chess, type Square } from 'chess.js';
-import { PIECE_VALUES } from '../chess/rules';
+import { Chess } from 'chess.js';
+import { PIECE_VALUES, parseUci } from '../chess/rules';
 import type { MoveClass } from '../game/state';
+import { lineMaterial, materialOffered, seeGain } from './material';
+import { majorsAndMinors } from './material';
 
 /**
- * Move classification & accuracy — documented thresholds (docs/ANALYSIS.md).
+ * Move classification & accuracy (the full model is documented here and in phase.ts, analyzer.ts, report.ts).
  *
- * Win% uses the Lichess logistic model (see engine/uci.ts winPercent).
- * Per-move accuracy (Lichess formula):
- *     acc = 103.1668 · e^(−0.04354 · Δwin%) − 3.1669   (+1 uncertainty bonus, clamped 0..100)
- * Classification by mover's win% lost (Δ):
- *     best        played the engine's top move
- *     excellent   Δ < 2
- *     good        Δ < 5
- *     inaccuracy  5 ≤ Δ < 10
- *     mistake     10 ≤ Δ < 15
- *     blunder     Δ ≥ 15
- *     miss        a winning position (≥ 75%) dropped to ≤ 55%, or a forced mate missed
- *     great       the top move when every alternative loses ≥ 15 points, in a position
- *                 that was not already decided (20% ≤ win% ≤ 92%)
- *     brilliant   a top (or within 1 point) piece sacrifice that keeps win% ≥ 50, played
- *                 from a position below 92% — sacrifices that merely trade, or that are
- *                 made when already completely winning, are NOT brilliant
- *     book        within the identified opening line and Δ < 5
- *     forced      the only legal move
+ * All numbers are WIN PERCENTAGES from the mover's point of view, using the
+ * Lichess logistic model on Stockfish centipawns (engine/uci.ts winPercent):
+ *     win% = 50 + 50 · (2 / (1 + e^(−0.00368208 · cp)) − 1),   mate = 0 / 100.
+ * Δ ("win% lost") = win% of the engine's best move − win% of the played move,
+ * both taken from the SAME MultiPV search when the played move is one of the
+ * candidates (so they are directly comparable), otherwise from the search of
+ * the position after the move.
+ *
+ * Per-move accuracy (Lichess):  acc = 103.1668 · e^(−0.04354 · Δ) − 3.1669 + 1, clamped 0..100.
+ * Game accuracy: mean of the volatility-weighted mean and the harmonic mean of
+ * the move accuracies (Lichess); see gameAccuracy().
+ *
+ * Classes, checked in this order:
+ *   forced      the only legal move.
+ *   book        the position after the move is still in the identified opening line and Δ < 5.
+ *   brilliant   ALL of:
+ *                 · the best move, or Δ ≤ 2 (near-best);
+ *                 · a real sacrifice: the move offers ≥ 2 pawns of material by static
+ *                   exchange (the moved piece, or a piece newly left en prise), AND the
+ *                   engine's main line confirms it: after the opponent's reply the mover is
+ *                   ≥ 2 pawns down within 6 plies and still ≥ 1 pawn down at the end of the
+ *                   line (≤ 8 plies) — or the line mates. Offers that are declined, or
+ *                   regained at once, are not brilliant;
+ *                 · not a recapture on the square the opponent just captured on;
+ *                 · not already decided: NOT (win% before ≥ 90 and the 2nd-best move also ≥ 90),
+ *                   and win% after the move ≥ 40 (the sacrifice must not lose).
+ *   great       the best move AND the 2nd-best candidate is ≥ 15 win% worse (every
+ *               alternative is a blunder), with win% before ≥ 25 (not already lost), not a
+ *               recapture, not simply taking free material (a capture that wins ≥ 2 pawns
+ *               by static exchange), not mate in one, and not a check evasion with ≤ 3
+ *               legal moves.
+ *   best        the engine's top move, or a MultiPV candidate within 1 win% of it.
+ *   miss        a forced mate was available and the played move no longer mates (Δ ≥ 5),
+ *               or a winning position (≥ 75%) dropped to ≤ 55%.
+ *   excellent   Δ < 2
+ *   good        Δ < 5
+ *   inaccuracy  5 ≤ Δ < 10    (Lichess: 0.1 on the −1..1 scale)
+ *   mistake     10 ≤ Δ < 15   (Lichess: 0.2)
+ *   blunder     Δ ≥ 15        (Lichess: 0.3)
  */
-
-export const THRESHOLDS = { excellent: 2, good: 5, inaccuracy: 10, mistake: 15, greatGap: 15, missFrom: 75, missTo: 55 };
+export const THRESHOLDS = {
+  best: 1,
+  excellent: 2,
+  good: 5,
+  inaccuracy: 10,
+  mistake: 15,
+  greatGap: 15,
+  greatMinWin: 25,
+  missFrom: 75,
+  missTo: 55,
+  brilliantNear: 2,
+  brilliantMinOffer: 2,
+  brilliantDecided: 90,
+  brilliantMinAfter: 40,
+};
 
 export function moveAccuracy(winLoss: number): number {
   const a = 103.1668 * Math.exp(-0.04354 * Math.max(0, winLoss)) - 3.1669 + 1;
@@ -36,73 +72,98 @@ export type ClassifyInput = {
   fenBefore: string;
   uci: string;
   bestUci: string;
-  winBefore: number; // mover perspective, best play
-  winAfter: number; // mover perspective after the played move
-  secondBestWin: number | null; // mover perspective; null if only one candidate
+  winBefore: number; // mover POV, value of the best move
+  winAfter: number; // mover POV, value of the played move
+  secondBestWin: number | null; // mover POV; null if there was no second candidate
   legalCount: number;
   inBook: boolean;
   bestWasMate: boolean;
   playedKeepsMate: boolean;
+  /** True if the played move is one of the MultiPV candidates within THRESHOLDS.best of the top move. */
+  playedIsTop?: boolean;
+  /** Engine line starting with the played move (UCI) — required to verify sacrifices. */
+  line?: string[];
+  /** Destination square of the opponent's previous move if it was a capture (for recapture detection). */
+  prevCaptureTo?: string | null;
 };
 
+export type Classified = { cls: MoveClass; loss: number; sacrificed: number; recapture: boolean; onlyMove: boolean };
+
 export function classifyMove(i: ClassifyInput): MoveClass {
+  return classifyDetailed(i).cls;
+}
+
+export function classifyDetailed(i: ClassifyInput): Classified {
   const loss = Math.max(0, i.winBefore - i.winAfter);
-  if (i.legalCount === 1) return 'forced';
-  if (i.inBook && loss < THRESHOLDS.good) return 'book';
-  const isBest = i.uci === i.bestUci;
-  if ((isBest || loss < 1) && i.winAfter >= 50 && i.winBefore < 92 && isSacrifice(i.fenBefore, i.uci)) return 'brilliant';
+  const out = (cls: MoveClass, extra: Partial<Classified> = {}): Classified => ({ cls, loss, sacrificed: 0, recapture, onlyMove: false, ...extra });
+  const recapture = !!i.prevCaptureTo && i.uci.slice(2, 4) === i.prevCaptureTo;
+  if (i.legalCount === 1) return out('forced');
+  if (i.inBook && loss < THRESHOLDS.good) return out('book');
+  const isBest = i.uci === i.bestUci || !!i.playedIsTop;
+  const sac = isBest || loss <= THRESHOLDS.brilliantNear ? verifiedSacrifice(i.fenBefore, i.uci, i.line) : 0;
+  if (
+    sac >= THRESHOLDS.brilliantMinOffer &&
+    !recapture &&
+    i.winAfter >= THRESHOLDS.brilliantMinAfter &&
+    !(i.winBefore >= THRESHOLDS.brilliantDecided && (i.secondBestWin ?? 0) >= THRESHOLDS.brilliantDecided)
+  )
+    return out('brilliant', { sacrificed: sac });
   if (isBest) {
-    if (
-      i.secondBestWin !== null &&
-      i.winBefore - i.secondBestWin >= THRESHOLDS.greatGap &&
-      i.winBefore >= 20 &&
-      i.winBefore <= 92
-    )
-      return 'great';
-    return 'best';
+    const gap = i.secondBestWin === null ? 0 : i.winBefore - i.secondBestWin;
+    if (gap >= THRESHOLDS.greatGap && i.winBefore >= THRESHOLDS.greatMinWin && !recapture && !isObvious(i.fenBefore, i.uci, i.legalCount))
+      return out('great', { onlyMove: true });
+    return out('best', { onlyMove: gap >= THRESHOLDS.greatGap });
   }
-  if ((i.bestWasMate && !i.playedKeepsMate && loss >= 5) || (i.winBefore >= THRESHOLDS.missFrom && i.winAfter <= THRESHOLDS.missTo))
-    return 'miss';
-  if (loss < THRESHOLDS.excellent) return 'excellent';
-  if (loss < THRESHOLDS.good) return 'good';
-  if (loss < THRESHOLDS.inaccuracy) return 'inaccuracy';
-  if (loss < THRESHOLDS.mistake) return 'mistake';
-  return 'blunder';
+  if ((i.bestWasMate && !i.playedKeepsMate && loss >= 5) || (i.winBefore >= THRESHOLDS.missFrom && i.winAfter <= THRESHOLDS.missTo)) return out('miss');
+  if (loss < THRESHOLDS.excellent) return out('excellent');
+  if (loss < THRESHOLDS.good) return out('good');
+  if (loss < THRESHOLDS.inaccuracy) return out('inaccuracy');
+  if (loss < THRESHOLDS.mistake) return out('mistake');
+  return out('blunder');
 }
 
 /**
- * Sacrifice detection: after the move, the moved piece (not a pawn or king)
- * can be captured by the opponent and the exchange loses material for the
- * mover — i.e. it lands on an attacked square that is either undefended or
- * attacked by a cheaper piece, net of anything it captured.
+ * "Obvious" only-moves that should not be called Great: taking free material
+ * (a capture that nets ≥ 2 pawns by static exchange), mate in one, and check
+ * evasions with at most three legal replies.
  */
-export function isSacrifice(fen: string, uci: string): boolean {
+export function isObvious(fen: string, uci: string, legalCount: number): boolean {
   const c = new Chess(fen);
+  if (c.inCheck() && legalCount <= 3) return true;
   let m;
   try {
-    m = c.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
+    m = c.move(parseUci(uci));
   } catch {
     return false;
   }
-  if (m.piece === 'p' || m.piece === 'k') return false;
-  const piece = (m.promotion ?? m.piece) as keyof typeof PIECE_VALUES;
-  const value = PIECE_VALUES[piece];
-  const gained = m.captured ? PIECE_VALUES[m.captured] : 0;
-  if (gained >= value) return false;
-  const to = m.to as Square;
-  const opp = c.turn();
-  const attackers = c.attackers(to, opp);
-  if (attackers.length === 0) return false;
-  const defenders = c.attackers(to, opp === 'w' ? 'b' : 'w');
-  const cheapest = Math.min(
-    ...attackers.map((sq) => {
-      const p = c.get(sq);
-      return p ? (p.type === 'k' ? 100 : PIECE_VALUES[p.type]) : 100;
-    }),
-  );
-  if (cheapest === 100 && defenders.length > 0) return false; // only the king attacks a defended piece
-  const netLoss = defenders.length === 0 ? value - gained : Math.max(0, value - cheapest) - gained;
-  return netLoss >= 2;
+  if (c.isCheckmate()) return true; // mate in one is the obvious finish
+  if (!m.captured) return false;
+  const net = PIECE_VALUES[m.captured] - seeGain(c, m.to);
+  return net >= 2;
+}
+
+/**
+ * Static sacrifice detection (gate): ≥ 2 pawns of material offered by the
+ * move (see material.ts materialOffered). Pawn moves count only through
+ * pieces they leave en prise.
+ */
+export function isSacrifice(fen: string, uci: string): boolean {
+  return materialOffered(fen, uci).offered >= THRESHOLDS.brilliantMinOffer;
+}
+
+/**
+ * Sacrificed material in pawns (0 if not a verified sacrifice): static offer
+ * ≥ 2 AND the engine line shows the deficit is real (≥ 2 after the reply
+ * within 6 plies, ≥ 1 at the end of the line, or the line mates).
+ */
+export function verifiedSacrifice(fen: string, uci: string, line?: string[]): number {
+  if (!line || line.length < 2 || line[0] !== uci) return 0;
+  const { offered } = materialOffered(fen, uci);
+  if (offered < THRESHOLDS.brilliantMinOffer) return 0;
+  const lm = lineMaterial(fen, line);
+  if (lm.deficitAfterReply < THRESHOLDS.brilliantMinOffer) return 0;
+  if (lm.endDeficit < 1 && !lm.mates) return 0;
+  return Math.max(offered, lm.deficitAfterReply);
 }
 
 /** Lichess-style game accuracy: mean of volatility-weighted mean and harmonic mean. */
@@ -124,6 +185,10 @@ export function gameAccuracy(winSeries: number[], moveAccs: number[]): number {
   return Math.round(((weighted + harmonic) / 2) * 10) / 10;
 }
 
+/**
+ * Final-position endgame label (≤ 4 non-pawn pieces). Kept for the ledger's
+ * endgame achievements (game/ledger.ts reads these exact strings).
+ */
 export function endgameLabel(fen: string): string | null {
   const c = new Chess(fen);
   const count: Record<string, number> = { q: 0, r: 0, b: 0, n: 0, p: 0 };
@@ -142,16 +207,22 @@ export function endgameLabel(fen: string): string | null {
   return 'Mixed endgame';
 }
 
+export { majorsAndMinors };
+
+/** Colours follow the White Imperial palette; glyphs are standard annotation symbols. */
 export const CLASS_META: Record<MoveClass, { label: string; color: string; glyph: string }> = {
-  brilliant: { label: 'Brilliant', color: '#1fb5a8', glyph: '!!' },
-  great: { label: 'Great', color: '#3d7fd9', glyph: '!' },
-  best: { label: 'Best', color: '#6aa84f', glyph: '★' },
-  excellent: { label: 'Excellent', color: '#8bbf4a', glyph: '✓' },
-  good: { label: 'Good', color: '#a8b56b', glyph: '·' },
-  book: { label: 'Book', color: '#b08d57', glyph: '📖' },
-  forced: { label: 'Forced', color: '#9a9a9a', glyph: '□' },
-  inaccuracy: { label: 'Inaccuracy', color: '#e6b422', glyph: '?!' },
-  mistake: { label: 'Mistake', color: '#e07b24', glyph: '?' },
-  blunder: { label: 'Blunder', color: '#d0312d', glyph: '??' },
-  miss: { label: 'Missed win', color: '#c2417a', glyph: '✗' },
+  brilliant: { label: 'Brilliant', color: '#1F9E93', glyph: '!!' },
+  great: { label: 'Great', color: '#527EAA', glyph: '!' },
+  best: { label: 'Best', color: '#5E9A48', glyph: '★' },
+  excellent: { label: 'Excellent', color: '#7FAE4E', glyph: '✓' },
+  good: { label: 'Good', color: '#9AA66A', glyph: '·' },
+  book: { label: 'Book', color: '#B08A4E', glyph: '≡' },
+  forced: { label: 'Forced', color: '#8E8E8E', glyph: '□' },
+  inaccuracy: { label: 'Inaccuracy', color: '#D9A520', glyph: '?!' },
+  mistake: { label: 'Mistake', color: '#DD7A2A', glyph: '?' },
+  blunder: { label: 'Blunder', color: '#C0392B', glyph: '??' },
+  miss: { label: 'Missed win', color: '#A92D3A', glyph: '✗' },
 };
+
+/** Display order for summaries. */
+export const CLASS_ORDER: MoveClass[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'forced', 'inaccuracy', 'mistake', 'blunder', 'miss'];

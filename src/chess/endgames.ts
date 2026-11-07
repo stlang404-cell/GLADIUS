@@ -30,3 +30,81 @@ export const ENDGAME_DRILLS: EndgameDrill[] = [
   { id: 'q-vs-r', name: 'Queen v Rook', fen: '8/8/3k4/8/8/8/2r5/4K2Q w - - 0 1', goal: 'win', difficulty: 5, hint: 'Push the king to the edge, look for forks and keep the rook away from its king.' },
   { id: 'saavedra', name: 'Saavedra Position', fen: '8/8/1KP5/3r4/8/8/8/k7 w - - 0 1', goal: 'win', difficulty: 5, hint: 'Escape the checks, then underpromote to a rook to avoid stalemate.' },
 ];
+
+// ---------------------------------------------------------------- endgame review (v0.3)
+
+type Counts = { q: number; r: number; b: number; n: number; p: number };
+
+function sideCounts(fen: string): { w: Counts; b: Counts } {
+  const z = (): Counts => ({ q: 0, r: 0, b: 0, n: 0, p: 0 });
+  const out = { w: z(), b: z() };
+  for (const ch of fen.split(' ')[0]) {
+    const lower = ch.toLowerCase();
+    if (!'qrbnp'.includes(lower)) continue;
+    out[ch === lower ? 'b' : 'w'][lower as keyof Counts]++;
+  }
+  return out;
+}
+
+/**
+ * Endgame type from material (used at the moment the endgame phase starts):
+ * "King and pawn", "Rook", "Queen", "Minor piece", "Rook vs minor piece",
+ * "Queen vs rook", "Rook and minor", "Queen and minor" or "Mixed".
+ */
+export function endgameType(fen: string): string {
+  const { w, b } = sideCounts(fen);
+  const has = (c: Counts) => ({ q: c.q > 0, r: c.r > 0, m: c.b + c.n > 0 });
+  const W = has(w);
+  const B = has(b);
+  const none = (h: { q: boolean; r: boolean; m: boolean }) => !h.q && !h.r && !h.m;
+  if (none(W) && none(B)) return 'King and pawn endgame';
+  const only = (h: typeof W, k: 'q' | 'r' | 'm') => h[k] && (['q', 'r', 'm'] as const).every((x) => x === k || !h[x]);
+  if (only(W, 'r') && only(B, 'r')) return 'Rook endgame';
+  if (only(W, 'q') && only(B, 'q')) return 'Queen endgame';
+  if (only(W, 'm') && only(B, 'm')) return 'Minor-piece endgame';
+  if ((only(W, 'r') && only(B, 'm')) || (only(W, 'm') && only(B, 'r'))) return 'Rook vs minor piece';
+  if ((only(W, 'q') && only(B, 'r')) || (only(W, 'r') && only(B, 'q'))) return 'Queen vs rook';
+  if (!W.q && !B.q && W.r && B.r && (W.m || B.m)) return 'Rook and minor endgame';
+  if (W.q && B.q && (W.m || B.m || W.r || B.r)) return 'Queen and piece endgame';
+  if (none(W) || none(B)) return 'Piece vs pawns';
+  return 'Mixed endgame';
+}
+
+/** Short technique notes and related drills for each endgame type. */
+export const ENDGAME_GUIDE: Record<string, { tip: string; drills: string[] }> = {
+  'King and pawn endgame': { tip: 'Count tempi, take the opposition and lead with the king.', drills: ['kpk-key-square', 'kpk-opposition', 'kpkp-outflank', 'square', 'breakthrough', 'outside-passer'] },
+  'Rook endgame': { tip: 'Activate the rook, put it behind passed pawns and cut the enemy king off.', drills: ['lucena', 'philidor', 'vancura', 'krk'] },
+  'Queen endgame': { tip: 'Centralise the queen, shelter your king from perpetual check, push the most advanced passer.', drills: ['kqk', 'q-vs-pawn', 'q-vs-rook-pawn'] },
+  'Minor-piece endgame': { tip: 'Bring the king in, fix enemy pawns on your bishop’s colour, create an outside passer.', drills: ['right-bishop', 'wrong-bishop', 'kbnk', 'kbbk'] },
+  'Rook vs minor piece': { tip: 'With the rook, trade pawns off only if the minor piece cannot build a fortress; with the piece, keep pawns together.', drills: ['r-vs-b', 'r-vs-pawn'] },
+  'Queen vs rook': { tip: 'Drive the king to the edge and look for forks of king and rook.', drills: ['q-vs-r'] },
+  'Rook and minor endgame': { tip: 'Coordinate rook and piece against the weakest pawn; trade into a winning rook ending when ahead.', drills: ['lucena', 'philidor'] },
+  'Queen and piece endgame': { tip: 'King safety still matters: trade queens when ahead in material.', drills: ['kqk', 'q-vs-r'] },
+  'Piece vs pawns': { tip: 'Stop the most dangerous pawn first, then bring the king.', drills: ['r-vs-pawn', 'q-vs-pawn', 'square'] },
+  'Mixed endgame': { tip: 'Activate the king and simplify into an ending you know.', drills: ['outside-passer', 'lucena'] },
+};
+
+export type EndgameVerdict = 'converted' | 'held' | 'saved' | 'spoiled' | 'lost-anyway' | 'even';
+
+/**
+ * Endgame conversion verdict from the player's win% at the start of the
+ * endgame (≥ 70 winning, ≤ 30 losing) and the game score (1 / ½ / 0).
+ */
+export function endgameVerdict(winAtEntry: number, score: number): EndgameVerdict {
+  if (winAtEntry >= 70) return score === 1 ? 'converted' : 'spoiled';
+  if (winAtEntry <= 30) return score >= 0.5 ? 'saved' : 'lost-anyway';
+  return score === 1 ? 'converted' : score === 0 ? 'spoiled' : 'held';
+}
+
+export function endgameFeedback(type: string, winAtEntry: number, score: number, errors: number): string {
+  const v = endgameVerdict(winAtEntry, score);
+  const tip = ENDGAME_GUIDE[type]?.tip ?? ENDGAME_GUIDE['Mixed endgame'].tip;
+  const head =
+    v === 'converted' ? (winAtEntry >= 70 ? 'Advantage converted.' : 'You outplayed them in the endgame.')
+      : v === 'spoiled' ? (winAtEntry >= 70 ? `A winning endgame (${Math.round(winAtEntry)}%) slipped away.` : 'The endgame decided it against you.')
+        : v === 'saved' ? 'A difficult endgame saved.'
+          : v === 'lost-anyway' ? 'The endgame was already lost on arrival.'
+            : 'Balanced endgame, held.';
+  const err = errors ? ` ${errors} ${errors === 1 ? 'error' : 'errors'} after the trade-down.` : '';
+  return `${head}${err} ${tip}`;
+}

@@ -1,3 +1,4 @@
+import { isPieceSetUnlocked, pieceSetById } from '../../board2d/pieceSets';
 import { useEffect, useMemo, useState } from 'react';
 import { useSave, mutate, setSave, getSave } from '../store';
 import { useNav } from '../nav';
@@ -13,7 +14,7 @@ import { careerRating, bestRating } from '../../game/career';
 import { exportAll, importAll, listBackups, restoreBackup, wipeAll } from '../../persist/save';
 import { requestPersistence } from '../../persist/db';
 import { downloadText } from '../AnalysisView';
-import { engineStatus, configureEngines, prefetchBigNet } from '../../engine/browserEngine';
+import { engineStatus, installEnginePack, cancelEnginePack, verifyEnginePack, removeEnginePack, onEngineStatus } from '../../engine/browserEngine';
 import type { Settings } from '../../game/state';
 import { PLAYER_ID } from '../../world/calendar';
 
@@ -276,7 +277,12 @@ function Timeline() {
 /** Cosmetic collections: boards unlock with arenas, piece sets with career milestones. Never affects chess. */
 function pieceUnlocked(s: ReturnType<typeof useSave>, id: string): boolean {
   const top = Math.max(...s.player.unlockedSets, RANKS[s.player.peakRank].arena);
-  return id === 'classical' || (id === 'marble' && top >= 2) || (id === 'imperial' && top >= 5);
+  return isPieceSetUnlocked(id, top);
+}
+
+function unlockArenaName(id: string): string {
+  const u = pieceSetById(id)?.unlock;
+  return u && 'arena' in u ? (ARENAS[u.arena]?.name ?? '').replace(/^The /, '') : '';
 }
 
 function Collection() {
@@ -296,7 +302,7 @@ function Collection() {
                 <div className="set-board" style={{ background: 'linear-gradient(135deg, #F3EEE3 50%, #CFC4AE 50%)' }}>
                   {p.id === 'board' ? <span className="muted small">Matches each board</span> : <><img src={pieceSrc(p.id as PieceStyle, 'w', 'k')} alt="" /><img src={pieceSrc(p.id as PieceStyle, 'b', 'n')} alt="" /><img src={pieceSrc(p.id as PieceStyle, 'w', 'q')} alt="" /></>}
                 </div>
-                <span>{p.name}{has ? '' : p.id === 'marble' ? ' · Iron Citadel' : ' · Praetorian Bastion'}</span>
+                <span>{p.name}{has ? '' : ` · ${unlockArenaName(p.id)}`}</span>
               </button>
             );
           })}
@@ -415,17 +421,38 @@ function Saves() {
 }
 
 function EngineCard() {
+  // Engine identification + engine pack (full-strength Stockfish 19) status, download and verification.
   const [st, setSt] = useState(() => engineStatus());
-  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => onEngineStatus(() => setSt(engineStatus())), []);
+  const { pack, elite, play, plan } = st;
+  const mb = (n: number) => `${Math.round(n / 1048576)} MB`;
+  const have = pack.state === 'installed' || pack.state === 'bundled';
+  const phone = plan.deviceClass !== 'desktop';
   return (
     <div className="choice">
       <span>Chess engine</span>
-      <div className="muted small">{JSON.stringify(st).length < 200 ? Object.entries(st).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join(' · ') : 'Stockfish 19 (on device)'}</div>
-      <button className="btn small" disabled={busy} onClick={() => {
-        setBusy(true);
-        configureEngines({ allowBigNet: true });
-        void prefetchBigNet({ force: true }).then(() => { setSt(engineStatus()); setBusy(false); });
-      }}>{busy ? 'Downloading…' : 'Download grandmaster engine (99 MB, desktop)'}</button>
+      <div className="muted small">Opponents ≥ 2700: <b>{elite.label}</b>{elite.fullStrength ? '' : ' — full-strength engine not active'}{elite.onFallback ? ' (fallback after an engine failure)' : ''}</div>
+      <div className="muted small">Other opponents &amp; analysis: {play.label} · net {play.netFile} · {elite.crossOriginIsolated ? 'threads available' : 'single-threaded host'}</div>
+      <div className="muted small">
+        Full-strength engine pack: {pack.state === 'bundled' ? 'bundled with this app' : pack.state === 'installed' ? `installed (${pack.files.length} build${pack.files.length > 1 ? 's' : ''}, SHA-256 verified)` : pack.state === 'downloading' ? `downloading ${mb(pack.loaded)} / ${mb(pack.total)}${pack.phase && pack.phase !== 'download' ? ` · ${pack.phase}` : ''}` : pack.state === 'failed' ? `failed — ${pack.error}` : pack.state === 'checking' ? 'checking…' : st.bigNetBroken ? 'disabled (it crashed on this device)' : 'not installed'}
+        {pack.verified ? ` · verify: ${pack.verified.bad.length ? 'damaged files removed' : 'OK'}` : ''}
+        {msg ? ` · ${msg}` : ''}
+      </div>
+      {pack.state === 'downloading' ? (
+        <button className="btn small" onClick={() => cancelEnginePack()}>Cancel download</button>
+      ) : !have ? (
+        <button className="btn small" disabled={pack.state === 'checking'} onClick={() => {
+          if (phone && !confirm('The full-strength engine is a ~79 MB download and uses ~0.5 GB of memory while it plays. On phones it is experimental. Install?')) return;
+          setMsg(null);
+          void installEnginePack({ force: true }).then((ok) => setMsg(ok ? 'ready — used for opponents ≥ 2700' : null));
+        }}>Install full-strength engine (~79 MB, works offline)</button>
+      ) : pack.state === 'installed' ? (
+        <>
+          <button className="btn small" onClick={() => void verifyEnginePack().then(() => setSt(engineStatus()))}>Verify</button>{' '}
+          <button className="btn small" onClick={() => { if (confirm('Remove the full-strength engine from this device?')) void removeEnginePack(); }}>Remove</button>
+        </>
+      ) : null}
     </div>
   );
 }

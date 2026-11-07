@@ -1,3 +1,6 @@
+import { Chess } from 'chess.js';
+import { parseUci } from './rules';
+
 /**
  * Built-in tactical puzzles. `solution` is UCI: trainee moves at even
  * indices, the opponent's replies at odd indices. Mate puzzles were verified
@@ -54,3 +57,61 @@ export const BUILTIN_PUZZLES: Puzzle[] = [
   { id: 'p44', fen: 'r1bqkb1r/pppn1ppp/5n2/3N2B1/3P4/8/PP2PPPP/R2QKBNR b KQkq - 0 6', solution: ['f6d5', 'g5d8', 'f8b4'], theme: 'trap', rating: 1600 },
   { id: 'p45', fen: 'r1b1k3/pp3ppp/8/1N6/8/8/PP3PPP/3R2K1 w - - 0 1', solution: ['b5c7', 'e8e7', 'c7a8'], theme: 'fork', rating: 1000 },
 ];
+
+// ---------------------------------------------------------------- puzzles from the player's own games (v0.3)
+
+/**
+ * Does `uci` solve step `idx` of `solution` from position `fen`? Accepts the
+ * stored engine move, or any move that delivers checkmate (mate is always a
+ * full solution, even if the engine line mates differently).
+ */
+export function acceptsMove(fen: string, solution: string[], idx: number, uci: string): boolean {
+  if (solution[idx] === uci) return true;
+  const c = new Chess(fen);
+  try {
+    c.move(parseUci(uci));
+  } catch {
+    return false;
+  }
+  return c.isCheckmate();
+}
+
+/** A solution line is well-formed: legal throughout, odd length (ends on the trainee's move). */
+export function validSolution(fen: string, solution: string[]): boolean {
+  if (solution.length === 0 || solution.length % 2 === 0) return false;
+  const c = new Chess(fen);
+  for (const u of solution) {
+    try {
+      c.move(parseUci(u));
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+export type MistakePuzzleInput = { ply: number; fen: string; line: string[]; margin: number; theme: string; playedUci: string; cls: string };
+
+/**
+ * Turn verified puzzle candidates from an analysed game (analysis/analyzer.ts)
+ * into training positions. Candidates whose line fails validation are dropped.
+ */
+export function puzzlesFromGame<T extends MistakePuzzleInput>(gameId: string, cands: T[]) {
+  return cands
+    .filter((p) => validSolution(p.fen, p.line))
+    .map((p) => ({
+      id: `${gameId}-${p.ply}`,
+      fen: p.fen,
+      bestUci: p.line[0],
+      playedUci: p.playedUci,
+      theme: p.theme,
+      fromGame: gameId,
+      ply: p.ply,
+      solved: 0,
+      failed: 0,
+      line: p.line,
+      margin: p.margin,
+      cls: p.cls,
+      v: 3,
+    }));
+}
