@@ -16,6 +16,9 @@ import type { GateLease, GateRequest, SearchGate } from './uci';
  *     lower-priority searches are asked to stop (the engine discards the
  *     partial result and re-runs that search later). Play is never preempted.
  *  5. An aborted waiting request leaves the queue immediately (no leaks).
+ *  6. hold(p): requests at or below priority p wait (running preemptible ones
+ *     are stopped and re-run later) until release() — the browser pool holds
+ *     analysis while a game is in progress so it never competes with play.
  */
 export const PRIORITY = { analysis: 1, spectate: 2, play: 3 } as const;
 
@@ -40,6 +43,25 @@ export class EngineScheduler implements SearchGate {
     this.opts = { exclusiveAbove: PRIORITY.play, ...opts };
   }
 
+  /** Searches with priority ≤ this value are held (not started; running preemptible ones are stopped). */
+  private holdAtOrBelow = -Infinity;
+
+  /**
+   * Hold background work while a game is in progress (v0.3): e.g.
+   * hold(PRIORITY.analysis) keeps post-game analysis queued until release().
+   */
+  hold(priority: number) {
+    this.holdAtOrBelow = priority;
+    this.pump();
+  }
+  release() {
+    this.holdAtOrBelow = -Infinity;
+    this.pump();
+  }
+  get held() {
+    return this.holdAtOrBelow;
+  }
+
   setMaxConcurrent(n: number) {
     this.opts.maxConcurrent = Math.max(1, n);
     this.pump();
@@ -48,6 +70,7 @@ export class EngineScheduler implements SearchGate {
   get stats() {
     return {
       running: [...this.running.values()].map((r) => r.req.role),
+      held: this.holdAtOrBelow > -Infinity ? this.holdAtOrBelow : null,
       waiting: this.waiting.map((w) => w.req.role),
       maxConcurrent: this.opts.maxConcurrent,
     };
@@ -88,6 +111,7 @@ export class EngineScheduler implements SearchGate {
     if (this.running.size >= this.opts.maxConcurrent) return false;
     const ex = this.exclusiveActive();
     if (w.req.priority < ex) return false;
+    if (w.req.priority <= this.holdAtOrBelow) return false;
     return true;
   }
 
@@ -107,12 +131,13 @@ export class EngineScheduler implements SearchGate {
     }
     // Ask preemptible holders to yield when they run below an exclusive (play)
     // search, or when a higher-priority request is still waiting for a slot.
-    const head = this.waiting[0];
+    // Highest-priority request that could run if a slot were free.
+    const head = this.waiting.find((w) => w.req.priority > this.holdAtOrBelow);
     const ex = this.exclusiveActive();
-    if (head || ex > -Infinity) {
+    if (head || ex > -Infinity || this.holdAtOrBelow > -Infinity) {
       for (const r of this.running.values()) {
         if (r.preemptAsked || !r.req.preemptible) continue;
-        const blocks = (head !== undefined && r.req.priority < head.req.priority) || r.req.priority < ex;
+        const blocks = (head !== undefined && r.req.priority < head.req.priority) || r.req.priority < ex || r.req.priority <= this.holdAtOrBelow;
         if (blocks) {
           r.preemptAsked = true;
           try {

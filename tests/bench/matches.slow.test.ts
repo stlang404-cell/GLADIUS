@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { runMatch, engineAgent, personaAgent, type AgentFactory } from './lib/match';
 import { BENCH_OPENINGS } from './lib/openings';
 import { fmtStats } from './lib/stats';
-import { saveResult, envInt } from './lib/report';
+import { saveResult, envInt, engineIds } from './lib/report';
 import { findBuild } from '../helpers/nodeEngine';
 import type { Persona } from '../../src/engine/persona';
 
@@ -39,6 +39,31 @@ const MATCHES: Record<string, () => Def> = {
     needs: ['full-single'],
     note: 'Persona ≥3000 path (book + single-PV search) on the desktop elite slot vs the v0.1 configuration',
   }),
+  // v0.3 Phase B: top configuration vs the v0.2 top configuration *as it actually ran*
+  // (v0.2 never shipped the big net to a fresh clone/host, so its top tier ran on Lite).
+  // Static PWA host (not cross-origin isolated): single-threaded builds.
+  'v03-pwa-vs-v02': () => ({
+    a: engineAgent(`v0.3 PWA top: full-single H128 ${MT}ms`, { build: 'full-single', movetime: MT, hash: 128, process: true }),
+    b: engineAgent(`v0.2 PWA top: lite-single H128 ${MT}ms`, { build: 'lite-single', movetime: MT, hash: 128, process: true }),
+    needs: ['full-single'],
+    note: 'v0.3 top tier on a static HTTPS host with the engine pack installed vs v0.2 (lite only), MultiPV 1, fixed movetime',
+  }),
+  // Windows package (launcher sends COOP/COEP → threads): v0.3 bundles full-mt; v0.2 had lite-mt.
+  'v03-win-vs-v02': () => ({
+    a: engineAgent(`v0.3 Windows top: full-mt T3 H128 ${MT}ms`, { build: 'full-mt', threads: 3, movetime: MT, hash: 128, process: true }),
+    b: engineAgent(`v0.2 Windows top: lite-mt T3 H128 ${MT}ms`, { build: 'lite-mt', threads: 3, movetime: MT, hash: 128, process: true }),
+    conc: 1,
+    needs: ['full-mt', 'lite-mt'],
+    note: 'Threads 3 each, one game at a time (4 cores), MultiPV 1, fixed movetime',
+  }),
+  // Threads with the big net: full-mt T3 vs full-single.
+  'full-mt3-vs-single': () => ({
+    a: engineAgent(`full-mt T3 H128 ${MT}ms`, { build: 'full-mt', threads: 3, movetime: MT, hash: 128, process: true }),
+    b: engineAgent(`full-single H128 ${MT}ms`, { build: 'full-single', movetime: MT, hash: 128, process: true }),
+    conc: 1,
+    needs: ['full-mt', 'full-single'],
+    note: 'Threads 3 vs 1 (big net), one game at a time',
+  }),
   'ladder-2200-2600': () => ({ a: personaAgent('persona 2600', { persona: P(2600) }), b: personaAgent('persona 2200', { persona: P(2200, 12) }), needs: [], note: 'sampler vs sampler, lite-single' }),
   'ladder-2600-2800': () => ({ a: personaAgent('persona 2800', { persona: P(2800), opts: { thinkMs: MT } }), b: personaAgent('persona 2600', { persona: P(2600, 12) }), needs: [], note: 'elite (MultiPV 3, low T) vs sampler, lite-single' }),
   'ladder-2800-3000': () => ({ a: personaAgent('persona 3000', { persona: P(3000), opts: { thinkMs: MT } }), b: personaAgent('persona 2800', { persona: P(2800, 12), opts: { thinkMs: MT } }), needs: [], note: 'top (single PV) vs elite, same think time, lite-single' }),
@@ -67,7 +92,7 @@ describe('engine matches', () => {
       });
       const line = fmtStats(`${rep.a} vs ${rep.b}`, rep);
       console.log(line, `(${Math.round(rep.wallMs / 1000)} s)`);
-      saveResult(`match-${name}`, { name, note: def.note, movetimeMs: MT, line, ...rep });
+      saveResult(`match-${process.env.BENCH_TAG ? name + '-' + process.env.BENCH_TAG : name}`, { name, note: def.note, movetimeMs: MT, line, engines: engineIds(), ...rep });
       expect(rep.w + rep.d + rep.l).toBe(openings.length * 2 * envInt('BENCH_ROUNDS', 1));
       expect(rep.games.every((g) => !g.reason.startsWith('illegal'))).toBe(true);
     }, 24 * 3600 * 1000);

@@ -1,4 +1,139 @@
-# GLADIUS engine (v0.2)
+# GLADIUS engine
+
+The v0.3 section below supersedes v0.2 where they disagree; the v0.2 measurements (sections 1–8) stay valid for what they measured.
+
+## v0.3 — Phase B: chess intelligence
+
+Machine: same sandbox as v0.2 (Linux, 4 vCPU Xeon @ 2.1 GHz, 16 GB, Node 22.23). **Caveat for every number in this section:** other engineers' jobs (headless Chromium renders, test suites) shared the 4 cores during the runs (load average 4–8 on 4 cores, recorded in the JSON files). Matches use a fixed `movetime` for both sides, so both sides lose the same share of CPU, but absolute nps/depth are lower than on an idle machine and the Elo differences belong to these budgets on a loaded 4-core box. Raw results: `tests/bench/results/*.json` (each has `meta` and the `engines` block with the SHA-256 of every `.wasm` used).
+
+### v0.3.1 Engine: exact version and licence
+* Stockfish 19, npm `stockfish@19.0.1` (Nathan Rugg / Chess.com build of the official Stockfish, https://github.com/nmrugg/stockfish.js, https://github.com/official-stockfish/Stockfish). GPL-3.0: `public/engine/STOCKFISH-LICENSE.txt` ships with every build and in the Windows package; the source is the upstream repositories above at the 19.0.1 tag.
+* Builds and nets (reported by the engine itself, `id name` / `EvalFile` default):
+
+| Build id | File | SHA-256 (.wasm) | `id name` | NNUE net | Delivery |
+|---|---|---|---|---|---|
+| lite-single | stockfish-19-lite-single.{js,wasm} (1.8 MB) | ee4f115b… | Stockfish 19 Lite WASM | nn-61e7af4bb97d (small) | precached with the app |
+| lite-mt | stockfish-19-lite.{js,wasm} (1.7 MB) | ddf06cda… | Stockfish 19 Lite WASM Multithreaded | nn-61e7af4bb97d | runtime-cached (needs COOP/COEP) |
+| full-single | stockfish-19-single.{js,wasm} (99.2 MB) | 991bede2… | Stockfish 19 WASM | nn-1a298aa575a0 (big) | engine pack |
+| full-mt | stockfish-19.{js,wasm} (99.1 MB) | a599d78d… | Stockfish 19 WASM Multithreaded | nn-1a298aa575a0 | engine pack (needs COOP/COEP) |
+
+Full hashes: `src/engine/builds.ts` (`BUILDS[*].sha256`) and `public/engine/pack/engine-pack.json`.
+
+### v0.3.2 Distribution: the engine pack (why a fresh clone no longer runs Lite)
+Problem in v0.2: the 99 MB big-net file was git-ignored, so every clone/host silently ran Lite.
+
+Strategy (measured sizes):
+* `stockfish-19-single.wasm` 99,169,054 B → gzip -9 79,036,993 B (−20 %; brotli/xz would give ~74 MB but browsers' `DecompressionStream` only decodes gzip/deflate) → **4 chunks of ≤ 20 MiB** (`public/engine/pack/stockfish-19-single.wasm.gz.000…003`: 20.0 / 20.0 / 20.0 / 15.1 MiB).
+* `stockfish-19.wasm` (threaded) shares the network with the single-threaded build: a binary delta (format GSD1: copy/literal ops, `scripts/engine-pack.mjs`) against the single build is **258,691 B gzipped** (`stockfish-19.wasm.gsd1.gz.000`). Both full builds therefore cost 79.3 MB in git instead of 2 × 79 MB.
+* `engine-pack.json`: size + SHA-256 of every chunk and of each reassembled file, source and licence. Every file is under GitHub's 50 MB warning and Cloudflare Pages' 25 MiB limit. Nothing needs git LFS.
+
+Where the full engine comes from at run time (`src/engine/enginePack.ts`, `browserEngine.ts`):
+1. **Hosted PWA** (GitHub Pages, Netlify, Cloudflare): `dist/engine/pack/` is deployed with the app but **never precached** (Workbox `globIgnores`; the precache is 5.3 MB). "Install full-strength engine" (Legacy → Settings → Chess engine) downloads the chunks with progress, checks each chunk's SHA-256 (2 retries), gunzips them in a stream (`DecompressionStream`), checks the SHA-256 of the 99 MB result, stores it in Cache Storage (`gladius-engine-pack-v1`, key = the canonical `engine/<file>.wasm` URL) and, on cross-origin-isolated devices, applies the delta for the threaded build and verifies it the same way. Storage quota is checked first (`navigator.storage.estimate`) and persistence requested. After a reload the installed files are found in the cache (size + stored hash header, no re-download) and handed to the worker as a `blob:` URL in the glue's `#wasm` hash parameter, so the installed engine works offline without depending on the service worker. **Verify** re-hashes the stored files (damaged ones are removed); **Remove** frees the space. Desktop browsers start the install in the background the first time an opponent ≥ 2700 is met (not on data-saver/2G/3G); **phones never download it automatically** — only after an explicit opt-in (confirm dialog), and never on Android devices reporting < 4 GB.
+2. **Windows package**: `scripts/package-windows.mjs` reassembles both full builds from the pack (SHA-256 verified) into `app/engine/`; the app detects them with a HEAD probe (exact `Content-Length`, not HTML) and uses them directly — no download, offline, threaded (the launcher sends COOP/COEP; it now answers HEAD and streams large files from disk).
+3. **Build**: a Vite plugin (`vite.config.ts` → `enginePack()`) verifies every chunk at build start (a clone without the chunks, or with LFS pointer files, fails the build loudly instead of shipping Lite silently) and removes stray full-size `.wasm` files a developer may have in `public/engine/`, so every build equals a fresh clone's. `GLADIUS_BUNDLE_FULL_ENGINE=1` writes the reassembled files into `dist/engine/` for hosts that accept 99 MB files.
+4. **Node tests/benches**: `tests/helpers/nodeEngine.ts → findBuild` falls back to reassembling from the pack into `node_modules/.cache/gladius-engine` (SHA-256 checked), so `npm run bench` on a fresh clone uses the real full builds.
+
+Verification done for v0.3: a copy of the working tree's committed + new files (`git ls-files -co --exclude-standard`, i.e. what a clone would contain; no ignored files) was built in a temp dir: `vite build` passed the pack check, `dist/` = 84 MB (largest file 20 MiB, precache 5.3 MB without any pack file); `package-windows.mjs` produced both full `.wasm` files with the npm SHA-256s; a Python static server serving that `dist/` was used by the browser installer code (run in Node 22: real `fetch`, `DecompressionStream`, WebCrypto) — 79.0 MB downloaded, both builds verified and stored in 3.9 s on localhost, found again "after reload", `verifyInstalled` OK, HEAD probe on the PWA host = not bundled, on the Windows `app/` = bundled; in the same temp copy `tests/engine*` (64 tests) passed and a `full-mt` vs `lite-mt` smoke match ran from the reassembled pack. Unit tests: `tests/engine.pack.test.ts` (chunks intact, bit-exact reassembly, browser install incl. corrupt-chunk retry/fail, missing-pack detection). **Not verified here:** a real browser (Worker + blob URL + Cache Storage) on a phone or desktop; Safari's handling of a 99 MB wasm in a Worker.
+
+### v0.3.3 Identification (what the UI may claim)
+`activeEngineInfo(role)` (browserEngine.ts) returns, for the engine a role uses *now* (after any fallback): `build`, `plannedBuild`, `uciName` (`id name` from the running worker), `version`, `source`, `net` (`small`/`big`), `netFile` (EvalFile reported by the worker), `threads`, `hashMB` (options actually set), `topMs`, `fullStrength` (true only for big-net builds), `crossOriginIsolated`, `alive`, `onFallback`, `delivery` (`app`/`pack`/`bundled`) and `label` (e.g. "Stockfish 19 full net, 3 threads · 128 MB hash" or "Stockfish 19 Lite (small net, 1 thread) · 16 MB hash"). `buildLabel()` is the only place labels are made; only big-net builds are called "full". `personaEngineLabel(elo)` gives the line for an opponent card (elite/top personas name their engine; < 2700: "Lite · calibrated N model"). `engineStatus()` adds the pack state/progress, the plan and the log; `onEngineStatus(cb)` notifies on progress/switches. The Settings EngineCard shows these (status, progress, cancel, verify, remove). Tested: on a phone profile without the pack, `fullStrength` is false and every label says Lite (`tests/engine.pool.test.ts`).
+
+### v0.3.4 Scheduling and resources (audit + changes)
+Audit of v0.2: the scheduler capped simultaneous *searches*, but every engine booted its worker in the constructor, so 4 roles meant 4 live workers even on a phone (measured with a fake Worker: 4 alive at once). Changes:
+* **Worker cap** `plan.maxWorkers`: 2 on phones/≤ 4 GB, 4 on desktop. Engines start lazily (`lazyStart`), a worker is created only when its search holds a scheduler lease, and before a new worker starts the least-recently-used idle ones are suspended (`UciEngine.suspend()`: worker killed, engine restarts transparently with its options). Engines waiting for a lease may be suspended too. Test: 4 roles × 2 rounds on a phone profile → never more than 2 workers, never more than 1 search.
+* **Analysis never competes with play**: `setGameInProgress(true)` (called by GameScreen on mount, false when the game is over/left) puts the scheduler on `hold(analysis)`: queued analysis waits, a running analysis search is stopped and re-run after the game. Play/elite are never preempted; spectate/analysis are still preempted while the opponent thinks (v0.2 rule).
+* **Cancellation**: unchanged AbortSignal semantics (queued or running searches reject at once; `stop` sent; the stopped search's `bestmove` is consumed before the next one). New `stopEngines()` / `suspendIdleEngines()`; on `pagehide` all idle workers are freed; on phones, 30 s after the page is hidden analysis/spectate are stopped and idle workers freed.
+* **Memory-aware hash** (`hashFor`): phones 16 MB (iOS always ≤ 16; Android elite 32 with ≥ 4 GB and the small net), spectate 8; ≤ 4 GB desktops 16 (elite 32); desktop play 64, analysis 64 big / 32 lite, spectate 16, elite 128, 256 with ≥ 8 GB and ≥ 8 cores (`deviceMemory` is capped at 8 by Chromium; unknown = 8 desktop / 4 phone).
+* **Crash/hang recovery**: v0.2's (restart + retry once, fallback build, watchdogs) plus an **OOM guard**: a flag is set while a big-net worker boots and cleared 30 s after it started or on `pagehide`; if a page load finds it set, the previous page was killed (iOS jetsam) and the big net is disabled on that device until the user re-enables it. Tests (fake engine): abort mid-search then the next search gets its own answer; terminate during a search (reload) rejects everything; 50 instant replies resolve in order; an engine that overruns `movetime` is stopped by the watchdog and still answers; crash during a gated search releases its lease.
+* **Compute budgets** (internal; players are untimed): `plan.budget` → `engine.budget` → `untimedThink`: elite 900→1500 ms desktop, 1200→1800 ms phones; top tier 2000 ms desktop, 2500 ms phones (phones search 2–5× fewer nodes/s).
+
+### v0.3.5 Strongest practical configuration (top tier ≥ 3000)
+MultiPV 1 (explicit), movetime 2 s desktop / 2.5 s phones, big net when installed/bundled, threads = min(4, cores − 1) when cross-origin isolated (Windows package: yes; GitHub Pages: no), Hash 128 (256 on ≥ 8-core/≥ 8 GB desktops). Elite 2700–2999 keeps MultiPV 3 + a ≤ 3 win% blunder guard and low temperature.
+
+Measured builds (2 s per position, 4 positions, child processes, load avg 4.3–6.5):
+
+| Build | Threads | Hash | Start → readyok | knps | Depth (4 pos.) | Peak RSS |
+|---|---|---|---|---|---|---|
+| lite-single | 1 | 16 | 185 ms | 408 | 21/22/18/20 | 138 MB |
+| lite-single | 1 | 64 | 157 ms | 529 | 21/22/17/22 | 184 MB |
+| lite-mt | 2 / 4 | 64 | 374 / 387 ms | 1158 / 1441 | 24/24/17/22 · 20/22/19/20 | 267 / 324 MB |
+| full-single | 1 | 64 / 128 | 745 / 827 ms | 322 / 287 | 20/21/19/21 · 21/22/18/20 | 492 / 625 MB |
+| full-mt | 2 / 3 / 4 | 64 / 128 / 64 | 941 / 1040 / 895 ms | 664 / 820 / 929 | ~20–21 | 782 / 922 / 865 MB |
+
+Mobile: not measured (no device). Expect the lite-single row ÷ 2–5.
+
+### v0.3.6 Matches: v0.3 top configuration vs v0.2 top configuration
+v0.2 "as it ran" = Lite (the big net was never present on a fresh clone/host). 40 balanced openings (v0.2 set), each with both colours; adjudication as in v0.2 §4.1; Elo ± 95 % CI from the trinomial variance (`tests/bench/lib/stats.ts`); engine agents (fixed engine configuration, MultiPV 1, fixed movetime, each engine its own process). knps/depth/RSS are per-move averages over the match, measured under the load noted above.
+
+| Platform | v0.3 (A) | v0.2 (B) | Budget | Games | W / D / L (A) | Score | Elo A − B [95 % CI] | A: depth · knps · RSS | B: depth · knps · RSS |
+|---|---|---|---|---|---|---|---|---|---|
+| PWA (no threads) | full-single H128 | lite-single H128 | 100 ms | 160 (40 × 2 colours × 2) | +70 =80 −10 | 68.8 % | **+137 [+101, +176]** | 13.5 · 227 · 626 MB | 14.0 · 340 · 251 MB |
+| PWA (no threads) | full-single H128 | lite-single H128 | 400 ms | 80 (40 × 2) | +25 =50 −5 | 62.5 % | **+89 [+45, +136]** | 15.3 · 122 · 625 MB | 15.8 · 185 · 253 MB |
+| Windows (COOP/COEP, 3 threads) | full-mt T3 H128 | lite-mt T3 H128 | 200 ms | 60 (30 × 2), one game at a time | +18 =41 −1 | 64.2 % | **+101 [+56, +150]** | 16.0 · 799 · 871 MB | 16.3 · 1131 · 363 MB |
+
+Reading: at every budget tried the full net beats the lite net clearly (all CIs exclude 0); the gap narrows with more time (100 → 400 ms), as is usual between engines of different strength. Total wall time 45 min (8 + 14 + 23). Not run: longer budgets (2 s = the real top-tier think time; ~4 h for 80 games here), full-mt vs full-single (threads alone).
+
+Tactical suite (62 verified WAC/BK positions, fixed time, one try): lite-single 56/62 (100 ms), 59/62 (500 ms); full-single 53/62, 60/62; lite-mt T3 57/62, 58/62; full-mt T3 58/62, 59/62. As in v0.2 the suite saturates and does not separate builds (±2 positions is noise). Endgame suite (8 positions, played out vs full-single 300 ms, no adjudication): lite-single 100 ms, full-single 100 ms, persona 3200 on lite and on full — **8/8 each** (KBNK converted by all; plies to mate differ, e.g. KBNK 79 / 55 / 49 / 75). The suite is too easy to separate configurations.
+
+### v0.3.7 Styles, measured — and fixed
+Method (`tests/bench/styles.slow.test.ts`): 172 fixed positions (40 opening end positions, 62 tactics, the same 62 after the winning move = defender to move, 8 endgames). Per Elo band the engine's candidate lines are computed once (lite-single; sampler bands at their own depth/MultiPV; elite: depth 12, MultiPV 3), then the game's own selection code is sampled 60× per position per style. Δ = style − universal in percentage points of chosen moves, ± 95 % CI over the 172 paired per-position differences; "loss" = mean win% given up vs the best line (oversight picks count 30).
+
+**v0.2 result: the effect was nil.** Largest |Δ| at 1600: +0.4 pp checks (attacker); at 2200 ≤ 0.2 pp on every feature; at 2800 ≤ 1.0 pp. Cause: the style bonus was added to the loss *before* dividing by the temperature and scaled down with Elo, so it was a few % of the weight.
+
+**v0.3 model** (`persona.ts → styleShift`): a style shifts a candidate's log-weight by `gain(elo) × max(0, bonus(move) − bonus(best line))`, only for candidates within `tolerance(elo)` win% of the best (gain 1.4 → 0.5, tolerance 8 → 0.5 win% from 800 to 3000 Elo). A style can move probability from the best line to a playable alternative it prefers, never towards worse-than-tolerance moves, and never makes a persona stronger than its calibrated `universal` self (a first prototype that also boosted stylish best lines lowered the attacker's loss by 0.9 win% at 1600, i.e. made it play stronger than its Elo — rejected).
+
+| Band | Style | Δ checks | Δ captures | Δ near enemy king | Δ pawn moves | Δ best-move rate | Δ loss (win%) |
+|---|---|---|---|---|---|---|---|
+| 1600 | attacker | **+5.6 ± 2.3** | +1.6 ± 1.1 | **+2.2 ± 1.4** | −1.6 ± 1.1 | −1.2 ± 0.6 | −0.1 |
+| 1600 | gambiteer | **+3.0 ± 1.2** | +0.4 ± 0.5 | +0.4 ± 0.5 | −1.3 ± 0.9 | −0.6 ± 0.3 | −0.1 |
+| 1600 | strategist | +0.2 ± 0.2 | +0.1 ± 0.5 | +0.3 ± 0.3 | **−3.6 ± 1.2** | −1.2 ± 0.5 | −0.1 |
+| 1600 | defender | **+1.5 ± 0.7** | +0.3 ± 0.6 | +0.1 ± 0.3 | −1.1 ± 0.7 | −0.9 ± 0.6 | 0.0 |
+| 1600 | technician | −0.2 ± 0.3 | 0.0 ± 0.2 | −0.2 ± 0.2 | +0.1 ± 0.3 | −0.2 ± 0.2 | 0.0 (king moves +0.8 ± 0.6) |
+| 1600 | theoretician | 0.0 ± 0.1 | 0.0 ± 0.3 | +0.1 ± 0.1 | **−1.7 ± 0.6** | −0.5 ± 0.2 | −0.1 |
+| 1600 | counterattacker | +0.2 ± 0.3 | +0.3 ± 0.6 | +0.1 ± 0.2 | −0.2 ± 0.6 | −0.6 ± 0.4 | −0.1 |
+| 2200 | attacker | **+2.4 ± 1.4** | +1.2 ± 0.8 | **+1.7 ± 1.2** | +0.1 ± 0.8 | −0.8 ± 0.3 | 0.0 |
+| 2200 | strategist | −0.1 ± 0.3 | −0.2 ± 0.3 | −0.1 ± 0.2 | **−2.3 ± 1.0** | −1.1 ± 0.4 | 0.0 |
+| 2200 | gambiteer | **+1.4 ± 0.9** | +0.4 ± 0.4 | +0.5 ± 0.5 | −0.7 ± 0.8 | −0.6 ± 0.3 | 0.0 |
+| 2800 (elite) | all styles | ≤ +0.6 ± 0.6 | ≤ 0.3 | ≤ 0.4 | strategist −1.2 ± 0.6 | −0.1 … −1.7 | 0.0 |
+
+v0.2 for comparison (same positions/seeds): 1600 attacker checks +0.4 ± 0.2, strategist pawn moves −0.6 ± 0.2; 2200 every |Δ| ≤ 0.2. Universal baselines: 1600 checks 9.4 %, captures 18.8 %, pawn moves 22.7 %, best move 32.9 %, loss 5.4; 2200: 11.3 / 23.1 / 23.9 / 45.3 %, loss 2.6; 2800: 13.8 / 32.7 / 23.4 / 80.2 %, loss 0.1.
+
+Reading: in v0.3 attacker/gambiteer/defender/strategist/theoretician have statistically clear signatures at 1600 and 2200 at no measurable strength cost (|Δ loss| ≤ 0.1 win%/move; the ladder step 1300 → 1700 is ~1 win%). Technician and counterattacker remain weak in the middlegame because their triggers (ahead/endgame; under pressure) are narrow — their main effects are in specific positions and in the book. Elite personas (2800) keep their strength (loss unchanged) and show only small style effects (≤ 1.7 pp fewer best-move picks); the top tier (≥ 3000) plays pure single-PV engine moves out of book by design.
+
+Opening book (persona 2000, 2000 simulated book games per style; book play is where styles differ most):
+
+| Style | Book plies | Ends in a gambit line | 1.e4 | 1.d4 | 1.c4 | vs 1.e4: …c5 | …e5 |
+|---|---|---|---|---|---|---|---|
+| universal | 9.5 | 14.8 % | 53.6 | 40.4 | 4.0 | 25.3 | 46.9 |
+| attacker | 9.7 | 17.4 % | 59.0 | 37.0 | 2.6 | 31.1 | 43.5 |
+| strategist | 8.8 | 12.8 % | 50.1 | 40.4 | 5.0 | 28.7 | 40.3 |
+| defender | 9.4 | 12.1 % | 57.1 | 38.5 | 3.0 | 26.0 | 46.1 |
+| technician | 9.0 | 13.0 % | 54.5 | 39.3 | 3.9 | 28.2 | 40.1 |
+| theoretician | **11.9** | 10.9 % | 67.5 | 32.0 | 0.5 | 35.4 | 52.1 |
+| counterattacker | 9.2 | 14.8 % | 56.8 | 36.0 | 3.2 | **41.3** | 29.8 |
+| gambiteer | 8.9 | **35.4 %** | 62.3 | 33.6 | 1.9 | 35.2 | 41.6 |
+
+Rival preparation (`prep.avoidLines/preferLines`) is unchanged: it only re-weights book moves from the player's past games (`rivalPrep`), never search strength.
+
+### v0.3.8 Reproduce
+```
+node scripts/engine-pack.mjs verify
+npx vitest run tests/engine                          # unit + pack + pool + scheduler tests
+npx vitest run tests/bench/builds.slow.test.ts
+BENCH_MATCH=v03-pwa-vs-v02 BENCH_ROUNDS=2 BENCH_MOVETIME=100 BENCH_TAG=100ms npx vitest run tests/bench/matches.slow.test.ts
+BENCH_MATCH=v03-pwa-vs-v02 BENCH_MOVETIME=400 BENCH_TAG=400ms npx vitest run tests/bench/matches.slow.test.ts
+BENCH_MATCH=v03-win-vs-v02 BENCH_OPENINGS=30 BENCH_MOVETIME=200 BENCH_TAG=200ms npx vitest run tests/bench/matches.slow.test.ts
+BENCH_TACTICS_PERSONAS=0 BENCH_TAG=v03 npx vitest run tests/bench/tactics.slow.test.ts
+BENCH_EG_ONLY='lite-single 100ms,full-single 100ms,persona 3200' npx vitest run tests/bench/endgames.slow.test.ts
+npx vitest run tests/bench/styles.slow.test.ts       # BENCH_STYLE_SAMPLES=60, models v0.3,v0.2
+```
+
+### v0.3.9 Not demonstrated
+No Elo relative to humans. No real-browser or phone measurement (Worker + blob URL path, Safari memory with the big net, iOS kill-guard in practice). Threads alone with the big net (full-mt vs full-single) and the 2 s top-tier budget were not matched. All match numbers come from a CPU shared with other jobs.
+
+---
+
+## v0.2 (original measurements)
 
 Everything here was measured in this repository's sandbox unless marked otherwise:
 Linux, 4 vCPU (x86-64, see `tests/bench/results/*.json` → `meta`), 16 GB RAM, Node 22,

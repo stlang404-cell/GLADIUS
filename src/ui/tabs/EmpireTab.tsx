@@ -1,3 +1,5 @@
+import { sigDefFor } from '../../world/trophies';
+import { tournamentInfo, roman } from '../../world/calendar';
 import { useMemo, useState } from 'react';
 import { useSave, mutate } from '../store';
 import { useNav } from '../nav';
@@ -69,7 +71,7 @@ function Arenas() {
         const locked = a.index > mine && !s.player.unlockedSets.includes(a.index);
         return (
           <ArenaCard key={a.id} index={a.index} mine={a.index === mine} onClick={() => nav.open({ kind: 'arena', index: a.index })}>
-            <div className="ac-num">{['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][a.index]}</div>
+            <div className="ac-num">{roman(a.index + 1)}</div>
             {locked && <div className="ac-lock"><IconShield size={16} /></div>}
             {a.index === mine && <div className="ac-here">YOU ARE HERE</div>}
             <div className="ac-body">
@@ -98,7 +100,7 @@ export function ArenaSheet({ index, onClose }: { index: number; onClose: () => v
       <div className="arena-banner" style={{ backgroundImage: art }}>
         <div className="ab-card">
           <img src={crestUri(index)} width={56} height={56} alt="" />
-          <TrophyImage defId={`sig-${index}`} arena={index} size={72} alt={a.trophy} />
+          <TrophyImage defId={sigDefFor(index)} arena={index} size={72} alt={a.trophy} />
           <div><div className="kicker">{a.trophy}</div><i>{a.motto}</i><div className="muted small">Signature board: {signatureTheme(index).name}</div></div>
         </div>
       </div>
@@ -187,7 +189,7 @@ function Tournaments() {
       {sorted.map((t) => (
         <Card key={t.id} className={'tourn ' + t.status} onClick={() => nav.open({ kind: 'tournament', id: t.id })}>
           <div className="row">
-            <TrophyImage defId={t.kind === 'championship' ? `sig-${t.arena}` : t.kind === 'league' ? `league-t${Math.min(3, Math.floor(t.arena / 3))}` : t.kind === 'invitational' ? `invit-t${Math.min(3, Math.floor(t.arena / 3))}` : `cup-open-t${Math.min(3, Math.floor(t.arena / 3))}`} arena={t.arena} size={44} />
+            <TrophyImage defId={tournamentInfo(s.world, t, 0).trophy} arena={t.arena} size={44} />
             <div className="grow">
               <b>{t.name}</b>
               <div className="muted">{describeFormat(t.format, t.state ?? undefined)} · {t.status === 'scheduled' ? `starts ${dayLabel(t.startDay)}` : t.status === 'running' ? `round ${(t.state?.rounds.length ?? 0)}` : `won by ${nameOf(s, t.state?.winner ?? null)}`}</div>
@@ -292,7 +294,7 @@ function Hall() {
           const reign = s.world.reigns.find((r) => r.titleId === t.id && r.to === null);
           return (
             <div key={t.id} className="leader" onClick={() => t.holder && t.holder !== PLAYER_ID && nav.open({ kind: 'competitor', id: t.holder })}>
-              <TrophyImage defId={`sig-${t.arena}`} arena={t.arena} size={40} />
+              <TrophyImage defId={sigDefFor(t.arena)} arena={t.arena} size={40} />
               <span className="grow"><b>{nameOf(s, t.holder)}</b><div className="muted small">{t.name}</div></span>
               <span className="muted small">{reign ? `${s.world.day - reign.from} days` : ''} · {t.defenses} def.</span>
             </div>

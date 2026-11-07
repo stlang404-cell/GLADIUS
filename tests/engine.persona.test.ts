@@ -6,6 +6,8 @@ import {
   humanDelay,
   chooseMove,
   styleBonus,
+  styleShift,
+  sampleCandidate,
   weightedBook,
   bookDepth,
   searchPosition,
@@ -185,5 +187,30 @@ describe('persona legality', () => {
       expect(Date.now() - t0, `elo ${elo}`).toBeLessThan(allocateTime(clock, 2000).totalMs + 400);
       expect(mv.uci).toMatch(/^[a-h][1-8][a-h][1-8]/);
     }
+  });
+});
+
+describe('style influence (v0.3 model)', () => {
+  const fen = '4k3/8/8/8/8/8/8/R3K3 w - - 0 1';
+  const lines = [
+    { multipv: 1, depth: 8, score: { cp: 20 }, pv: ['a1a2'] },
+    { multipv: 2, depth: 8, score: { cp: 5 }, pv: ['a1a8'] }, // check, 1.4 win% worse: within tolerance
+    { multipv: 3, depth: 8, score: { cp: -400 }, pv: ['e1d1'] },
+  ];
+  const rate = (style: 'attacker' | 'universal', elo: number) => {
+    let n = 0;
+    for (let k = 0; k < 4000; k++) if (sampleCandidate(lines, { elo, style, openingStyles: [], seed: k }, fen, createRng(k * 7919 + 1), 30) === 'a1a8') n++;
+    return n / 4000;
+  };
+  it('a style measurably prefers its moves among playable candidates', () => {
+    expect(rate('attacker', 1800) - rate('universal', 1800)).toBeGreaterThan(0.05);
+  });
+  it('never boosts the best line or moves outside the tolerance (cannot make a persona stronger)', () => {
+    const ctx = { bestWin: 52, ply: 30 };
+    const p = { elo: 1800, style: 'attacker' as const, openingStyles: [], seed: 1 };
+    expect(styleShift(p, fen, 'a1a8', 0, ctx, 0)).toBe(0);
+    expect(styleShift(p, fen, 'a1a8', 30, ctx, 0)).toBe(0);
+    expect(styleShift(p, fen, 'a1a8', 1, ctx, 0)).toBeGreaterThan(0);
+    expect(styleShift({ ...p, style: 'universal' }, fen, 'a1a8', 1, ctx, 0)).toBe(0);
   });
 });

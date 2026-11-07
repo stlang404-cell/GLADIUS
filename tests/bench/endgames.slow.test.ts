@@ -17,10 +17,14 @@ describe('endgame suite', () => {
     const tested = [
       { name: 'lite-single 100ms', f: engineAgent('lite-single 100ms', { build: 'lite-single', movetime: 100, hash: 16 }) },
       ...(findBuild('full-single') ? [{ name: 'full-single 100ms', f: engineAgent('full-single 100ms', { build: 'full-single', movetime: 100, hash: 64 }) }] : []),
+      ...(findBuild('full-single') ? [{ name: 'persona 3200 full-single', f: personaAgent('persona 3200 full-single', { persona: { elo: 3200, style: 'universal', openingStyles: [], seed: 5 }, build: 'full-single', hash: 128, opts: { thinkMs: 300 } }) }] : []),
+      { name: 'persona 3200 lite-single', f: personaAgent('persona 3200 lite-single', { persona: { elo: 3200, style: 'universal', openingStyles: [], seed: 5 }, hash: 128, opts: { thinkMs: 300 } }) },
       ...[1000, 1600, 2200, 2600, 2800, 3000].map((elo) => ({ name: `persona ${elo}`, f: personaAgent(`persona ${elo}`, { persona: P(elo), opts: { thinkMs: 300 } }) })),
     ];
+    // BENCH_EG_ONLY=substring[,substring…] limits the tested configurations.
+    const only = process.env.BENCH_EG_ONLY?.split(',');
     const rows = [];
-    for (const t of tested) {
+    for (const t of tested.filter((x) => !only || only.some((o) => x.name.includes(o)))) {
       const r = await endgameSuite(t.name, t.f, opp);
       rows.push({ config: t.name, score: `${r.score}/${r.total}`, detail: r.results.map((x) => `${x.id}:${x.got}${x.got === 'win' ? '@' + x.plies : ''}`).join(' ') });
       console.log(rows[rows.length - 1]);

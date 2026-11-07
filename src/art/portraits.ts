@@ -148,8 +148,10 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
   const sd = (Number.isFinite(seed) ? Math.floor(seed) : 0) >>> 0;
   const female = !!opts.female;
   const age = Math.max(14, Math.min(95, Number.isFinite(opts.age) ? opts.age : 30));
-  const ai = ((Math.floor(Number.isFinite(opts.arenaIndex) ? opts.arenaIndex : 0) % 12) + 12) % 12;
-  const pal = ARENAS[ai].palette;
+  // 24 arenas: the palette follows the arena; costume tiers (0..11) advance every two arenas.
+  const a24 = Math.max(0, Math.min(ARENAS.length - 1, Math.floor(Number.isFinite(opts.arenaIndex) ? opts.arenaIndex : 0)));
+  const ai = Math.min(11, a24 >> 1);
+  const pal = ARENAS[a24].palette;
   const id = 'p' + (mixSeed('pt', sd, female ? 1 : 0, Math.round(age), ai) % 60466176).toString(36);
   const r: Rng = createRng(mixSeed(sd, 'face'));
   const g: Rng = createRng(mixSeed(sd, ai, 'gear'));

@@ -7,9 +7,11 @@ import type { UciTransport } from '../../src/engine/uci';
  *  - `hangOnGo`: number of `go` commands that never answer (not even to stop)
  *  - `bootFails`: the first N instances never answer `uci`
  */
-export type FakeScript = { searchMs?: number; failOnGo?: number; hangOnGo?: number; bootFails?: number; bestmove?: string };
+export type FakeScript = { searchMs?: number; failOnGo?: number; hangOnGo?: number; bootFails?: number; bestmove?: string; /** take searchMs even when `go movetime` asks for less (slow engine) */ ignoreMovetime?: boolean; /** bestmove per go: e2e4, then the counter (e.g. 'a2a3' style ids) */ countMoves?: boolean };
 
 export type FakeStats = { instances: number; gos: number; stops: number; log: string[]; active: number; maxActive: number };
+
+const MOVES = ['a2a3', 'b2b3', 'c2c3', 'd2d3', 'e2e3', 'f2f3', 'g2g3', 'h2h3'];
 
 export function fakeFactory(script: FakeScript = {}, stats: FakeStats = { instances: 0, gos: 0, stops: 0, log: [], active: 0, maxActive: 0 }) {
   let failBudget = script.failOnGo ?? 0;
@@ -31,8 +33,9 @@ export function fakeFactory(script: FakeScript = {}, stats: FakeStats = { instan
       stats.active--;
       if (timer) clearTimeout(timer);
       timer = null;
-      emit('info depth 5 multipv 1 score cp 12 nodes 100 pv ' + (script.bestmove ?? 'e2e4'));
-      emit('bestmove ' + (script.bestmove ?? 'e2e4'));
+      const bm = script.countMoves ? MOVES[stats.gos % MOVES.length] : (script.bestmove ?? 'e2e4');
+      emit('info depth 5 multipv 1 score cp 12 nodes 100 pv ' + bm);
+      emit('bestmove ' + bm);
     };
     return {
       send(cmd: string) {
@@ -62,7 +65,7 @@ export function fakeFactory(script: FakeScript = {}, stats: FakeStats = { instan
           stats.active++;
           stats.maxActive = Math.max(stats.maxActive, stats.active);
           const mt = /movetime (\d+)/.exec(cmd);
-          timer = setTimeout(finish, mt ? Number(mt[1]) : (script.searchMs ?? 30));
+          timer = setTimeout(finish, mt && !script.ignoreMovetime ? Number(mt[1]) : (script.searchMs ?? 30));
         } else if (cmd === 'stop') {
           stats.stops++;
           if (!hanging) finish();

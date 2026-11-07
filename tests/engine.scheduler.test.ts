@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { UciEngine, isAbortError } from '../src/engine/uci';
 import { EngineScheduler, PRIORITY } from '../src/engine/scheduler';
-import { planEngines, detectDevice, type DeviceInfo } from '../src/engine/builds';
+import { planEngines, detectDevice, hashFor, type DeviceInfo } from '../src/engine/builds';
+import { untimedThink } from '../src/engine/persona';
 import { fakeFactory } from './helpers/fakeEngine';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -174,6 +175,135 @@ describe('robust UCI client', () => {
   });
 });
 
+describe('worker lifecycle (v0.3)', () => {
+  it('suspend() frees an idle worker, refuses while searching, restarts lazily with options', async () => {
+    const { make, stats } = fakeFactory({ searchMs: 60 });
+    const e = new UciEngine(make, { initOptions: { Hash: 32 } });
+    await e.search({ fen: START, movetime: 10 });
+    expect(e.alive).toBe(true);
+    const p = e.search({ fen: START, movetime: 60 });
+    await sleep(15);
+    expect(e.suspend()).toBe(false); // searching
+    await p;
+    expect(e.suspend()).toBe(true);
+    expect(e.alive).toBe(false);
+    await e.search({ fen: START, movetime: 10 });
+    expect(stats.instances).toBe(2);
+    expect(stats.log.filter((l) => l === 'setoption name Hash value 32').length).toBe(2);
+    e.terminate();
+  });
+  it('lazyStart: with a gate, the worker is created only once the search holds a lease', async () => {
+    const sch = new EngineScheduler({ maxConcurrent: 1, exclusiveAbove: 99 });
+    const { make, stats } = fakeFactory({ searchMs: 40 });
+    const a = new UciEngine(make, { gate: sch, lazyStart: true, role: 'a' });
+    const b = new UciEngine(make, { gate: sch, lazyStart: true, role: 'b' });
+    expect(stats.instances).toBe(0);
+    const pa = a.search({ fen: START, movetime: 40 });
+    const pb = b.search({ fen: START, movetime: 40 });
+    await sleep(15);
+    expect(stats.instances).toBe(1); // b waits for the lease without a worker
+    expect(b.suspend()).toBe(false); // nothing to free yet
+    await Promise.all([pa, pb]);
+    expect(stats.instances).toBe(2);
+    // An engine with a worker that waits for a lease may be suspended (memory), and still completes.
+    const pa2 = a.search({ fen: START, movetime: 40 });
+    const pb2 = b.search({ fen: START, movetime: 40 });
+    await sleep(10);
+    expect(b.suspend()).toBe(true);
+    const r = await pb2;
+    await pa2;
+    expect(r.bestmove).toBe('e2e4');
+    a.terminate();
+    b.terminate();
+  });
+  it('a crashed worker during a gated search is recovered without leaking the lease', async () => {
+    const sch = new EngineScheduler({ maxConcurrent: 1, exclusiveAbove: 99 });
+    const { make } = fakeFactory({ failOnGo: 1 });
+    const e = new UciEngine(make, { gate: sch, lazyStart: true });
+    const r = await e.search({ fen: START, movetime: 20 });
+    expect(r.bestmove).toBe('e2e4');
+    expect(e.restarts).toBe(1);
+    expect(sch.stats.running).toEqual([]);
+    e.terminate();
+  });
+});
+
+describe('interruptions and reply speed (v0.3)', () => {
+  it('interrupted search: abort mid-search, "navigate away", next game gets its own answer', async () => {
+    const { make, stats } = fakeFactory({ countMoves: true });
+    const sch = new EngineScheduler({ maxConcurrent: 1 });
+    const e = new UciEngine(make, { gate: sch, priority: PRIORITY.play, lazyStart: true });
+    const ac = new AbortController();
+    const p1 = e.search({ fen: START, movetime: 5000, signal: ac.signal });
+    await sleep(30);
+    ac.abort(); // user leaves the game screen
+    await expect(p1).rejects.toSatisfy(isAbortError);
+    expect(stats.stops).toBe(1);
+    // The stopped search's late bestmove must not be taken as the next answer.
+    const r = await e.search({ fen: START, movetime: 20 });
+    expect(r.bestmove).toBe('c2c3'); // answer of the 2nd go (the 1st, stopped one said b2b3)
+    expect(sch.stats.running).toEqual([]);
+    e.terminate();
+  });
+  it('reload while searching: terminate() rejects everything, a fresh engine starts clean', async () => {
+    const { make, stats } = fakeFactory({ searchMs: 1000, ignoreMovetime: true });
+    const e = new UciEngine(make);
+    const p = e.search({ fen: START, movetime: 1000 });
+    const q = e.search({ fen: START, movetime: 1000 });
+    await sleep(20);
+    e.terminate(); // page unload
+    await expect(p).rejects.toThrow(/terminated/);
+    await expect(q).rejects.toThrow();
+    expect(stats.active).toBe(0);
+    const e2 = new UciEngine(fakeFactory({ searchMs: 5 }).make);
+    expect((await e2.search({ fen: START, movetime: 5 })).bestmove).toBe('e2e4');
+    e2.terminate();
+  });
+  it('fast replies: 50 back-to-back searches with instant bestmove resolve in order', async () => {
+    const { make, stats } = fakeFactory({ searchMs: 0, ignoreMovetime: true, countMoves: true });
+    const e = new UciEngine(make);
+    const rs = await Promise.all(Array.from({ length: 50 }, () => e.search({ fen: START, movetime: 1 })));
+    expect(stats.gos).toBe(50);
+    rs.forEach((r, i) => expect(r.bestmove).toBe(['a2a3', 'b2b3', 'c2c3', 'd2d3', 'e2e3', 'f2f3', 'g2g3', 'h2h3'][(i + 1) % 8]));
+    e.terminate();
+  });
+  it('slow replies: an engine that overruns its movetime is stopped by the watchdog and still answers', async () => {
+    const { make, stats } = fakeFactory({ searchMs: 5000, ignoreMovetime: true });
+    const e = new UciEngine(make, { searchGraceMs: 100 });
+    const t0 = Date.now();
+    const r = await e.search({ fen: START, movetime: 50 });
+    expect(r.bestmove).toBe('e2e4');
+    expect(Date.now() - t0).toBeLessThan(1000);
+    expect(stats.stops).toBe(1);
+    e.terminate();
+  });
+});
+
+describe('analysis held during a game (v0.3)', () => {
+  it('hold() keeps analysis queued and stops a running one; release() resumes it', async () => {
+    const sch = new EngineScheduler({ maxConcurrent: 2 });
+    const { make } = fakeFactory();
+    const analysis = new UciEngine(make, { role: 'analysis', gate: sch, priority: PRIORITY.analysis, preemptible: true, lazyStart: true });
+    const a1 = analysis.search({ fen: START, movetime: 300 });
+    await sleep(30);
+    expect(sch.stats.running).toEqual(['analysis']);
+    sch.hold(PRIORITY.analysis); // next game starts
+    await sleep(30);
+    expect(sch.stats.running).toEqual([]);
+    expect(sch.stats.waiting).toEqual(['analysis']);
+    const play = new UciEngine(make, { role: 'play', gate: sch, priority: PRIORITY.play, lazyStart: true });
+    await play.search({ fen: START, movetime: 20 }); // play unaffected
+    let done = false;
+    void a1.then(() => (done = true));
+    await sleep(50);
+    expect(done).toBe(false);
+    sch.release(); // game over
+    expect((await a1).bestmove).toBe('e2e4');
+    analysis.terminate();
+    play.terminate();
+  });
+});
+
 describe('device tiers', () => {
   const desk: DeviceInfo = { cores: 8, memoryGB: 8, mobile: false, ios: false, isolated: false };
   it('detects iPhone, iPadOS and Android as mobile', () => {
@@ -182,18 +312,51 @@ describe('device tiers', () => {
     expect(detectDevice({ userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8)' }, {}).mobile).toBe(true);
     expect(detectDevice({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', hardwareConcurrency: 12 }, { crossOriginIsolated: true, SharedArrayBuffer: ArrayBuffer }).isolated).toBe(true);
   });
-  it('mobile: lite single-threaded, one search, idle termination, never the big net', () => {
+  it('mobile: lite single-threaded, one search, idle termination, no big net by default', () => {
     const p = planEngines({ cores: 6, memoryGB: null, mobile: true, ios: true, isolated: true }, { bigNetReady: true });
     expect([p.play.build, p.elite.build, p.analysis.build, p.spectate.build]).toEqual(['lite-single', 'lite-single', 'lite-single', 'lite-single']);
     expect(p.maxConcurrent).toBe(1);
     expect(p.idleTerminateMs).toBeGreaterThan(0);
     expect(p.bigNetAllowed).toBe(false);
+    expect(p.bigNetAuto).toBe(false);
+    expect(p.maxWorkers).toBe(2);
+  });
+  it('mobile: the engine pack only with an explicit opt-in, never automatic, single-threaded, Hash 16', () => {
+    const phone: DeviceInfo = { cores: 6, memoryGB: null, mobile: true, ios: true, isolated: false };
+    const p = planEngines(phone, { bigNetReady: true, allowBigNet: true });
+    expect(p.bigNetAllowed).toBe(true);
+    expect(p.bigNetAuto).toBe(false);
+    expect(p.elite).toEqual({ build: 'full-single', threads: 1, hashMB: 16 });
+    expect(p.play.build).toBe('lite-single');
+    // Android reporting < 4 GB: never.
+    expect(planEngines({ ...phone, ios: false, memoryGB: 2 }, { bigNetReady: true, allowBigNet: true }).elite.build).toBe('lite-single');
+  });
+  it('hash sizing follows device memory and iOS caps', () => {
+    const iphone: DeviceInfo = { cores: 6, memoryGB: null, mobile: true, ios: true, isolated: false };
+    const android: DeviceInfo = { cores: 8, memoryGB: 8, mobile: true, ios: false, isolated: false };
+    expect(hashFor(iphone, 'elite', false)).toBe(16);
+    expect(hashFor(android, 'elite', false)).toBe(32);
+    expect(hashFor(android, 'elite', true)).toBe(16);
+    expect(hashFor(android, 'spectate', false)).toBe(8);
+    expect(hashFor({ cores: 4, memoryGB: 4, mobile: false, ios: false, isolated: false }, 'elite', true)).toBe(32);
+    expect(hashFor({ cores: 4, memoryGB: null, mobile: false, ios: false, isolated: false }, 'elite', true)).toBe(128);
+    expect(hashFor({ cores: 16, memoryGB: 8, mobile: false, ios: false, isolated: false }, 'elite', true)).toBe(256);
+    expect(hashFor({ cores: 16, memoryGB: 8, mobile: false, ios: false, isolated: false }, 'play', false)).toBe(64);
+  });
+  it('compute budgets: phones think longer for the same strength; desktop top tier 2 s', () => {
+    expect(planEngines({ cores: 6, memoryGB: null, mobile: true, ios: true, isolated: false }, { bigNetReady: false }).budget.topMs).toBe(2500);
+    expect(planEngines(desk, { bigNetReady: false }).budget.topMs).toBe(2000);
+    expect(untimedThink(3100, undefined, { topMs: 2500 })).toBe(2500);
+    expect(untimedThink(2700, undefined, { eliteMs: [1200, 1800] })).toBe(1200);
+    expect(untimedThink(3100)).toBe(2000);
+    expect(untimedThink(3100, 700, { topMs: 2500 })).toBe(700);
   });
   it('desktop: big net only once downloaded; threads only when isolated', () => {
     expect(planEngines(desk, { bigNetReady: false }).elite.build).toBe('lite-single');
     expect(planEngines(desk, { bigNetReady: true }).elite.build).toBe('full-single');
     const iso = planEngines({ ...desk, isolated: true }, { bigNetReady: true });
-    expect(iso.elite).toEqual({ build: 'full-mt', threads: 4, hashMB: 128 });
+    expect(iso.elite).toEqual({ build: 'full-mt', threads: 4, hashMB: 256 }); // ≥ 8 GB and ≥ 8 cores
+    expect(planEngines({ ...desk, isolated: true, cores: 4 }, { bigNetReady: true }).elite).toEqual({ build: 'full-mt', threads: 3, hashMB: 128 });
     expect(iso.play.build).toBe('lite-mt');
     expect(planEngines({ ...desk, isolated: true, cores: 4 }, { bigNetReady: false }).play.threads).toBe(3);
     expect(planEngines(desk, { bigNetReady: true, allowBigNet: false }).elite.build).toBe('lite-single');

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { UciEngine, type UciTransport, type EngineOptions } from '../../src/engine/uci';
 import { BUILDS, type BuildId } from '../../src/engine/builds';
+import { assemblePack, readManifest } from '../../scripts/engine-pack.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -25,7 +26,32 @@ export function findBuild(id: BuildId): string | null {
     const p = path.join(d, file);
     if (fs.existsSync(p) && fs.existsSync(p.replace(/\.js$/, '.wasm'))) return p;
   }
-  return null;
+  return fromPack(id);
+}
+
+/**
+ * 4. The committed engine pack (public/engine/pack): big-net builds are reassembled
+ * (gunzip + delta, SHA-256 verified) once into node_modules/.cache/gladius-engine,
+ * so a fresh clone runs the full-strength benches without any download.
+ */
+function fromPack(id: BuildId): string | null {
+  const b = BUILDS[id];
+  const m = readManifest();
+  if (!m || !m.files[b.wasm]) return null;
+  const dir = path.resolve(__dirname, '../../node_modules/.cache/gladius-engine');
+  const js = path.resolve(__dirname, '../../public/engine', b.js);
+  if (!fs.existsSync(js)) return null;
+  const wasm = path.join(dir, b.wasm);
+  if (!fs.existsSync(wasm) || fs.statSync(wasm).size !== m.files[b.wasm].bytes) {
+    try {
+      assemblePack(dir, undefined, [b.wasm]);
+    } catch {
+      return null;
+    }
+  }
+  fs.copyFileSync(js, path.join(dir, b.js));
+  fs.writeFileSync(path.join(dir, 'package.json'), '{"type":"commonjs"}');
+  return path.join(dir, b.js);
 }
 
 let inProcessUsed = false;

@@ -33,8 +33,13 @@ while ($listener.IsListening) {
     $ctx.Response.Headers.Add('Cross-Origin-Opener-Policy', 'same-origin')
     $ctx.Response.Headers.Add('Cross-Origin-Embedder-Policy', 'require-corp')
     $ctx.Response.ContentType = $(if ($mime.ContainsKey($ext)) { $mime[$ext] } else { 'application/octet-stream' })
-    $bytes = [IO.File]::ReadAllBytes($full)
-    $ctx.Response.ContentLength64 = $bytes.Length
-    $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+    # HEAD (the app probes for the bundled full-strength engine): headers only.
+    if ($ctx.Request.HttpMethod -eq 'HEAD') {
+      $ctx.Response.ContentLength64 = (Get-Item -LiteralPath $full).Length
+    } else {
+      # Stream from disk (the full engine .wasm files are ~99 MB each).
+      $fs = [IO.File]::OpenRead($full)
+      try { $ctx.Response.ContentLength64 = $fs.Length; $fs.CopyTo($ctx.Response.OutputStream) } finally { $fs.Close() }
+    }
   } catch { $ctx.Response.StatusCode = 500 } finally { $ctx.Response.OutputStream.Close() }
 }

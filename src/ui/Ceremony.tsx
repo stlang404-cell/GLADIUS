@@ -1,3 +1,4 @@
+import { roman } from '../world/calendar';
 import { useEffect, useSyncExternalStore } from 'react';
 import { ARENAS, RANKS } from '../world/arenas';
 import { TROPHY_BY_ID } from '../world/trophies';
@@ -54,7 +55,7 @@ export function CeremonyHost() {
         <ArenaReveal arena={item.arena}>
           <div>
             <img src={crestUri(item.arena)} alt="" />
-            <div className="kicker">Arena {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][item.arena]}</div>
+            <div className="kicker">Arena {roman(item.arena + 1)}</div>
             <h1>{ARENAS[item.arena].name}</h1>
             <p>{ARENAS[item.arena].motto}</p>
             <div className="next" style={{ marginTop: 10, display: 'inline-block' }}>{item.next}</div>

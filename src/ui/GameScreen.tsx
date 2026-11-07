@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Move } from 'chess.js';
 import { ChessGame, START_FEN } from '../chess/rules';
-import { getEngine } from '../engine/browserEngine';
+import { getEngine, setGameInProgress } from '../engine/browserEngine';
 import { isAbortError } from '../engine/uci';
 import { chooseMove, humanDelay, type Persona } from '../engine/persona';
 import { createRng, mixSeed, hashString } from '../core/rng';
@@ -52,6 +52,12 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
   const tc = TIME_CONTROLS.find((t) => t.id === rec?.tc) ?? TIME_CONTROLS[2];
   // Untimed by design: clocks exist only behind the disabled CLOCKS_ENABLED flag.
   const timed = CLOCKS_ENABLED && tc.baseSec > 0;
+
+  // Engine scheduling: hold post-game analysis while this game is being played.
+  useEffect(() => {
+    setGameInProgress(!!game && !post);
+    return () => setGameInProgress(false);
+  }, [game, post]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (game) setFen(game.fen());

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import os from 'node:os';
 import { BUILDS, type BuildId } from '../../src/engine/builds';
 import { UciEngine } from '../../src/engine/uci';
 import { findBuild, processTransport, processRssMB } from '../helpers/nodeEngine';
@@ -28,6 +29,8 @@ describe('engine builds', () => {
       { build: 'lite-mt', threads: 4, hash: 64 },
       { build: 'full-mt', threads: 2, hash: 64 },
       { build: 'full-mt', threads: 4, hash: 64 },
+      { build: 'full-single', threads: 1, hash: 128 },
+      { build: 'full-mt', threads: 3, hash: 128 },
     ];
     const rows: Record<string, unknown>[] = [];
     for (const c of configs) {
@@ -61,7 +64,7 @@ describe('engine builds', () => {
       rows.push({ build: c.build, file: BUILDS[c.build].wasm, wasmMB: +(BUILDS[c.build].wasmBytes / 1048576).toFixed(1), threads: c.threads, hash: c.hash, startupMs, knps: Math.round(nps.reduce((a, b) => a + b, 0) / nps.length / 1000), depth: depth.join('/'), peakRssMB: peak });
     }
     console.table(rows);
-    saveResult('builds', { movetime, rows });
+    saveResult('builds', { movetime, loadavg: os.loadavg(), rows });
     expect(rows.some((r) => !r.skipped)).toBe(true);
   }, 900000);
 });

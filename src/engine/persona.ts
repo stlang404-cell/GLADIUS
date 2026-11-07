@@ -1,5 +1,5 @@
 import { Chess, type Color, type Square, type PieceSymbol } from 'chess.js';
-import type { UciEngine, PvLine, Score, SearchParams } from './uci';
+import type { UciEngine, PvLine, Score, SearchParams, SearchBudget } from './uci';
 import { winPercent } from './uci';
 import { bookMoves, OPENINGS, openingFamily, type OpeningStyle } from '../chess/openings';
 import { createRng, clamp, type Rng } from '../core/rng';
@@ -389,6 +389,57 @@ function pickWeighted<T extends { weight: number }>(xs: T[], rng: Rng): T {
 // Sampler (< 2700)
 // ---------------------------------------------------------------------------
 
+/**
+ * Style model (v0.3, measured in tests/bench/styles.slow.test.ts, docs/ENGINE.md).
+ * v0.2 added `bonus × scale` to the win% loss *before* dividing by the
+ * temperature, so the effect shrank with T and was measured as nil (≤ 0.4
+ * percentage points on any move feature at 1600). Now a style shifts the
+ * log-weight of a candidate by `gain × bonus`, independent of the temperature,
+ * but only for candidates within `tolerance` win% of the best line: the style
+ * chooses among moves the persona's strength already considers playable, so
+ * strength (expected win% loss) moves by a bounded, measured amount.
+ */
+export const STYLE_GAIN_KNOTS: [number, number][] = [[800, 1.4], [1600, 1.2], [2200, 0.9], [2700, 0.7], [3000, 0.5]];
+/** Win% from the best line within which the style may act. */
+export const STYLE_TOLERANCE_KNOTS: [number, number][] = [[800, 8], [1600, 5], [2200, 3], [2600, 2], [2700, 1], [3000, 0.5]];
+export function styleGain(elo: number): number {
+  return interp(STYLE_GAIN_KNOTS, elo);
+}
+export function styleTolerance(elo: number): number {
+  return interp(STYLE_TOLERANCE_KNOTS, elo);
+}
+
+const bonusMemo = new Map<string, number>();
+function styleBonusMemo(style: PlayStyle, fen: string, uci: string, ctx: StyleContext): number {
+  if (normalizeStyle(style) === 'universal') return 0;
+  const k = `${style}|${fen}|${uci}|${ctx.bestWin.toFixed(1)}|${ctx.ply < 20 ? 'o' : 'm'}`;
+  let v = bonusMemo.get(k);
+  if (v === undefined) {
+    v = styleBonus(style, fen, uci, ctx);
+    if (bonusMemo.size > 4000) bonusMemo.clear();
+    bonusMemo.set(k, v);
+  }
+  return v;
+}
+
+/**
+ * Log-weight shift a style gives one candidate: only candidates within the
+ * tolerance, and only by how much MORE the style likes them than the best line
+ * (never negative). So a style can move probability from the best move to a
+ * playable alternative it prefers, but can never make a persona *stronger* than
+ * its calibrated `universal` self (a v0.3 prototype that also boosted the best
+ * line when it was stylish lowered the win% loss by up to 0.9 points at 1600).
+ */
+export function styleShift(persona: Persona, fen: string, uci: string, loss: number, ctx: StyleContext, bestBonus: number, cap = 3): number {
+  if (loss <= 0 || loss > styleTolerance(persona.elo)) return 0;
+  const b = clamp(styleBonusMemo(persona.style, fen, uci, ctx), -2, cap);
+  return styleGain(persona.elo) * Math.max(0, b - bestBonus);
+}
+function bestBonusOf(persona: Persona, fen: string, cands: PvLine[], wins: number[], best: number, ctx: StyleContext, cap = 3): number {
+  const i = wins.indexOf(best);
+  return i < 0 ? 0 : clamp(styleBonusMemo(persona.style, fen, cands[i].pv[0], ctx), -2, cap);
+}
+
 /** Pure selection step of the sampler, separated for testing. */
 export function sampleCandidate(lines: PvLine[], persona: Persona, fen: string, rng: Rng, ply = 20): string | null {
   const cands = lines.filter((l) => l.pv.length > 0);
@@ -396,8 +447,6 @@ export function sampleCandidate(lines: PvLine[], persona: Persona, fen: string, 
   const wins = cands.map((l) => winPercent(l.score));
   const best = Math.max(...wins);
   const T = samplerTemperature(persona.elo);
-  // Style matters more for weaker players; strong players play the position.
-  const styleScale = clamp(1.2 - persona.elo / 2200, 0.15, 1);
   if (rng.chance(oversightChance(persona.elo))) {
     // Weaker players' oversights can be any legal move (hung pieces, missed threats).
     if (persona.elo < 1600) {
@@ -410,10 +459,10 @@ export function sampleCandidate(lines: PvLine[], persona: Persona, fen: string, 
     return rng.pick(cands).pv[0];
   }
   const ctx: StyleContext = { bestWin: best, ply };
+  const bb = bestBonusOf(persona, fen, cands, wins, best, ctx);
   const weights = cands.map((l, i) => {
     const loss = best - wins[i];
-    const bonus = styleBonus(persona.style, fen, l.pv[0], ctx) * styleScale;
-    return Math.exp(-(loss - bonus) / T);
+    return Math.exp(-loss / T + styleShift(persona, fen, l.pv[0], loss, ctx, bb));
   });
   const total = weights.reduce((a, b) => a + b, 0);
   let r = rng.next() * total;
@@ -426,8 +475,8 @@ export function sampleCandidate(lines: PvLine[], persona: Persona, fen: string, 
 
 /**
  * Elite selection (2700–2999): low-temperature softmax over the top lines with a
- * blunder guard (never more than 3 win% below best), style as a tie-break worth
- * at most 0.4 win% points.
+ * blunder guard (never more than 3 win% below best); the style acts only among
+ * lines within 1 → 0.5 win% of the best (genuine strength is kept).
  */
 export function eliteSelect(lines: PvLine[], persona: Persona, fen: string, rng: Rng, ply = 20): PvLine | null {
   const cands = lines.filter((l) => l.pv.length > 0);
@@ -437,7 +486,8 @@ export function eliteSelect(lines: PvLine[], persona: Persona, fen: string, rng:
   const T = interp(ELITE_TEMPERATURE_KNOTS, persona.elo);
   const ctx: StyleContext = { bestWin: best, ply };
   const ok = cands.map((l, i) => ({ l, loss: best - wins[i] })).filter((x) => x.loss <= 3);
-  const weights = ok.map((x) => ({ l: x.l, weight: Math.exp(-(x.loss - clamp(styleBonus(persona.style, fen, x.l.pv[0], ctx), -2, 2) * 0.2) / T) }));
+  const bb = bestBonusOf(persona, fen, cands, wins, best, ctx, 2);
+  const weights = ok.map((x) => ({ l: x.l, weight: Math.exp(-x.loss / T + styleShift(persona, fen, x.l.pv[0], x.loss, ctx, bb, 2)) }));
   return pickWeighted(weights, rng).l;
 }
 
@@ -464,10 +514,17 @@ export function humanDelay(elo: number, ply: number, rng: Rng, pace: 'instant' |
 // chooseMove
 // ---------------------------------------------------------------------------
 
-function untimedThink(elo: number, override?: number): number {
+/**
+ * Untimed think time (internal compute budget; the player has no clock).
+ * Elite 900→1500 ms across 2700–2999, top tier 2000 ms by default; the browser
+ * pool passes device budgets via `engine.budget` (phones get more time, since
+ * they search 2–5× fewer nodes per second).
+ */
+export function untimedThink(elo: number, override?: number, budget?: SearchBudget): number {
   if (override) return override;
-  if (elo >= TOP_FROM) return 2000;
-  return Math.round(interp([[ELITE_FROM, 900], [TOP_FROM, 1500]], elo));
+  if (elo >= TOP_FROM) return budget?.topMs ?? 2000;
+  const [lo, hi] = budget?.eliteMs ?? [900, 1500];
+  return Math.round(interp([[ELITE_FROM, lo], [TOP_FROM, hi]], elo));
 }
 
 /**
@@ -503,7 +560,7 @@ export async function chooseMove(
   const t0 = Date.now();
   const elapsed = () => Date.now() - t0;
   const ply = history.length;
-  const plan = allocateTime(opts.clock, untimedThink(persona.elo, opts.thinkMs));
+  const plan = allocateTime(opts.clock, untimedThink(persona.elo, opts.thinkMs, engine.budget));
   const budgetMs = Number.isFinite(plan.totalMs) ? Math.round(plan.totalMs) : undefined;
 
   // 1) Opening preparation from the book (style/prep-weighted). Only from the standard start.
@@ -546,7 +603,7 @@ export async function chooseMove(
     // Watchdog: SF never needs more than ~2× our own allocation; `stop` is graceful.
     p = { ...base, wtime: white ? my : opp, btime: white ? opp : my, winc: inc, binc: inc, timeoutMs: plan.totalMs * 2 + 1000 };
   } else {
-    p = { ...base, movetime: Math.max(30, Math.round(plan.searchMs)) };
+    p = { ...base, movetime: Math.max(30, Math.round(plan.searchMs)), multipv: 1 };
   }
   const res = await engine.search(p);
   return { uci: res.bestmove!, source: 'full', thinkMs: elapsed(), budgetMs, score: res.lines[0]?.score };

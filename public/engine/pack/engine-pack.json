@@ -1,0 +1,53 @@
+{
+  "format": 1,
+  "engine": "Stockfish 19",
+  "source": "npm stockfish@19.0.1 (https://github.com/nmrugg/stockfish.js), package/bin/",
+  "license": "GPL-3.0 — see ../STOCKFISH-LICENSE.txt",
+  "files": {
+    "stockfish-19-single.wasm": {
+      "build": "full-single",
+      "bytes": 99169054,
+      "sha256": "991bede2f253ebb08ff01fcc48270f4b9c8e66b12d5bd5f8d6f52eb3e3b3a740",
+      "encoding": "gzip",
+      "chunks": [
+        {
+          "file": "stockfish-19-single.wasm.gz.000",
+          "bytes": 20971520,
+          "sha256": "0c8c1882b6d615a6e5e0c00586ef65fd65b25c3cdcf24fd90357c5ebfedd565b"
+        },
+        {
+          "file": "stockfish-19-single.wasm.gz.001",
+          "bytes": 20971520,
+          "sha256": "a9e998aa0e1f7d85230d981faf1d88f55a365140c602782d08efaa4af34bc836"
+        },
+        {
+          "file": "stockfish-19-single.wasm.gz.002",
+          "bytes": 20971520,
+          "sha256": "0b25cd58e1145234252ba9988aef67a89109dee537f123a0bdc55b5b4df26d99"
+        },
+        {
+          "file": "stockfish-19-single.wasm.gz.003",
+          "bytes": 15863742,
+          "sha256": "ebae99065c61f30be25b452f36224a0df6f0adb332c93d979affc2e7cdc224c5"
+        }
+      ]
+    },
+    "stockfish-19.wasm": {
+      "build": "full-mt",
+      "bytes": 99076105,
+      "sha256": "a599d78d72e0722d8895be84aca8b492d12e8bba3cdfcbcbc4a64017888c6667",
+      "encoding": "gzip",
+      "delta": {
+        "base": "stockfish-19-single.wasm",
+        "format": "GSD1"
+      },
+      "chunks": [
+        {
+          "file": "stockfish-19.wasm.gsd1.gz.000",
+          "bytes": 258691,
+          "sha256": "133e51c51dba7b7856edd7ae4fe0c0091e1c2d275c4aa835280dc0a14b7e4f3d"
+        }
+      ]
+    }
+  }
+}

@@ -1,9 +1,10 @@
+import { sigDefFor } from '../../world/trophies';
 import { isPieceSetUnlocked, pieceSetById } from '../../board2d/pieceSets';
 import { useEffect, useMemo, useState } from 'react';
 import { useSave, mutate, setSave, getSave } from '../store';
 import { useNav } from '../nav';
 import { Card, Emblem, Portrait, Record, Sparkline, Stat, Sheet, dayLabel, pct } from '../components/common';
-import { RANKS, ARENAS } from '../../world/arenas';
+import { RANKS, ARENAS, TOP_ARENA } from '../../world/arenas';
 import { achievementProgress, CATEGORY_LABELS } from '../../game/achievements';
 import { awardsFor, trophyCabinet, rarityOf, allAwards, awardsByDef, TROPHY_BY_ID } from '../../world/trophies';
 import { legacyTimeline, rivalries, championshipPrivileges } from '../../game/legacy';
@@ -155,11 +156,11 @@ function HallOfHonors() {
           </button>
         ))}
       </div>
-      <h4>The twelve signature trophies</h4>
+      <h4>The {ARENAS.length} signature trophies</h4>
       <div className="shelf">
         {ARENAS.map((a) => (
           <div key={a.index} className="shelf-item" title={a.trophy}>
-            <TrophyImage defId={`sig-${a.index}`} arena={a.index} size={80} locked={!signatureWon.has(`sig-${a.index}`)} />
+            <TrophyImage defId={sigDefFor(a.index)} arena={a.index} size={80} locked={!signatureWon.has(sigDefFor(a.index))} />
             <span>{a.trophy}</span>
           </div>
         ))}
@@ -290,7 +291,7 @@ function Collection() {
   const unlockedArenas = new Set([...s.player.unlockedSets, ...Array.from({ length: RANKS[s.player.peakRank].arena + 1 }, (_, i) => i)]);
   const current = s.settings.boardTheme ?? 'arena';
   const pieces = s.settings.pieceStyle ?? 'board';
-  const reachedThrone = RANKS[s.player.peakRank].arena >= 11 || s.player.titles.includes('title-11');
+  const reachedThrone = RANKS[s.player.peakRank].arena >= TOP_ARENA || s.player.titles.includes(`title-${TOP_ARENA}`);
   return (
     <>
       <Card title="Piece sets">
@@ -414,7 +415,7 @@ function Saves() {
         <button className="btn red" onClick={() => { if (confirm('Delete this career and world permanently? Export first if unsure.')) void wipeAll().then(() => location.reload()); }}>Delete career</button>
       </Card>
       <Card title="About">
-        <div className="muted small">GLADIUS v0.1 · Chess engine: Stockfish 19 (lite, single-threaded WASM build by Nathan Rugg), GPL-3.0 — see engine/STOCKFISH-LICENSE.txt. Rules: chess.js (BSD-2). Rendering: three.js (MIT). All art is procedurally generated and original. GLADIUS is distributed under GPL-3.0-or-later.</div>
+        <div className="muted small">GLADIUS v0.3 · Chess engine: Stockfish 19 WASM (lite and full-net builds by Nathan Rugg; the active build is shown above), GPL-3.0 — see engine/STOCKFISH-LICENSE.txt. Rules: chess.js (BSD-2). All art is original and generated in this project. GLADIUS is distributed under GPL-3.0-or-later.</div>
       </Card>
     </>
   );

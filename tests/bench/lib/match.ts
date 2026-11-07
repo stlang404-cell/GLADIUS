@@ -1,9 +1,10 @@
 import { Chess } from 'chess.js';
-import type { UciEngine, Score } from '../../../src/engine/uci';
+import type { Score } from '../../../src/engine/uci';
 import { chooseMove, humanDelay, type Persona, type ClockInfo, type ChooseOptions } from '../../../src/engine/persona';
 import { createRng, mixSeed } from '../../../src/core/rng';
 import { START_FEN } from '../../../src/chess/rules';
-import { nodeEngine } from '../../helpers/nodeEngine';
+import { nodeEngine, findBuild, processTransport, processRssMB } from '../../helpers/nodeEngine';
+import { UciEngine } from '../../../src/engine/uci';
 import type { BuildId } from '../../../src/engine/builds';
 import { matchStats, type Wdl } from './stats';
 
@@ -22,19 +23,38 @@ export type Agent = {
   newGame(): Promise<void>;
   move(fen: string, history: string[], clock?: ClockInfo, startFen?: string): Promise<MoveOut>;
   close(): void;
+  /** Search statistics (engine agents): per-move depth, nodes, time; engine id; peak RSS. */
+  stats?: AgentStats;
 };
+export type AgentStats = { engine: string; moves: number; depthSum: number; nodesSum: number; msSum: number; peakRssMB: number };
 export type AgentFactory = () => Agent;
 
 export type EngineAgentCfg = { build: BuildId; movetime?: number; nodes?: number; depth?: number; hash?: number; threads?: number; process?: boolean };
 
 export function engineAgent(name: string, cfg: EngineAgentCfg): AgentFactory {
   return () => {
-    const e = nodeEngine(cfg.build, { process: cfg.process, initOptions: { Hash: cfg.hash ?? 16, Threads: cfg.threads ?? 1 } });
+    let pid: number | undefined;
+    const e = cfg.process
+      ? new UciEngine(() => {
+          const t = processTransport(findBuild(cfg.build)!);
+          pid = t.pid;
+          return t;
+        }, { initOptions: { Hash: cfg.hash ?? 16, Threads: cfg.threads ?? 1 } })
+      : nodeEngine(cfg.build, { initOptions: { Hash: cfg.hash ?? 16, Threads: cfg.threads ?? 1 } });
+    const stats: AgentStats = { engine: '', moves: 0, depthSum: 0, nodesSum: 0, msSum: 0, peakRssMB: -1 };
     return {
       name,
+      stats,
       newGame: () => e.newGame(),
       async move(_fen, history, _clock, startFen) {
+        const t0 = performance.now();
         const r = await e.search({ fen: startFen ?? START_FEN, moves: history, movetime: cfg.movetime, nodes: cfg.nodes, depth: cfg.depth });
+        stats.msSum += performance.now() - t0;
+        stats.moves++;
+        stats.depthSum += r.lines[0]?.depth ?? 0;
+        stats.nodesSum += r.lines[0]?.nodes ?? 0;
+        stats.engine = e.name;
+        if (stats.moves % 20 === 1) stats.peakRssMB = Math.max(stats.peakRssMB, processRssMB(pid));
         return { uci: r.bestmove!, score: r.lines[0]?.score };
       },
       close: () => e.terminate(),
@@ -135,6 +155,8 @@ export type MatchReport = Wdl & {
   games: { opening: string; aWhite: boolean; result: string; reason: string; plies: number }[];
   wallMs: number;
   stats: ReturnType<typeof matchStats>;
+  /** Aggregated search statistics per agent name (engine agents only). */
+  search?: Record<string, { engine: string; moves: number; avgDepth: number; knps: number; avgMoveMs: number; peakRssMB: number }>;
 };
 
 /**
@@ -171,12 +193,26 @@ export async function runMatch(
         o.onGame?.(rep);
       }
     } finally {
+      for (const ag of [a, b]) {
+        const st = ag.stats;
+        if (!st) continue;
+        const acc = (agg[ag.name] ??= { engine: st.engine, moves: 0, depthSum: 0, nodesSum: 0, msSum: 0, peakRssMB: -1 });
+        acc.moves += st.moves;
+        acc.depthSum += st.depthSum;
+        acc.nodesSum += st.nodesSum;
+        acc.msSum += st.msSum;
+        acc.peakRssMB = Math.max(acc.peakRssMB, st.peakRssMB);
+      }
       a.close();
       b.close();
     }
   };
+  const agg: Record<string, AgentStats> = {};
   await Promise.all(Array.from({ length: o.concurrency ?? 1 }, worker));
   rep.wallMs = Date.now() - t0;
   rep.stats = matchStats(rep);
+  rep.search = Object.fromEntries(
+    Object.entries(agg).map(([k, v]) => [k, { engine: v.engine, moves: v.moves, avgDepth: +(v.depthSum / Math.max(1, v.moves)).toFixed(1), knps: Math.round(v.nodesSum / Math.max(1, v.msSum)), avgMoveMs: Math.round(v.msSum / Math.max(1, v.moves)), peakRssMB: v.peakRssMB }]),
+  );
   return rep;
 }

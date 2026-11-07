@@ -93,6 +93,24 @@ export type EngineOptions = {
   /** Options applied after every (re)start, before caller-set options. */
   initOptions?: Record<string, string | number | boolean>;
   onEvent?: (e: EngineEvent) => void;
+  /** Device-specific compute budgets for personas (read by persona.chooseMove). */
+  budget?: SearchBudget;
+  /**
+   * Do not start the worker in the constructor; start it on first use. With a
+   * gate this means a worker is only created once the search holds a lease.
+   */
+  lazyStart?: boolean;
+};
+
+/**
+ * Internal compute budgets (players are untimed; these bound the engine's own
+ * think time). Defaults in persona.ts when absent (Node tests/benches).
+ */
+export type SearchBudget = {
+  /** Elite band (2700–2999) movetime range, ms. */
+  eliteMs?: [number, number];
+  /** Top tier (≥ 3000) movetime, ms. */
+  topMs?: number;
 };
 
 export type EngineEvent =
@@ -161,10 +179,18 @@ export class UciEngine {
   /** Options actually sent to the current transport. */
   private applied = new Map<string, string>();
   private busy = 0;
+  private booting = false;
+  private inGateWait = false;
   private pendingRestart = false;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
-  private o: Required<Omit<EngineOptions, 'gate' | 'fallbackFactory' | 'initOptions' | 'onEvent'>> & EngineOptions;
+  private o: Required<Omit<EngineOptions, 'gate' | 'fallbackFactory' | 'initOptions' | 'onEvent' | 'budget' | 'lazyStart'>> & EngineOptions;
   name = 'engine';
+  /** Default of the EvalFile option as reported by the running build (the NNUE net id). */
+  evalFile: string | null = null;
+  /** True while the fallback build runs instead of the primary one. */
+  get onFallback() {
+    return this.usingFallback;
+  }
   /** Number of transparent restarts performed (crash, hang, fallback). */
   restarts = 0;
 
@@ -187,12 +213,40 @@ export class UciEngine {
     }
     for (const [k, v] of Object.entries(opts.initOptions ?? {})) this.desired.set(k, String(v));
     // Eager start keeps the old behaviour (constructing an engine boots it).
-    this.ready = this.boot();
-    this.ready.catch(() => undefined);
+    if (!opts.lazyStart || !this.factory) {
+      this.ready = this.boot();
+      this.ready.catch(() => undefined);
+    }
   }
 
   get role() {
     return this.o.role;
+  }
+
+  get budget(): SearchBudget | undefined {
+    return this.o.budget;
+  }
+
+  /** No search or other operation running or queued on this engine. */
+  get idle() {
+    return this.busy === 0;
+  }
+
+  /**
+   * Free the worker (memory) while keeping this engine usable: it restarts
+   * lazily on the next operation, re-applying options. No-op (false) while busy.
+   */
+  suspend(): boolean {
+    // Busy only because the search waits for a scheduler lease = safe to free.
+    const busy = this.busy > (this.inGateWait ? 1 : 0);
+    if (busy || this.booting || this.searching || !this.transport || !this.factory) return false;
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
+    this.teardown('suspended');
+    this.o.onEvent?.({ type: 'idle-terminate' });
+    return true;
   }
 
   /** Swap the transport factory (e.g. big net became available). Takes effect at the next idle restart. */
@@ -243,6 +297,15 @@ export class UciEngine {
   }
 
   private async boot(): Promise<void> {
+    this.booting = true;
+    try {
+      await this.bootInner();
+    } finally {
+      this.booting = false;
+    }
+  }
+
+  private async bootInner(): Promise<void> {
     const t0 = Date.now();
     if (!this.transport) {
       if (this.disposed) throw new EngineError('engine terminated', 'terminated');
@@ -255,6 +318,7 @@ export class UciEngine {
       this.o.handshakeTimeoutMs,
       (l) => {
         if (l.startsWith('id name ')) this.name = l.slice(8);
+        else if (l.startsWith('option name EvalFile ')) this.evalFile = /default (\S+)/.exec(l)?.[1] ?? null;
       },
     );
     this.send('uci');
@@ -448,8 +512,9 @@ export class UciEngine {
     for (;;) {
       if (p.signal?.aborted) throw new EngineError('search aborted', 'aborted');
       let preempted = false;
-      const lease = this.o.gate
-        ? await this.o.gate.acquire({
+      this.inGateWait = !!this.o.gate;
+      const leaseP = this.o.gate
+        ? this.o.gate.acquire({
             role: this.o.role,
             priority: this.o.priority,
             preemptible: this.o.preemptible,
@@ -460,6 +525,12 @@ export class UciEngine {
             },
           })
         : null;
+      let lease: GateLease | null;
+      try {
+        lease = await leaseP;
+      } finally {
+        this.inGateWait = false;
+      }
       try {
         const r = await this.searchOnce(p, onInfo);
         if (p.signal?.aborted) throw new EngineError('search aborted', 'aborted');

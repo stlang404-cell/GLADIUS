@@ -1,6 +1,46 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import fs from 'node:fs';
+import path from 'node:path';
+import { verifyPack, assemblePack, readManifest } from './scripts/engine-pack.mjs';
+
+/**
+ * Engine pack (docs/ENGINE.md, "v0.3 → Distribution"). The full-strength
+ * Stockfish builds live in public/engine/pack/ as checksummed chunks (copied to
+ * dist/ as-is; the PWA installs them on demand). At build time:
+ *  - every chunk is verified (a clone without the chunks, or with git-LFS
+ *    pointers, fails the build instead of silently shipping Lite only);
+ *  - single full-size .wasm files that a developer may have in public/engine/
+ *    (git-ignored) are removed from dist/, so every build is identical to a
+ *    fresh clone's — unless GLADIUS_BUNDLE_FULL_ENGINE=1, which writes them,
+ *    reassembled and SHA-256 verified (hosts that accept 99 MB files; the
+ *    Windows packager does this itself).
+ */
+function enginePack(): Plugin {
+  let outDir = 'dist';
+  return {
+    name: 'gladius-engine-pack',
+    apply: 'build',
+    configResolved(c) {
+      outDir = path.resolve(c.root, c.build.outDir);
+    },
+    buildStart() {
+      const bad = verifyPack();
+      if (bad.length) this.error(`engine pack invalid:\n  ${bad.join('\n  ')}\nRestore public/engine/pack/ (see docs/ENGINE.md) or rebuild it: node scripts/engine-pack.mjs build <npm stockfish bin dir>`);
+    },
+    closeBundle() {
+      const engineDir = path.join(outDir, 'engine');
+      if (!fs.existsSync(engineDir)) return;
+      const names = Object.keys(readManifest()?.files ?? {});
+      if (process.env.GLADIUS_BUNDLE_FULL_ENGINE) {
+        assemblePack(engineDir, undefined, names);
+      } else {
+        for (const n of names) fs.rmSync(path.join(engineDir, n), { force: true });
+      }
+    },
+  };
+}
 
 // Heavy engine benchmarks (tests/bench/**/*.slow.test.ts) only run when asked for
 // explicitly (`npm run bench`, or a path under tests/bench), never in `npm test`.
@@ -20,6 +60,7 @@ export default defineConfig({
   base: './',
   plugins: [
     react(),
+    enginePack(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
@@ -47,9 +88,11 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,wasm,txt,webmanifest,woff2,webp,ico}'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         navigateFallback: 'index.html',
-        // Optional engine builds (big net ≈99 MB, threaded builds) are never precached:
-        // they are fetched on demand and kept by a CacheFirst runtime route (offline after first use).
-        globIgnores: ['**/engine/stockfish-19-single.wasm', '**/engine/stockfish-19.wasm', '**/engine/stockfish-19.js', '**/engine/stockfish-19-lite.wasm', '**/engine/stockfish-19-lite.js'],
+        // Never precached: the engine pack (≈79 MB of chunks; installed on demand by the app
+        // into its own Cache Storage, verified by SHA-256), full-size big-net files (bundled
+        // hosts only) and the threaded lite wasm (only usable when cross-origin isolated).
+        // The small JS glue of every build IS precached so an installed pack works offline.
+        globIgnores: ['**/engine/pack/**', '**/engine/stockfish-19-single.wasm', '**/engine/stockfish-19.wasm', '**/engine/stockfish-19-lite.wasm'],
         runtimeCaching: [
           {
             urlPattern: /\/engine\/stockfish-19(?:-single|-lite)?\.(?:wasm|js)$/,

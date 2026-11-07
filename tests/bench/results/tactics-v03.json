@@ -1,0 +1,63 @@
+{
+ "meta": {
+  "date": "2026-11-07T23:34:18.339Z",
+  "node": "v22.23.4",
+  "cpus": 4,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "memGB": 16
+ },
+ "data": {
+  "positions": 62,
+  "personaThinkMs": 500,
+  "rows": [
+   {
+    "config": "lite-single 100ms",
+    "solved": "56/62",
+    "rate": 90.3,
+    "failed": "WAC.015 WAC.021 WAC.049 BK.01 BK.02 BK.22"
+   },
+   {
+    "config": "full-single 100ms",
+    "solved": "53/62",
+    "rate": 85.5,
+    "failed": "WAC.011 WAC.015 WAC.021 WAC.035 WAC.041 WAC.043 WAC.049 BK.02 BK.16"
+   },
+   {
+    "config": "lite-mt T3 100ms",
+    "solved": "57/62",
+    "rate": 91.9,
+    "failed": "WAC.015 WAC.021 WAC.049 BK.02 BK.22"
+   },
+   {
+    "config": "full-mt T3 100ms",
+    "solved": "58/62",
+    "rate": 93.5,
+    "failed": "WAC.011 WAC.015 WAC.041 WAC.049"
+   },
+   {
+    "config": "lite-single 500ms",
+    "solved": "59/62",
+    "rate": 95.2,
+    "failed": "WAC.015 WAC.021 WAC.049"
+   },
+   {
+    "config": "full-single 500ms",
+    "solved": "60/62",
+    "rate": 96.8,
+    "failed": "WAC.011 WAC.049"
+   },
+   {
+    "config": "lite-mt T3 500ms",
+    "solved": "58/62",
+    "rate": 93.5,
+    "failed": "WAC.015 WAC.021 WAC.049 BK.01"
+   },
+   {
+    "config": "full-mt T3 500ms",
+    "solved": "59/62",
+    "rate": 95.2,
+    "failed": "WAC.021 WAC.041 WAC.049"
+   }
+  ]
+ }
+}
