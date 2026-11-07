@@ -29,6 +29,9 @@ while ($listener.IsListening) {
     $full = [IO.Path]::GetFullPath((Join-Path $root $path))
     if (-not $full.StartsWith([IO.Path]::GetFullPath($root)) -or -not (Test-Path $full -PathType Leaf)) { $full = Join-Path $root 'index.html' }
     $ext = [IO.Path]::GetExtension($full).ToLower()
+    # Cross-origin isolation lets the multi-threaded Stockfish build run.
+    $ctx.Response.Headers.Add('Cross-Origin-Opener-Policy', 'same-origin')
+    $ctx.Response.Headers.Add('Cross-Origin-Embedder-Policy', 'require-corp')
     $ctx.Response.ContentType = $(if ($mime.ContainsKey($ext)) { $mime[$ext] } else { 'application/octet-stream' })
     $bytes = [IO.File]::ReadAllBytes($full)
     $ctx.Response.ContentLength64 = $bytes.Length

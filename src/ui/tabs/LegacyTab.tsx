@@ -12,6 +12,7 @@ import { careerRating, bestRating } from '../../game/career';
 import { exportAll, importAll, listBackups, restoreBackup, wipeAll } from '../../persist/save';
 import { requestPersistence } from '../../persist/db';
 import { downloadText } from '../AnalysisView';
+import { engineStatus, configureEngines, prefetchBigNet } from '../../engine/browserEngine';
 import { POOLS } from '../../rating/elo';
 import type { Settings } from '../../game/state';
 import { PLAYER_ID } from '../../world/calendar';
@@ -336,6 +337,7 @@ function SettingsPanel() {
       <Toggle k="ambience" label="Arena ambience" />
       <Toggle k="reduceMotion" label="Reduce motion" />
       <Toggle k="highContrast" label="High contrast" />
+      <EngineCard />
       <div className="muted small">Your career rank follows the chosen career rating. Each time control keeps its own rating pool.</div>
     </Card>
   );
@@ -382,5 +384,21 @@ function Saves() {
         <div className="muted small">GLADIUS v0.1 · Chess engine: Stockfish 19 (lite, single-threaded WASM build by Nathan Rugg), GPL-3.0 — see engine/STOCKFISH-LICENSE.txt. Rules: chess.js (BSD-2). Rendering: three.js (MIT). All art is procedurally generated and original. GLADIUS is distributed under GPL-3.0-or-later.</div>
       </Card>
     </>
+  );
+}
+
+function EngineCard() {
+  const [st, setSt] = useState(() => engineStatus());
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="choice">
+      <span>Chess engine</span>
+      <div className="muted small">{JSON.stringify(st).length < 200 ? Object.entries(st).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join(' · ') : 'Stockfish 19 (on device)'}</div>
+      <button className="btn small" disabled={busy} onClick={() => {
+        setBusy(true);
+        configureEngines({ allowBigNet: true });
+        void prefetchBigNet({ force: true }).then(() => { setSt(engineStatus()); setBusy(false); });
+      }}>{busy ? 'Downloading…' : 'Download grandmaster engine (99 MB, desktop)'}</button>
+    </div>
   );
 }

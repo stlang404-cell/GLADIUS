@@ -10,7 +10,7 @@ Only items verified in this repository are marked done. Screenshots: `docs/scree
 |---|---|---|
 | **A — Visual vertical slice** | ✅ | New SDF-sculpted "Legio" set (close-ups, both colours on both square colours, iPhone size); new board renderer; new UI language; new header, opponent card, post-game ceremony. Screenshots desktop + iPhone 13. |
 | **A — Animation** | ✅ | Timeline system with Fast/Balanced/Majestic/Custom; capture contact, castling, e.p., promotion flare, mate/resign topple, landing settle, skip, reduce motion. Deterministic sampling of 19 moves (captures, both castles, e.p., promotion): 0 regressions, exact landing, max 0.6 square/16 ms. |
-| **B — Chess intelligence** | see ENGINE.md | Capability-aware tiers, scheduler, clock-aware search, eight styles, rival preparation; benchmark results and limits in ENGINE.md. |
+| **B — Chess intelligence** | ✅ (desktop evidence) | Full-net vs lite-net at equal time: **+89 Elo [95% CI +59, +120], 160 games**; v0.2 top tier vs v0.1 top tier: **+57 [+24, +91], 80 games**; 62-position verified tactical suite; monotone persona ladder; capability tiers, scheduler (play > spectate > analysis), crash/hang restart, clock-aware allocation, eight styles, rival opening preparation. Threads match, persona-ladder matches and endgame suite implemented but not run. No Elo-vs-humans claim. See ENGINE.md. |
 | **C — Living empire** | ✅ | Trophy registry (60 defs), 139 achievements with eligibility & analysis gating, hall of records, rivalry model, objectives, season reports, prestige-driven invitations; 50-season soak with invariants (WORLD.md). |
 | **D — Twelve arenas** | ✅ (stylized, see limits) | 12 distinct 3D environments + scenic framing; arena portraits used across the UI; arena reveal ceremony. |
 | **E — Career & polish** | ✅ mostly | Legacy timeline, season ceremony, objectives, Hall of Honors with 2.5D trophies, achievements UI, split persistence with migration, background broadcasts, keyboard play, text scaling, reduced motion, contrast; offline verified. |
@@ -37,6 +37,7 @@ Only items verified in this repository are marked done. Screenshots: `docs/scree
 - Achievements that existed before v0.2 counters (ledger) cannot be back-dated; trophies before v0.2 are back-filled from tournament history without match scores.
 - Persistence light commits during a game skip unseen changes until the next full commit (see PERSISTENCE.md).
 - Not tested on a physical iPhone or Windows PC.
+- The 99 MB big-net engine is git-ignored (GitHub file limit); fresh clones/hosts run the lite net until it is copied in (ENGINE.md §8). It is never used on phones.
 
 ## Next recommended milestone
 Real-device pass (iPhone Safari PWA + Windows Edge): frame-time and memory budgets, big-net download UX; hand-painted texture/lighting pass for the twelve arenas; 3D portrait busts to replace SVG portraits; larger engine match samples on desktop hardware.

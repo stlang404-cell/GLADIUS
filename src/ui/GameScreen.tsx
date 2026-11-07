@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Move } from 'chess.js';
 import { ChessGame, START_FEN } from '../chess/rules';
 import { getEngine } from '../engine/browserEngine';
+import { isAbortError } from '../engine/uci';
 import { chooseMove, humanDelay, type Persona } from '../engine/persona';
 import { createRng, mixSeed, hashString } from '../core/rng';
 import { identifyOpening } from '../chess/openings';
@@ -139,23 +140,26 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
     const side = game.turn();
     const clock = a && timed ? { myMs: oppClock, oppMs: a.clockMs[side === 'w' ? 'b' : 'w'], incMs: tc.incSec * 1000, moveNumber: Math.floor(game.ply() / 2) + 1 } : undefined;
     const prep = rivalPrep(getSave(), opp.id); // legitimate preparation only: opening choice, never strength
-    void chooseMove(getEngine('play', { elo: persona.elo }), game.fen(), game.uciHistory, persona, { pace, clock, prep, startFen: rec.startFen === START_FEN ? undefined : rec.startFen })
+    const ac = new AbortController();
+    void chooseMove(getEngine('play', { elo: persona.elo }), game.fen(), game.uciHistory, persona, { pace, clock, prep, signal: ac.signal, startFen: rec.startFen === START_FEN ? undefined : rec.startFen })
       .then(async (mv) => {
         const rng = createRng(mixSeed(persona.seed, game.ply()));
         // Wait at least for the player's move animation to land, so motion never overlaps.
         const minWait = animMs(getSave().settings) + 120;
-        const wait = Math.max(minWait, humanDelay(persona.elo, game.ply(), rng, pace)) - (Date.now() - t0);
+        const wait = Math.max(minWait, humanDelay(persona.elo, game.ply(), rng, pace, clock)) - (Date.now() - t0);
         if (wait > 0) await new Promise((r) => setTimeout(r, wait));
         if (stop || cancelled.current) return;
         setThinking(false);
         if (!applyMove(mv.uci)) console.warn('engine produced illegal move', mv);
       })
       .catch((e) => {
+        if (isAbortError(e)) return;
         console.error(e);
         setThinking(false);
       });
     return () => {
       stop = true;
+      ac.abort();
     };
   }, [fen, opp, post, ending]); // eslint-disable-line react-hooks/exhaustive-deps
 

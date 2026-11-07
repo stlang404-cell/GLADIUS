@@ -11,10 +11,15 @@ WASM in a browser Worker runs at roughly the same speed as WASM in Node, but pho
 
 | Build | Files (js + wasm) | Net | Threads | Needs COOP/COEP | Startup to `readyok` | Speed, 1 thread | Depth in 2 s (4 positions) | Peak RSS (Node, Hash 64) |
 |---|---|---|---|---|---|---|---|---|
-{{BUILDS_TABLE}}
+| lite-single (shipped, precached) | 28 KB + 1.8 MB | small | 1 | no | 0.15–0.22 s | ≈ 550–590 knps | 21–23 / 18–23 / 18–19 / 21–22 | 139 MB (Hash 16) / 184 MB (Hash 64) |
+| lite (threaded) | 33 KB + 1.7 MB | small | ≤ 4 | yes | 0.6–1.0 s | 561 knps (T1); 1179 (T2); 1754 (T4) | T2: 21–22 | 209 / 263 / 328 MB (T1/T2/T4) |
+| full-single | 28 KB + 99.2 MB | big | 1 | no | 0.8–1.4 s | ≈ 280–310 knps | 19–22 | 490 MB |
+| full (threaded) | 33 KB + 99.1 MB | big | ≤ 4 | yes | 1.3–1.6 s | 313 knps (T1); 641 (T2); 1144 (T4) | T4: 18–23 | 771 / 781 / 870 MB (T1/T2/T4) |
 
 Notes
-* "Speed" is nodes/s over 2 s searches from four positions (opening, middlegame, Kiwipete, rook endgame).
+* Measured with `node stockfish-19*.js` child processes, 2 s per position, nothing else running
+  (scratch script equivalent to `tests/bench/builds.slow.test.ts`, which was written afterwards and
+  not re-run). "Speed" is nodes/s over 2 s searches from four positions (opening, middlegame, Kiwipete, rook endgame).
   The big net evaluates ~half as many nodes per second as the lite net — and still wins (section 4).
 * The threaded builds run in Node as child processes (`node stockfish-19*.js`, worker_threads).
   Loading them in-process with `require()` does not answer `uci`; the single-threaded glue also
@@ -106,7 +111,17 @@ Up to 4 games in parallel on 4 cores (1 for the threads match). Fixed `movetime`
 
 | Match | Budget | Games | W / D / L (A) | Score A | Elo A − B | 95 % CI |
 |---|---|---|---|---|---|---|
-{{MATCH_TABLE}}
+| **full-single vs lite-single** (net only) | 200 ms/move, Hash 64 both, 1 thread | 160 (40 openings × 2 colours × 2 rounds) | +47 / =106 / −7 | 62.5 % | **+89** | **+59 … +120** |
+| **top tier v0.2 vs v0.1** (persona 3200 path: book + single-PV; full-single Hash 128 vs lite-single Hash 16) | 500 ms/move both | 80 (40 × 2) | +15 / =63 / −2 | 58.1 % | **+57** | **+24 … +91** |
+| lite threaded T3 vs lite-single | — | not run (time) | | | | |
+| persona ladder 2200–2600, 2600–2800, 2800–3000 | — | not run (time) | | | | |
+
+Caveats: the first ~20 games of the 160-game match ran while another engineer's test suite shared the
+CPU (both sides at fixed movetime, so equally affected). The v0.2 top tier also differs from v0.1 in
+the repetition-aware `position … moves` search; the gain is mostly the net. The threads and ladder
+matches are implemented (`mt3-vs-single`, `ladder-*`) but were not run before the v0.2 cut-off, so
+**no head-to-head evidence for persona-level ordering or for threads is claimed** (threads: only nps
+scaling above).
 
 ### 4.2 Tactical suite (62 verified positions)
 WAC (Reinfeld's *Win at Chess*, 1–50) and Bratko-Kopec (24) candidates were typed in and each one
@@ -116,22 +131,61 @@ line by ≥ 25 cp. Kept 62; rejected 11 (engine disagrees: WAC.002, WAC.031, BK.
 ambiguous: WAC.008, BK.11, BK.18, BK.23, BK.24 — see `REJECTED` in `tests/bench/lib/positions.ts`).
 Note: the remaining BK positions are mostly positional, so this is a mixed tactical/positional suite.
 
-{{TACTICS_TABLE}}
+Fixed time per move; personas use their normal path (`thinkMs` 500 for ≥ 2700), one sample each.
+
+| Config | Solved | Rate |
+|---|---|---|
+| lite-single 100 ms | 56/62 | 90.3 % |
+| full-single 100 ms | 53/62 | 85.5 % |
+| lite threaded T3 100 ms | 58/62 | 93.5 % |
+| lite-single 500 ms | 59/62 | 95.2 % |
+| full-single 500 ms | 60/62 | 96.8 % |
+| lite threaded T3 500 ms | 59/62 | 95.2 % |
+| persona 1000 | 9/62 | 14.5 % |
+| persona 1600 | 32/62 | 51.6 % |
+| persona 2200 | 43/62 | 69.4 % |
+| persona 2600 | 55/62 | 88.7 % |
+| persona 2800 (elite, lite) | 61/62 | 98.4 % |
+| persona 3000 (lite) | 59/62 | 95.2 % |
+| persona 3000 (full net, Hash 128) | 60/62 | 96.8 % |
+
+Reading: the suite saturates for engine configurations (2–6 failures, mostly the same positions),
+so it does **not** separate builds; at 100 ms the slower big net solves fewer (its strength shows in
+games, 4.1). It does separate persona levels clearly up to 2600; 2800 vs 3000 differ by 2 positions
+(noise; MultiPV 3 can also help find a tactic).
 
 ### 4.3 Endgame suite (8 positions, played out)
 The tested side plays from the position against the big net at 300 ms/move (no tablebases, no
 adjudication, 50-move rule). Success = theoretical result (win converted, or draw held).
 
-{{ENDGAME_TABLE}}
+Implemented (`tests/bench/endgames.slow.test.ts`, positions verified with the big net, see `ENDGAMES`) but **not run** before the v0.2 cut-off: no conversion numbers are claimed.
 
 ### 4.4 Persona ladder (calibration bench)
 `tests/bench/calibration.test.ts` — average win% lost per move vs a depth-12 reference on 12
-positions (runs in `npm test` with 4 samples per position; the table below is the 12-sample run).
+positions.
 
-{{LADDER_TABLE}}
+Default run (4 samples × 12 positions, `npm test`), unchanged from v0.1 (re-checked; the v0.2 sampler is
+bit-identical for `universal` style):
+
+| Persona Elo | Target | Measured |
+|---|---|---|
+| 500 | 13 | 11.4 |
+| 900 | 9 | 8.1 |
+| 1300 | 6.5 | 5.4 |
+| 1700 | 4.5 | 5.2 |
+| 2100 | 3.2 | 3.3 |
+| 2600 | 2.0 | 1.6 |
+
+Monotone within the test's tolerance, but 1300 ≈ 1700 (5.4 vs 5.2): with 48 samples one 40-point
+blunder moves the mean by 0.8, so this table cannot resolve 400-point steps there. A retune of the
+1200/1600 knots changed nothing measurable and was reverted. The 12-sample + elite (2800/3000)
+run (`BENCH_LADDER_REPS=12 BENCH_LADDER_ELITE=1`) was not run before the cut-off.
 
 ### 4.5 Clock safety
-{{CLOCK_TEXT}}
+Unit-tested: `allocateTime` arithmetic, and a simulated 160-move game at every control the game offers
+(5+0, 3+2, 10+0, 15+10, 30+0), each move spending its full budget + 60 ms of latency: the clock never
+reaches zero. `humanDelay` is checked to stay within the budget. Real-time persona games on a clock
+(60+0 and 30+1, `tests/bench/clock.slow.test.ts`) are implemented but were **not run**.
 
 ## 5. Personas (src/engine/persona.ts, src/engine/styles.ts)
 
@@ -189,10 +243,13 @@ never exceeds the move's budget and is 0 in panic. Without `clock` everything be
   below the top tier.
 
 ## 7. What is and is not demonstrated
-* Demonstrated (with the numbers above): big net > lite net at equal time; threads > 1 thread;
-  the v0.2 desktop top tier beats the v0.1 top tier; the persona ladder is monotone in move
-  quality and in head-to-head results at the levels measured; personas return legal moves in
-  random positions in all bands and styles; no persona flagged in the clock stress run.
+* Demonstrated (numbers above): big net > lite net at equal time (+89 [+59, +120], 160 games);
+  the v0.2 desktop top tier beats the v0.1 top tier (+57 [+24, +91], 80 games); threads scale nps
+  ~2×/3× at 2/4 threads; tactical solve rate rises with persona level up to 2600; the move-quality
+  ladder is monotone within tolerance; personas return legal moves in random positions in all bands
+  and styles; the time allocation cannot flag in simulation.
+* Implemented but not run before the cut-off: threads match, persona-ladder matches, endgame suite,
+  real-time clock stress, 12-sample ladder.
 * **Not** demonstrated: any Elo relative to humans. Persona Elo labels are estimates anchored to
   accuracy-by-rating targets; no game against rated humans was played. Browser performance on
   real phones/desktops, the threaded builds inside a browser Worker, the big-net download/caching

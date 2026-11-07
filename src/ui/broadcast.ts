@@ -80,7 +80,7 @@ export function startBroadcast(f: Feature) {
       while (myAlive() && (state!.paused || getSave().active)) await new Promise((r) => setTimeout(r, 300));
       if (!myAlive()) return;
       const t0 = Date.now();
-      const mv = await chooseMove(eng, g.fen(), g.uciHistory, g.turn() === 'w' ? pw : pb, { pace: 'instant' });
+      const mv = await chooseMove(eng, g.fen(), g.uciHistory, g.turn() === 'w' ? pw : pb, { pace: 'instant', thinkMs: 800 });
       if (!myAlive()) return;
       const m = g.playUci(mv.uci);
       if (!m) break;

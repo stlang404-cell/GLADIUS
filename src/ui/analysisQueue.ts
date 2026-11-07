@@ -1,4 +1,4 @@
-import { getEngine } from '../engine/browserEngine';
+import { getEngine, recommendedAnalysisDepth } from '../engine/browserEngine';
 import { analyseGame } from '../analysis/analyzer';
 import { getGame, storeGame } from '../persist/save';
 import { mutate, metaOf, pushToast } from './store';
@@ -28,7 +28,7 @@ export function queueAnalysis(id: string, front = false) {
 }
 
 export function analysisDepth(): number {
-  return /iPhone|iPad|Android/.test(navigator.userAgent) ? 11 : 13;
+  return recommendedAnalysisDepth();
 }
 
 async function pump() {
