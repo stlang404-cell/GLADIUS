@@ -1,848 +1,846 @@
 /**
- * Arena backdrops (viewBox 0 0 1600 900, slice). Twelve distinct Roman
- * architectures matching ARENAS[i].architecture. Composition rule: detail
- * lives on the horizon band and the left/right edges; the lower ~40% (where
- * the chessboard sits) stays calm.
+ * Arena backdrops — stylized Roman key-art illustrations (viewBox 0 0 1600 900,
+ * preserveAspectRatio slice). Twelve unique places, one per ARENAS[i].
+ *
+ * Composition contract: the chessboard card sits in the centre. Landmark
+ * architecture lives in the upper third and on the left/right edges; the
+ * centre band stays comparatively calm. The centre 420px column must read on
+ * its own (phone portrait crop) and the top 40% must read as a banner strip.
+ *
+ * Technique: layered depth (sky → far → mid → near), atmospheric haze layers
+ * between depths, gradient-shaded flat shapes, cheap <pattern> textures
+ * (stone courses, roof tiles, crowds) and soft light shafts. No raster
+ * filters, no fonts, no external references.
  */
-import { ARENAS, type Palette } from '../world/arenas';
-import { createRng, mixSeed, type Rng } from '../core/rng';
-import { idPrefix, laurelArc, linGrad, mix, n, radGrad, shade, starPath } from './svgUtil';
+import { createRng, type Rng } from '../core/rng';
+import { idPrefix, mix, n, shade } from './svgUtil';
 
 const W = 1600;
 const H = 900;
 
-type Ctx = { id: string; r: Rng; pal: Palette; defs: string[] };
+type Stop = [number, string, number?];
+
+/** Scene builder: collects defs, de-duplicates gradients, owns the RNG. */
+class S {
+  readonly id: string;
+  readonly r: Rng;
+  private defs: string[] = [];
+  private cache = new Map<string, string>();
+  private k = 0;
+  out: string[] = [];
+  /** +1: light comes from the left (lit faces on the left); -1 from the right. */
+  lit = 1;
+
+  constructor(arena: number) {
+    this.id = idPrefix('arena-art', arena);
+    this.r = createRng(0x51a7 + arena * 7919);
+  }
+  uid(): string {
+    return this.id + (this.k++).toString(36);
+  }
+  def(s: string): void {
+    this.defs.push(s);
+  }
+  private stops(stops: Stop[]): string {
+    return stops
+      .map(([o, c, op]) => `<stop offset="${n(o)}" stop-color="${c}"${op === undefined || op === 1 ? '' : ` stop-opacity="${n(op)}"`}/>`)
+      .join('');
+  }
+  /** Linear gradient (bounding-box units). Returns `url(#id)`. */
+  lg(stops: Stop[], x1 = 0, y1 = 0, x2 = 0, y2 = 1): string {
+    const key = 'l' + JSON.stringify(stops) + [x1, y1, x2, y2].join();
+    let id = this.cache.get(key);
+    if (!id) {
+      id = this.uid();
+      this.cache.set(key, id);
+      this.defs.push(`<linearGradient id="${id}" x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}">${this.stops(stops)}</linearGradient>`);
+    }
+    return `url(#${id})`;
+  }
+  /** Linear gradient in user space (works on zero-height/width shapes). */
+  lgu(stops: Stop[], x1: number, y1: number, x2: number, y2: number): string {
+    const id = this.uid();
+    this.defs.push(
+      `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}">${this.stops(stops)}</linearGradient>`,
+    );
+    return `url(#${id})`;
+  }
+  /** Radial gradient in user space. */
+  rgu(stops: Stop[], cx: number, cy: number, r: number, sy = 1): string {
+    const key = 'r' + JSON.stringify(stops) + [cx, cy, r, sy].join();
+    let id = this.cache.get(key);
+    if (!id) {
+      id = this.uid();
+      this.cache.set(key, id);
+      const tr = sy === 1 ? '' : ` gradientTransform="translate(0 ${n(cy * (1 - sy))}) scale(1 ${n(sy)})"`;
+      this.defs.push(`<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}"${tr}>${this.stops(stops)}</radialGradient>`);
+    }
+    return `url(#${id})`;
+  }
+  add(...s: string[]): void {
+    for (const x of s) this.out.push(x);
+  }
+  rnd(a: number, b: number): number {
+    return a + this.r.next() * (b - a);
+  }
+  svg(): string {
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">` +
+      `<defs>${this.defs.join('')}</defs>${this.out.join('')}</svg>`
+    );
+  }
+}
 
 // ------------------------------------------------------------------ primitives
 
-function rect(x: number, y: number, w: number, h: number, fill: string, extra = ''): string {
-  return `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" fill="${fill}"${extra ? ' ' + extra : ''}/>`;
+const rect = (x: number, y: number, w: number, h: number, fill: string, extra = '') =>
+  `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" fill="${fill}"${extra ? ' ' + extra : ''}/>`;
+const path = (d: string, fill: string, extra = '') => `<path d="${d}" fill="${fill}"${extra ? ' ' + extra : ''}/>`;
+const ell = (cx: number, cy: number, rx: number, ry: number, fill: string, extra = '') =>
+  `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}" fill="${fill}"${extra ? ' ' + extra : ''}/>`;
+const stroke = (d: string, color: string, w: number, extra = '') =>
+  `<path d="${d}" fill="none" stroke="${color}" stroke-width="${n(w)}"${extra ? ' ' + extra : ''}/>`;
+const op = (v: number) => `opacity="${n(v)}"`;
+const g = (inner: string, extra = '') => `<g${extra ? ' ' + extra : ''}>${inner}</g>`;
+const P = (x: number, y: number) => n(x) + ',' + n(y);
+const poly = (pts: number[]) => {
+  let d = '';
+  for (let i = 0; i < pts.length; i += 2) d += (i ? 'L' : 'M') + P(pts[i], pts[i + 1]);
+  return d + 'Z';
+};
+const circ = (cx: number, cy: number, r: number) =>
+  `M${P(cx - r, cy)}a${n(r)},${n(r)} 0 1,0 ${n(2 * r)},0a${n(r)},${n(r)} 0 1,0 ${n(-2 * r)},0Z`;
+
+/** Full-frame sky gradient. */
+function sky(s: S, stops: Stop[]): void {
+  s.add(rect(0, 0, W, H, s.lg(stops)));
 }
 
-function path(d: string, fill: string, extra = ''): string {
-  return `<path d="${d}" fill="${fill}"${extra ? ' ' + extra : ''}/>`;
+/** Sun/moon disc with layered glow. */
+function sun(s: S, x: number, y: number, r: number, core: string, glowC: string, glowR = r * 6, glowOp = 0.75): void {
+  s.add(`<circle cx="${n(x)}" cy="${n(y)}" r="${n(glowR)}" fill="${s.rgu([[0, glowC, glowOp], [0.25, glowC, glowOp * 0.45], [1, glowC, 0]], x, y, glowR)}"/>`);
+  s.add(`<circle cx="${n(x)}" cy="${n(y)}" r="${n(r * 1.5)}" fill="${core}" ${op(0.35)}/>`);
+  s.add(`<circle cx="${n(x)}" cy="${n(y)}" r="${n(r)}" fill="${core}"/>`);
 }
 
-function sky(c: Ctx, top: string, bottom: string, mid?: string): string {
-  c.defs.push(linGrad(`${c.id}sk`, mid ? [[0, top], [0.55, mid], [1, bottom]] : [[0, top], [1, bottom]]));
-  return rect(0, 0, W, H, `url(#${c.id}sk)`);
+/** Fan of soft light shafts from (x,y). */
+function shafts(s: S, x: number, y: number, a0: number, a1: number, count: number, len: number, color: string, strength = 0.22): void {
+  let out = '';
+  const fill = s.rgu([[0, color, strength], [0.55, color, strength * 0.4], [1, color, 0]], x, y, len);
+  for (let i = 0; i < count; i++) {
+    const a = a0 + ((a1 - a0) * (i + s.rnd(0.2, 0.8))) / count;
+    const w = s.rnd(0.025, 0.07);
+    out += `M${P(x, y)}L${P(x + Math.cos(a - w) * len, y + Math.sin(a - w) * len)}L${P(x + Math.cos(a + w) * len, y + Math.sin(a + w) * len)}Z`;
+  }
+  s.add(path(out, fill));
 }
 
-function glow(c: Ctx, key: string, cx: number, cy: number, r: number, color: string, op = 0.9): string {
-  c.defs.push(radGrad(`${c.id}${key}`, [[0, color, op], [0.35, color, op * 0.45], [1, color, 0]]));
-  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="url(#${c.id}${key})"/>`;
+/**
+ * Cartoon cumulus: flat bottom, bumpy top, vertical lit→shade gradient and a
+ * brighter cap offset toward the light.
+ */
+function cloud(s: S, x: number, y: number, w: number, h: number, litC: string, shadeC: string, alpha = 1, bumps = 0): void {
+  const k = bumps || 4 + Math.floor(s.r.next() * 3);
+  const contour = (cx: number, by: number, ww: number, hh: number) => {
+    const pts: [number, number][] = [];
+    for (let i = 0; i <= k; i++) {
+      const t = i / k;
+      const env = Math.sin(Math.PI * (0.08 + t * 0.84));
+      pts.push([cx - ww / 2 + ww * t, by - hh * (0.25 + 0.75 * env) * (i === 0 || i === k ? 0.35 : s.rnd(0.75, 1))]);
+    }
+    let d = `M${P(cx - ww / 2 - hh * 0.15, by)}L${P(pts[0][0], pts[0][1])}`;
+    for (let i = 1; i <= k; i++) {
+      const [x0, y0] = pts[i - 1];
+      const [x1, y1] = pts[i];
+      const r = Math.hypot(x1 - x0, y1 - y0) * 0.56;
+      d += `A${n(r)},${n(r)} 0 0,1 ${P(x1, y1)}`;
+    }
+    return d + `L${P(cx + ww / 2 + hh * 0.15, by)}Z`;
+  };
+  const st = s.r.state();
+  const base = contour(x, y, w, h);
+  s.add(path(base, s.lg([[0, litC], [0.55, mix(litC, shadeC, 0.45)], [1, shadeC]]), alpha < 1 ? op(alpha) : ''));
+  void st;
+  const cap = contour(x - s.lit * w * 0.04, y - h * 0.3, w * 0.8, h * 0.72);
+  s.add(path(cap, litC, op(0.55 * alpha)));
 }
 
-function ground(c: Ctx, y: number, top: string, bottom: string): string {
-  c.defs.push(linGrad(`${c.id}gr`, [[0, top], [1, bottom]]));
-  return rect(0, y, W, H - y, `url(#${c.id}gr)`);
-}
-
-function vignette(c: Ctx, strength = 0.55): string {
-  c.defs.push(radGrad(`${c.id}vg`, [[0.55, '#000', 0], [1, '#000', strength]], 0.5, 0.45, 0.75));
-  return rect(0, 0, W, H, `url(#${c.id}vg)`);
-}
-
-/** Rolling silhouette (hills, crowds, clouds banks). */
-function ridge(r: Rng, y: number, amp: number, step: number, fill: string, extra = '', bottom = H): string {
-  let d = `M0,${n(bottom)}L0,${n(y)}`;
-  let x = 0;
-  let prevY = y;
-  while (x < W) {
-    const nx = Math.min(W, x + step * (0.7 + r.next() * 0.6));
-    const ny = y - r.next() * amp;
-    d += `Q${n((x + nx) / 2)},${n(Math.min(prevY, ny) - amp * 0.3)} ${n(nx)},${n(ny)}`;
-    prevY = ny;
-    x = nx;
+/** Smooth rolling hills silhouette from y with amplitude amp. */
+function hills(s: S, y: number, amp: number, count: number, fill: string, extra = '', bottom = H): string {
+  let d = `M0,${n(bottom)}L0,${n(y - s.rnd(0, amp))}`;
+  const step = W / count;
+  for (let i = 0; i < count; i++) {
+    const x1 = (i + 1) * step;
+    const yy = y - s.rnd(0.1, 1) * amp;
+    d += `Q${P(x1 - step / 2, yy - amp * 0.6)} ${P(x1, y - s.rnd(0, amp * 0.5))}`;
   }
   return path(d + `L${W},${n(bottom)}Z`, fill, extra);
 }
 
-function clouds(c: Ctx, count: number, y0: number, y1: number, color: string, op: number, scale = 1): string {
-  let d = '';
-  for (let i = 0; i < count; i++) {
-    const x = c.r.next() * W;
-    const y = y0 + c.r.next() * (y1 - y0);
-    const w = (140 + c.r.next() * 220) * scale;
-    const h = w * 0.22;
-    d += `M${n(x - w / 2)},${n(y)}`;
-    d += `C${n(x - w / 2)},${n(y - h)} ${n(x - w * 0.2)},${n(y - h * 1.4)} ${n(x - w * 0.05)},${n(y - h * 0.9)}`;
-    d += `C${n(x + w * 0.05)},${n(y - h * 2)} ${n(x + w * 0.38)},${n(y - h * 1.6)} ${n(x + w * 0.32)},${n(y - h * 0.6)}`;
-    d += `C${n(x + w * 0.5)},${n(y - h * 0.9)} ${n(x + w * 0.56)},${n(y - h * 0.1)} ${n(x + w / 2)},${n(y)}Z`;
+/** Faceted stylized mountain range with lit facets and optional snow caps. */
+function mountains(s: S, y: number, peaks: [number, number, number][], body: string, litC: string, snow?: string): void {
+  // peaks: [x, height, halfWidth]
+  let sil = '';
+  let lit = '';
+  let cap = '';
+  for (const [px, ph, hw] of peaks) {
+    const top = y - ph;
+    const lx = px - hw;
+    const rx = px + hw;
+    const sk = s.rnd(-0.12, 0.12) * hw;
+    sil += `M${P(lx, y)}L${P(px - hw * 0.45, top + ph * 0.38)}L${P(px + sk, top)}L${P(px + hw * 0.5, top + ph * 0.42)}L${P(rx, y)}Z`;
+    const side = s.lit;
+    // lit facet: from peak down toward the lit side
+    lit += `M${P(px + sk, top)}L${P(px - side * hw * 0.45, top + ph * 0.38 + (side < 0 ? ph * 0.04 : 0))}L${P(px - side * hw, y)}L${P(px - side * hw * 0.1, y)}L${P(px + sk - side * hw * 0.05, top + ph * 0.5)}Z`;
+    if (snow) {
+      const sh = ph * 0.26;
+      const ax = px + sk;
+      cap += `M${P(ax, top)}L${P(ax + (px - hw * 0.45 - ax) * (sh / (ph * 0.38)), top + sh)}L${P(ax - hw * 0.12, top + sh * 0.75)}L${P(ax, top + sh * 1.05)}L${P(ax + hw * 0.14, top + sh * 0.8)}L${P(ax + (px + hw * 0.5 - ax) * (sh / (ph * 0.42)), top + sh)}Z`;
+    }
   }
-  return path(d, color, `opacity="${n(op)}"`);
+  s.add(path(sil, body), path(lit, litC));
+  if (snow) s.add(path(cap, snow));
 }
 
-function stars(c: Ctx, count: number, yMax: number, color = '#fff', op = 0.9): string {
+/** Haze / mist band: vertical gradient from transparent to colour. */
+function haze(s: S, y0: number, y1: number, color: string, opTop: number, opBot: number): void {
+  s.add(rect(0, y0, W, y1 - y0, s.lg([[0, color, opTop], [1, color, opBot]])));
+}
+
+/** Small flock of birds (M-shapes). */
+function birds(s: S, cx: number, cy: number, count: number, spread: number, color: string, size = 9): void {
   let d = '';
-  let big = '';
   for (let i = 0; i < count; i++) {
-    const x = c.r.next() * W;
-    const y = Math.pow(c.r.next(), 1.4) * yMax;
-    if (c.r.chance(0.06)) big += starPath(x, y, 5 + c.r.next() * 4, 0.25, 4, 0);
-    else d += `M${n(x)},${n(y)}h.1`;
+    const x = cx + s.rnd(-1, 1) * spread;
+    const y = cy + s.rnd(-0.4, 0.4) * spread;
+    const sz = size * s.rnd(0.6, 1.15);
+    const f = s.rnd(-0.3, 0.4);
+    d += `M${P(x - sz, y - sz * (0.3 + f))}Q${P(x - sz * 0.45, y - sz * 0.55)} ${P(x, y)}Q${P(x + sz * 0.45, y - sz * 0.55)} ${P(x + sz, y - sz * (0.3 + f))}`;
+  }
+  s.add(stroke(d, color, size * 0.22, 'stroke-linecap="round" stroke-linejoin="round"'));
+}
+
+/** Cypress: flame-shaped, two-tone. */
+function cypress(s: S, x: number, base: number, h: number, w: number, dark: string, light: string): string {
+  const top = base - h;
+  const lean = s.rnd(-0.06, 0.06) * w;
+  const body = `M${P(x + lean, top)}C${P(x + w * 0.42, top + h * 0.25)} ${P(x + w * 0.62, top + h * 0.7)} ${P(x + w * 0.18, base - h * 0.03)}L${P(x - w * 0.18, base - h * 0.03)}C${P(x - w * 0.62, top + h * 0.7)} ${P(x - w * 0.42, top + h * 0.25)} ${P(x + lean, top)}Z`;
+  const side = s.lit;
+  const half = `M${P(x + lean, top)}C${P(x - side * w * 0.42, top + h * 0.25)} ${P(x - side * w * 0.62, top + h * 0.7)} ${P(x - side * w * 0.18, base - h * 0.03)}L${P(x - side * w * 0.02, base - h * 0.05)}C${P(x - side * w * 0.2, top + h * 0.6)} ${P(x - side * w * 0.12, top + h * 0.25)} ${P(x + lean, top)}Z`;
+  // little tufts for texture
+  let tufts = '';
+  for (let i = 0; i < 5; i++) {
+    const ty = top + h * (0.2 + i * 0.15);
+    const tw = w * (0.18 + 0.28 * Math.sin(Math.PI * (0.2 + i * 0.15)));
+    tufts += `M${P(x - side * tw, ty)}q${n(side * tw * 0.4)},${n(-h * 0.04)} ${n(side * tw * 0.8)},${n(h * 0.01)}`;
   }
   return (
-    `<path d="${d}" stroke="${color}" stroke-width="2.6" stroke-linecap="round" opacity="${n(op * 0.75)}"/>` +
-    (big ? path(big, color, `opacity="${n(op)}"`) : '')
+    rect(x - w * 0.05, base - h * 0.06, w * 0.1, h * 0.06, shade(dark, -0.3)) +
+    path(body, dark) +
+    path(half, light) +
+    stroke(tufts, light, Math.max(1, w * 0.06), `stroke-linecap="round" ${op(0.7)}`)
   );
 }
 
-/** Column defined once per backdrop and reused via <use>. Unit size 40×200 at origin (bottom-centre). */
-function defColumn(c: Ctx, key: string, light: string, dark: string, capital: string): void {
-  c.defs.push(linGrad(`${c.id}${key}g`, [[0, shade(light, 0.2)], [0.35, light], [1, dark]], 0, 0, 1, 0));
-  const g = `url(#${c.id}${key}g)`;
-  c.defs.push(
-    `<g id="${c.id}${key}">` +
-      rect(-24, -12, 48, 12, g) +
-      rect(-20, -16, 40, 5, g) +
-      rect(-17, -184, 34, 168, g) +
-      `<path d="M-9,-182V-18M0,-182V-18M9,-182V-18" stroke="${dark}" stroke-width="2" opacity=".35"/>` +
-      rect(-21, -192, 42, 8, capital) +
-      rect(-26, -200, 52, 9, capital) +
-      `</g>`,
-  );
-}
-
-function useAt(c: Ctx, key: string, x: number, y: number, sx: number, sy = sx): string {
-  return `<use href="#${c.id}${key}" transform="translate(${n(x)},${n(y)}) scale(${n(sx)},${n(sy)})"/>`;
-}
-
-function colonnade(c: Ctx, key: string, x0: number, x1: number, baseY: number, count: number, scale: number): string {
-  let s = '';
-  for (let i = 0; i < count; i++) {
-    const x = count === 1 ? x0 : x0 + ((x1 - x0) * i) / (count - 1);
-    s += useAt(c, key, x, baseY, scale);
+/** Umbrella (stone) pine: tall bare trunk, flat cloud canopy. */
+function umbrellaPine(s: S, x: number, base: number, h: number, w: number, trunk: string, dark: string, light: string): string {
+  const top = base - h;
+  const lean = s.rnd(-0.18, 0.18) * w;
+  const tw = Math.max(2, w * 0.035);
+  let out = stroke(`M${P(x, base)}Q${P(x + lean * 0.2, base - h * 0.5)} ${P(x + lean, top + h * 0.18)}`, trunk, tw, 'stroke-linecap="round"');
+  out += stroke(`M${P(x + lean * 0.6, top + h * 0.35)}L${P(x + lean - w * 0.25, top + h * 0.17)}M${P(x + lean * 0.8, top + h * 0.28)}L${P(x + lean + w * 0.28, top + h * 0.16)}`, trunk, tw * 0.6, 'stroke-linecap="round"');
+  const cx = x + lean;
+  const cy = top + h * 0.12;
+  let darkD = '';
+  let litD = '';
+  const k = 5;
+  for (let i = 0; i < k; i++) {
+    const t = i / (k - 1) - 0.5;
+    const ex = cx + t * w * 0.8;
+    const ey = cy + Math.abs(t) * h * 0.08;
+    const rx = w * s.rnd(0.2, 0.26);
+    const ry = h * s.rnd(0.07, 0.09);
+    darkD += `M${P(ex - rx, ey)}a${n(rx)},${n(ry)} 0 1,0 ${n(2 * rx)},0a${n(rx)},${n(ry)} 0 1,0 ${n(-2 * rx)},0Z`;
+    litD += `M${P(ex - rx * 0.8 - s.lit * rx * 0.1, ey - ry * 0.35)}a${n(rx * 0.75)},${n(ry * 0.6)} 0 1,0 ${n(1.5 * rx)},0a${n(rx * 0.75)},${n(ry * 0.6)} 0 1,0 ${n(-1.5 * rx)},0Z`;
   }
-  return s;
+  return out + path(darkD, dark) + path(litD, light, op(0.9));
 }
 
-function pediment(x: number, y: number, w: number, h: number, fill: string, trim: string, dark: string): string {
-  return (
-    path(`M${n(x)},${n(y)}L${n(x + w / 2)},${n(y - h)}L${n(x + w)},${n(y)}Z`, fill) +
-    path(`M${n(x + w * 0.1)},${n(y - 4)}L${n(x + w / 2)},${n(y - h + 12)}L${n(x + w * 0.9)},${n(y - 4)}Z`, dark, 'opacity=".35"') +
-    path(`M${n(x - 6)},${n(y)}L${n(x + w / 2)},${n(y - h - 6)}L${n(x + w + 6)},${n(y)}`, 'none', `stroke="${trim}" stroke-width="6"`)
-  );
-}
-
-/** Stepped temple front: stylobate, columns, entablature, pediment. */
-function temple(c: Ctx, key: string, x: number, baseY: number, w: number, colScale: number, count: number, stone: string, trim: string, dark: string): string {
-  const colH = 200 * colScale;
-  let s = '';
-  // cella shadow behind columns
-  s += rect(x + 10, baseY - colH, w - 20, colH, shade(dark, -0.2), 'opacity=".75"');
-  s += colonnade(c, key, x + 26 * colScale, x + w - 26 * colScale, baseY, count, colScale);
-  // steps
-  for (let i = 0; i < 3; i++) s += rect(x - 8 - i * 10, baseY + i * 9, w + 16 + i * 20, 9, i % 2 ? shade(stone, -0.12) : stone);
-  // entablature
-  s += rect(x - 8, baseY - colH - 30, w + 16, 30, stone);
-  s += rect(x - 8, baseY - colH - 18, w + 16, 6, trim);
-  s += pediment(x - 8, baseY - colH - 30, w + 16, (w + 16) * 0.22, stone, shade(stone, 0.4), dark);
-  return s;
-}
-
-/** Wall with a row of arches (dark openings), rim-lit. */
-function arcade(x: number, y: number, w: number, h: number, count: number, wall: string, hole: string, archRatio = 0.62, pier = 0.24): string {
-  let s = rect(x, y, w, h, wall);
-  const cw = w / count;
-  let d = '';
-  for (let i = 0; i < count; i++) {
-    const ax = x + i * cw + cw * pier;
-    const aw = cw * (1 - pier * 2);
-    const top = y + h * (1 - archRatio);
-    d += `M${n(ax)},${n(y + h)}V${n(top + aw / 2)}A${n(aw / 2)},${n(aw / 2)} 0 0,1 ${n(ax + aw)},${n(top + aw / 2)}V${n(y + h)}Z`;
+/** Olive / round deciduous tree. */
+function roundTree(s: S, x: number, base: number, h: number, w: number, trunk: string, dark: string, light: string): string {
+  const top = base - h;
+  let out = path(`M${P(x - w * 0.05, base)}Q${P(x - w * 0.08, base - h * 0.3)} ${P(x - w * 0.15, base - h * 0.55)}L${P(x + w * 0.05, base - h * 0.5)}Q${P(x + w * 0.06, base - h * 0.25)} ${P(x + w * 0.08, base)}Z`, trunk);
+  let darkD = '';
+  let litD = '';
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const bx = x + Math.cos(a) * w * 0.28;
+    const by = top + h * 0.38 + Math.sin(a) * h * 0.18;
+    const r = w * s.rnd(0.2, 0.27);
+    darkD += circ(bx, by, r);
+    litD += circ(bx - s.lit * r * 0.22, by - r * 0.28, r * 0.68);
   }
-  s += path(d, hole);
-  s += rect(x, y, w, Math.max(3, h * 0.05), shade(wall, 0.25));
-  s += rect(x, y + h - Math.max(3, h * 0.04), w, Math.max(3, h * 0.04), shade(wall, -0.2));
-  return s;
-}
-
-function crenellations(x0: number, x1: number, y: number, mw: number, mh: number, fill: string): string {
-  let d = '';
-  for (let x = x0; x < x1 - mw * 0.5; x += mw * 2) d += `M${n(x)},${n(y)}v${n(-mh)}h${n(mw)}v${n(mh)}Z`;
-  return path(d, fill);
-}
-
-/** Hanging banner with swallowtail and gold rod. */
-function banner(x: number, y: number, w: number, h: number, color: string, trim: string, emblem = ''): string {
-  const tail = h * 0.16;
-  let s = path(
-    `M${n(x)},${n(y)}H${n(x + w)}V${n(y + h)}L${n(x + w / 2)},${n(y + h - tail)}L${n(x)},${n(y + h)}Z`,
-    color,
-  );
-  s += path(`M${n(x + w * 0.62)},${n(y)}H${n(x + w)}V${n(y + h)}L${n(x + w * 0.62)},${n(y + h - tail * 0.6)}Z`, '#000', 'opacity=".18"');
-  s += path(`M${n(x + w * 0.1)},${n(y + 6)}V${n(y + h - tail - 4)}M${n(x + w * 0.9)},${n(y + 6)}V${n(y + h - tail * 0.4 - 6)}`, 'none', `stroke="${trim}" stroke-width="${n(Math.max(2, w * 0.05))}"`);
-  s += rect(x - w * 0.12, y - 6, w * 1.24, 8, trim, 'rx="3"');
-  if (emblem) s += emblem;
-  return s;
-}
-
-function wreathGlyph(cx: number, cy: number, r: number, color: string): string {
-  const leaves =
-    laurelArc(cx, cy, r, Math.PI * 0.62, Math.PI * 1.42, 5, r * 0.42, r * 0.13) +
-    laurelArc(cx, cy, r, Math.PI * 0.38, -Math.PI * 0.42, 5, r * 0.42, r * 0.13);
-  return path(leaves + starPath(cx, cy, r * 0.42, 0.45), color);
-}
-
-function scorpionGlyph(cx: number, cy: number, s: number, color: string): string {
-  const P = (x: number, y: number) => `${n(cx + x * s)},${n(cy + y * s)}`;
-  return (
-    path(`M${P(0, -6)}A${n(5 * s)},${n(8 * s)} 0 1,0 ${P(0.1, -6)}Z`, color) +
-    path(`M${P(-4, -8)}Q${P(-12, -12)} ${P(-10, -20)}M${P(4, -8)}Q${P(12, -12)} ${P(10, -20)}M${P(0, 9)}Q${P(2, 18)} ${P(9, 17)}Q${P(14, 14)} ${P(11, 8)}M${P(-4, -2)}L${P(-11, 0)}M${P(4, -2)}L${P(11, 0)}M${P(-4, 3)}L${P(-11, 6)}M${P(4, 3)}L${P(11, 6)}`, 'none', `stroke="${color}" stroke-width="${n(2.6 * s)}" stroke-linecap="round"`)
-  );
-}
-
-/** Military standard: pole + optional vexillum or aquila. */
-function standard(x: number, baseY: number, h: number, kind: 'vex' | 'aquila', red: string, gold: string, s = 1): string {
-  let out = rect(x - 4 * s, baseY - h, 8 * s, h, '#5a3a20');
-  out += path(`M${n(x - 4 * s)},${n(baseY - h)}h${n(3 * s)}V${n(baseY)}h${n(-3 * s)}Z`, '#fff', 'opacity=".2"');
-  if (kind === 'vex') {
-    const top = baseY - h + 30 * s;
-    out += rect(x - 50 * s, top, 100 * s, 7 * s, gold, 'rx="3"');
-    out += path(`M${n(x - 44 * s)},${n(top + 7 * s)}H${n(x + 44 * s)}V${n(top + 92 * s)}Q${n(x)},${n(top + 84 * s)} ${n(x - 44 * s)},${n(top + 92 * s)}Z`, red);
-    out += path(`M${n(x + 10 * s)},${n(top + 7 * s)}H${n(x + 44 * s)}V${n(top + 92 * s)}Q${n(x + 26 * s)},${n(top + 87 * s)} ${n(x + 10 * s)},${n(top + 88 * s)}Z`, '#000', 'opacity=".18"');
-    let fringe = '';
-    for (let i = 0; i <= 10; i++) fringe += `M${n(x - 44 * s + i * 8.8 * s)},${n(top + 90 * s - Math.sin((i / 10) * Math.PI) * 6 * s)}v${n(10 * s)}`;
-    out += path(fringe, 'none', `stroke="${gold}" stroke-width="${n(3 * s)}"`);
-    out += wreathGlyph(x, top + 46 * s, 22 * s, gold);
-    out += path(`M${n(x)},${n(baseY - h - 26 * s)}l${n(10 * s)},${n(24 * s)}h${n(-20 * s)}Z`, gold);
-  } else {
-    const ty = baseY - h;
-    // eagle: spread wings + body on a plinth bar
-    out += rect(x - 26 * s, ty + 40 * s, 52 * s, 8 * s, gold, 'rx="3"');
-    out += path(
-      `M${n(x)},${n(ty + 40 * s)}C${n(x - 8 * s)},${n(ty + 30 * s)} ${n(x - 20 * s)},${n(ty + 10 * s)} ${n(x - 52 * s)},${n(ty - 10 * s)}C${n(x - 46 * s)},${n(ty + 4 * s)} ${n(x - 48 * s)},${n(ty + 8 * s)} ${n(x - 42 * s)},${n(ty + 14 * s)}C${n(x - 36 * s)},${n(ty + 22 * s)} ${n(x - 26 * s)},${n(ty + 30 * s)} ${n(x - 10 * s)},${n(ty + 36 * s)}` +
-        `L${n(x + 10 * s)},${n(ty + 36 * s)}C${n(x + 26 * s)},${n(ty + 30 * s)} ${n(x + 36 * s)},${n(ty + 22 * s)} ${n(x + 42 * s)},${n(ty + 14 * s)}C${n(x + 48 * s)},${n(ty + 8 * s)} ${n(x + 46 * s)},${n(ty + 4 * s)} ${n(x + 52 * s)},${n(ty - 10 * s)}C${n(x + 20 * s)},${n(ty + 10 * s)} ${n(x + 8 * s)},${n(ty + 30 * s)} ${n(x)},${n(ty + 40 * s)}Z`,
-      gold,
-    );
-    out += path(`M${n(x - 7 * s)},${n(ty + 38 * s)}C${n(x - 8 * s)},${n(ty + 20 * s)} ${n(x - 6 * s)},${n(ty + 6 * s)} ${n(x)},${n(ty + 2 * s)}C${n(x + 6 * s)},${n(ty)} ${n(x + 12 * s)},${n(ty + 2 * s)} ${n(x + 16 * s)},${n(ty + 6 * s)}L${n(x + 7 * s)},${n(ty + 9 * s)}C${n(x + 8 * s)},${n(ty + 20 * s)} ${n(x + 8 * s)},${n(ty + 30 * s)} ${n(x + 7 * s)},${n(ty + 38 * s)}Z`, gold);
-    out += path(`M${n(x - 30 * s)},${n(ty + 6 * s)}Q${n(x - 16 * s)},${n(ty + 20 * s)} ${n(x - 8 * s)},${n(ty + 24 * s)}M${n(x + 30 * s)},${n(ty + 6 * s)}Q${n(x + 16 * s)},${n(ty + 20 * s)} ${n(x + 8 * s)},${n(ty + 24 * s)}`, 'none', `stroke="#fff" stroke-opacity=".45" stroke-width="${n(2 * s)}"`);
-    out += wreathGlyph(x, ty + 82 * s, 20 * s, gold);
-  }
+  out += path(darkD, dark) + path(litD, light, op(0.85));
   return out;
 }
 
-function torch(c: Ctx, x: number, y: number, key: string): string {
+/** Palm tree with curved segmented trunk and arched fronds. */
+function palm(s: S, x: number, base: number, h: number, lean: number, trunk: string, dark: string, light: string): string {
+  const tx = x + lean * h * 0.35;
+  const ty = base - h;
+  const tw = h * 0.035;
+  let out = path(`M${P(x - tw * 1.3, base)}Q${P(x + lean * h * 0.05, base - h * 0.55)} ${P(tx - tw * 0.7, ty)}L${P(tx + tw * 0.7, ty)}Q${P(x + lean * h * 0.05 + tw * 2, base - h * 0.55)} ${P(x + tw * 1.3, base)}Z`, trunk);
+  let rings = '';
+  for (let i = 1; i < 14; i++) {
+    const t = i / 14;
+    const cx = (1 - t) * (1 - t) * x + 2 * (1 - t) * t * (x + lean * h * 0.05 + tw) + t * t * tx;
+    const cy = base - h * t;
+    const ww = tw * (1.3 - t * 0.5);
+    rings += `M${P(cx - ww, cy)}q${n(ww)},${n(h * 0.012)} ${n(2 * ww)},0`;
+  }
+  out += stroke(rings, shade(trunk, -0.35), Math.max(1, tw * 0.25), op(0.8));
+  let fd = '';
+  let fl = '';
+  const fronds = 9;
+  for (let i = 0; i < fronds; i++) {
+    const a = -Math.PI + (i / (fronds - 1)) * Math.PI + s.rnd(-0.12, 0.12);
+    const len = h * s.rnd(0.38, 0.5);
+    const ex = tx + Math.cos(a) * len;
+    const ey = ty + Math.sin(a) * len * 0.45 + len * 0.42;
+    const mx = tx + Math.cos(a) * len * 0.55;
+    const my = ty + Math.sin(a) * len * 0.6 - len * 0.12;
+    const nx = -(ey - ty);
+    const ny = ex - tx;
+    const nl = Math.hypot(nx, ny) || 1;
+    const wd = len * 0.13;
+    const ox = (nx / nl) * wd;
+    const oy = (ny / nl) * wd;
+    const d = `M${P(tx, ty)}Q${P(mx + ox, my + oy)} ${P(ex, ey)}Q${P(mx - ox * 0.3, my - oy * 0.3)} ${P(tx, ty)}Z`;
+    if (Math.cos(a) * s.lit < 0) fl += d;
+    else fd += d;
+  }
+  out += path(fd, dark) + path(fl, light);
+  out += `<circle cx="${n(tx)}" cy="${n(ty + tw)}" r="${n(tw * 1.4)}" fill="${shade(trunk, -0.2)}"/>`;
+  return out;
+}
+
+/** Waving flag on a pole. */
+function flag(s: S, x: number, y: number, w: number, h: number, color: string, poleC: string, dir = 1, phase = 0, finial = '#e8c060'): string {
+  const a = h * 0.18;
+  const ph = phase;
+  const x1 = x + dir * w;
+  const top = `M${P(x, y)}C${P(x + dir * w * 0.33, y - a * Math.cos(ph))} ${P(x + dir * w * 0.66, y + a * Math.sin(ph + 1))} ${P(x1, y + a * 0.3)}`;
+  const tail = `L${P(x1 - dir * w * 0.12, y + h * 0.5 + a * 0.3)}L${P(x1, y + h + a * 0.3)}`;
+  const bottom = `C${P(x + dir * w * 0.66, y + h + a * Math.sin(ph + 1))} ${P(x + dir * w * 0.33, y + h - a * Math.cos(ph))} ${P(x, y + h)}Z`;
+  const fill = s.lg([[0, color], [0.3, shade(color, 0.22)], [0.55, shade(color, -0.25)], [0.8, shade(color, 0.12)], [1, shade(color, -0.2)]], dir > 0 ? 0 : 1, 0, dir > 0 ? 1 : 0, 0);
   return (
-    glow(c, key, x, y - 16, 90, '#ffb347', 0.75) +
-    rect(x - 4, y - 6, 8, 46, '#2a1810') +
-    path(`M${n(x - 10)},${n(y - 6)}H${n(x + 10)}L${n(x + 6)},${n(y + 2)}H${n(x - 6)}Z`, '#3a2416') +
-    path(`M${n(x)},${n(y - 40)}C${n(x + 12)},${n(y - 22)} ${n(x + 10)},${n(y - 8)} ${n(x)},${n(y - 6)}C${n(x - 10)},${n(y - 8)} ${n(x - 12)},${n(y - 22)} ${n(x)},${n(y - 40)}Z`, '#ffcf5a') +
-    path(`M${n(x)},${n(y - 28)}C${n(x + 5)},${n(y - 18)} ${n(x + 4)},${n(y - 10)} ${n(x)},${n(y - 9)}C${n(x - 4)},${n(y - 10)} ${n(x - 5)},${n(y - 18)} ${n(x)},${n(y - 28)}Z`, '#fff6c8')
+    path(top + tail + bottom, fill) +
+    stroke(`M${P(x, y - h * 0.4)}L${P(x, y + h * 3.2)}`, poleC, Math.max(2, h * 0.07), 'stroke-linecap="round"') +
+    `<circle cx="${n(x)}" cy="${n(y - h * 0.45)}" r="${n(Math.max(2.5, h * 0.09))}" fill="${finial}"/>`
   );
 }
 
-function cypress(x: number, baseY: number, h: number, fill: string): string {
-  const w = h * 0.16;
-  return path(`M${n(x)},${n(baseY - h)}C${n(x + w * 0.8)},${n(baseY - h * 0.7)} ${n(x + w)},${n(baseY - h * 0.2)} ${n(x + w * 0.4)},${n(baseY)}H${n(x - w * 0.4)}C${n(x - w)},${n(baseY - h * 0.2)} ${n(x - w * 0.8)},${n(baseY - h * 0.7)} ${n(x)},${n(baseY - h)}Z`, fill);
+/** Hanging vertical banner with swallowtail, folds and gold trim. */
+function hangingBanner(s: S, x: number, y: number, w: number, h: number, color: string, trim: string, emblem = ''): string {
+  const fill = s.lg([[0, shade(color, -0.25)], [0.18, shade(color, 0.15)], [0.42, color], [0.62, shade(color, -0.18)], [0.85, shade(color, 0.1)], [1, shade(color, -0.3)]], 0, 0, 1, 0);
+  const d = `M${P(x, y)}L${P(x + w, y)}L${P(x + w, y + h)}L${P(x + w / 2, y + h - w * 0.35)}L${P(x, y + h)}Z`;
+  return (
+    path(d, fill) +
+    stroke(`M${P(x + w * 0.1, y + 4)}L${P(x + w * 0.1, y + h - w * 0.12)}M${P(x + w * 0.9, y + 4)}L${P(x + w * 0.9, y + h - w * 0.12)}`, trim, Math.max(1.5, w * 0.05), op(0.9)) +
+    rect(x - w * 0.12, y - w * 0.08, w * 1.24, w * 0.12, trim) +
+    emblem
+  );
 }
 
-function palm(x: number, baseY: number, h: number, trunk: string, leaf: string, lean = 1): string {
-  const tx = x + lean * h * 0.12;
-  const ty = baseY - h;
-  let s = path(`M${n(x - 7)},${n(baseY)}Q${n(x + lean * h * 0.02)},${n(baseY - h * 0.5)} ${n(tx - 3)},${n(ty)}h6Q${n(x + 6 + lean * h * 0.04)},${n(baseY - h * 0.5)} ${n(x + 7)},${n(baseY)}Z`, trunk);
-  let d = '';
-  for (let i = 0; i < 7; i++) {
-    const a = -Math.PI + (i / 6) * Math.PI + (i % 2 ? 0.1 : -0.1);
-    const len = h * (0.36 + (i % 3) * 0.05);
-    const ex = tx + Math.cos(a) * len;
-    const ey = ty + Math.sin(a) * len * 0.5 + len * 0.35;
-    const mx = tx + Math.cos(a) * len * 0.5;
-    const my = ty + Math.sin(a) * len * 0.5 - len * 0.12;
-    d += `M${n(tx)},${n(ty)}Q${n(mx)},${n(my - 10)} ${n(ex)},${n(ey)}Q${n(mx)},${n(my + 8)} ${n(tx)},${n(ty)}Z`;
-  }
-  s += path(d, leaf);
-  return s;
-}
+// ------------------------------------------------------------------ lettering
 
-/** Stone block courses drawn as thin lines over a wall. */
-function masonry(x: number, y: number, w: number, h: number, course: number, color: string, op = 0.25): string {
-  let d = '';
-  let row = 0;
-  for (let yy = y + course; yy < y + h; yy += course, row++) {
-    d += `M${n(x)},${n(yy)}H${n(x + w)}`;
-    for (let xx = x + (row % 2 ? course : course * 2); xx < x + w; xx += course * 3) d += `M${n(xx)},${n(yy)}v${n(-course)}`;
-  }
-  return path(d, 'none', `stroke="${color}" stroke-width="2" opacity="${n(op)}"`);
-}
-
-// ------------------------------------------------------------------ arenas
-
-function ludus(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1]);
-  s += glow(c, 'sn', 1180, 300, 420, '#fff2c4', 0.9);
-  s += `<circle cx="1180" cy="300" r="70" fill="#fff6dc" opacity=".9"/>`;
-  s += clouds(c, 5, 120, 260, '#fff4e0', 0.35, 1.2);
-  s += ridge(c.r, 470, 50, 220, mix(p.sky[1], p.stoneDark, 0.35), 'opacity=".55"');
-  s += ridge(c.r, 505, 30, 160, mix(p.sky[1], p.stoneDark, 0.55), 'opacity=".7"');
-  // ludus buildings at both edges
-  const bld = (x: number, w: number, top: number, flip: boolean) => {
-    let b = rect(x, top, w, 600 - top, p.stone);
-    b += masonry(x, top + 30, w, 600 - top - 30, 34, p.stoneDark, 0.18);
-    b += path(`M${n(x - 20)},${n(top)}L${n(x + (flip ? w * 0.35 : w * 0.65))},${n(top - 70)}L${n(x + w + 20)},${n(top)}Z`, mix(p.accent, p.stoneDark, 0.3));
-    b += path(`M${n(x - 20)},${n(top)}H${n(x + w + 20)}v10H${n(x - 20)}Z`, shade(p.stoneDark, -0.2));
-    let win = '';
-    for (let i = 0; i < Math.floor(w / 70); i++) win += `M${n(x + 30 + i * 70)},${n(top + 50)}h26v40h-26Z`;
-    b += path(win, shade(p.stoneDark, -0.35));
-    // wooden balcony
-    b += rect(x, top + 120, w, 10, '#6b3f22') + path(Array.from({ length: Math.floor(w / 22) }, (_, i) => `M${n(x + 8 + i * 22)},${n(top + 130)}v34`).join(''), 'none', 'stroke="#6b3f22" stroke-width="5"');
-    b += rect(x, top + 162, w, 7, '#6b3f22');
-    // big arched gate
-    const gx = x + w / 2 - 50;
-    b += path(`M${n(gx)},600V${n(top + 240)}A50,50 0 0,1 ${n(gx + 100)},${n(top + 240)}V600Z`, shade(p.stoneDark, -0.4));
-    return b;
-  };
-  s += bld(-40, 420, 300, false) + bld(1220, 420, 290, true);
-  // red cloth banners from the buildings
-  s += banner(330, 330, 54, 170, p.accent, p.accent2) + banner(1250, 320, 54, 170, p.accent, p.accent2);
-  // palisade across the horizon
-  let stakes = '';
-  for (let x = 380; x < 1230; x += 26) {
-    const h = 70 + ((x * 7) % 23);
-    stakes += `M${x},590V${590 - h}l13,-16l13,16V590Z`;
-  }
-  s += path(stakes, '#8a5a32');
-  s += path(stakes, 'none', 'stroke="#4a2c16" stroke-width="2.5"');
-  s += rect(380, 548, 850, 8, '#5a3820') + rect(380, 572, 850, 8, '#5a3820');
-  s += ground(c, 585, mix(p.light, p.stone, 0.5), mix(p.stone, p.dark, 0.45));
-  s += rect(0, 585, W, 6, shade(p.stoneDark, -0.1), 'opacity=".35"');
-  // raked sand
-  let rake = '';
-  for (let i = 0; i < 6; i++) rake += `M${-50},${640 + i * 46}Q800,${600 + i * 54} 1650,${640 + i * 46}`;
-  s += path(rake, 'none', `stroke="${shade(p.stone, 0.35)}" stroke-width="3" opacity=".35"`);
-  // training posts (palus) at the edges
-  const palus = (x: number, h: number) => {
-    let t = rect(x - 22, 880 - h, 44, h, '#7a4a28') + rect(x - 22, 880 - h, 12, h, '#a06a3c');
-    t += path(`M${x - 22},${880 - h + 60}h44M${x - 22},${880 - h + 72}h44M${x - 22},${880 - h + 84}h44`, 'none', 'stroke="#d8c08a" stroke-width="5"');
-    t += path(`M${x - 22},${880 - h}h44v-12q-22,-10 -44,0Z`, '#5a3418');
-    t += path(`M${x - 70},${880 - h + 130}h140`, 'none', 'stroke="#5a3418" stroke-width="14" stroke-linecap="round"');
-    t += `<ellipse cx="${x}" cy="882" rx="80" ry="12" fill="#000" opacity=".2"/>`;
-    return t;
-  };
-  s += palus(120, 330) + palus(1480, 300);
-  // weapon rack with wooden swords
-  let rack = rect(230, 640, 120, 10, '#5a3418') + rect(230, 700, 120, 10, '#5a3418') + rect(234, 630, 10, 130, '#5a3418') + rect(336, 630, 10, 130, '#5a3418');
-  for (let i = 0; i < 4; i++) rack += rect(254 + i * 22, 600, 9, 130, '#b07a48') + rect(248 + i * 22, 690, 21, 6, '#4a2c16');
-  s += rack;
-  return s + vignette(c, 0.45);
-}
-
-function camp(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1]);
-  s += glow(c, 'sn', 400, 180, 380, '#ffffff', 0.7);
-  s += clouds(c, 9, 90, 330, '#ffffff', 0.85, 1.3);
-  s += ridge(c.r, 430, 90, 260, mix(p.sky[0], '#4a6a8a', 0.55), 'opacity=".75"');
-  s += ridge(c.r, 480, 50, 200, mix('#7a8a4a', p.sky[1], 0.4));
-  // camp rampart & palisade
-  s += path('M0,560L0,520Q800,505 1600,520L1600,560Z', '#8a7a4a');
-  let stakes = '';
-  for (let x = 0; x < W; x += 18) stakes += `M${x},530V${498 - ((x * 13) % 9)}l9,-10l9,10V530Z`;
-  s += path(stakes, '#6b4a2a');
-  // gate towers (porta praetoria)
-  const tower = (x: number) =>
-    rect(x, 380, 90, 160, '#7a5432') +
-    masonry(x, 380, 90, 160, 20, '#3a2414', 0.4) +
-    path(`M${x - 12},380L${x + 45},336L${x + 102},380Z`, p.accent) +
-    rect(x - 10, 380, 110, 12, '#4b2e19') +
-    rect(x + 30, 410, 30, 34, '#2a1608');
-  s += tower(690) + tower(820);
-  s += rect(780, 430, 40, 110, '#3a2414');
-  s += banner(705, 400, 30, 80, p.accent2, '#e8b04b') + banner(865, 400, 30, 80, p.accent2, '#e8b04b');
-  // tent rows
-  const tent = (x: number, y: number, w: number, col: string) => {
-    const h = w * 0.62;
-    return (
-      path(`M${n(x)},${n(y)}L${n(x + w * 0.35)},${n(y - h)}H${n(x + w * 1.15)}L${n(x + w * 0.85)},${n(y)}Z`, shade(col, -0.18)) +
-      path(`M${n(x)},${n(y)}L${n(x + w * 0.35)},${n(y - h)}L${n(x + w * 0.7)},${n(y)}Z`, col) +
-      path(`M${n(x + w * 0.27)},${n(y)}L${n(x + w * 0.35)},${n(y - h * 0.55)}L${n(x + w * 0.43)},${n(y)}Z`, '#3a2414') +
-      path(`M${n(x + w * 0.35)},${n(y - h)}l0,-14`, 'none', 'stroke="#5a3a20" stroke-width="3"')
-    );
-  };
-  const tentCol = ['#e9dcc0', '#d8c49a', '#cdb48a'];
-  for (let row = 0; row < 3; row++) {
-    const y = 540 + row * 26;
-    const w = 90 + row * 22;
-    for (let i = 0; i < 4 - (row === 2 ? 1 : 0); i++) {
-      s += tent(-30 + i * (w + 20) + row * 18, y, w, tentCol[(i + row) % 3]);
-      s += tent(W - 30 - (i + 1) * (w + 20) - row * 18, y, w, tentCol[(i + row + 1) % 3]);
-    }
-  }
-  s += ground(c, 600, mix('#b8a06a', p.light, 0.3), mix('#8f6a45', p.dark, 0.5));
-  // trodden path
-  s += path('M700,600L900,600L1100,900L500,900Z', shade(p.light, -0.05), 'opacity=".35"');
-  s += standard(400, 860, 420, 'vex', p.accent, '#e8b04b', 1.2) + standard(1210, 860, 400, 'aquila', p.accent, '#e8b04b', 1.15);
-  s += standard(170, 880, 330, 'vex', p.accent2, '#e8b04b', 0.9);
-  s += standard(1440, 880, 330, 'vex', p.accent, '#e8b04b', 0.9);
-  return s + vignette(c, 0.4);
-}
-
-function fortress(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1]);
-  s += glow(c, 'sn', 820, 460, 520, '#ffe2b0', 0.55);
-  s += clouds(c, 7, 80, 260, shade(p.sky[0], -0.25), 0.6, 1.6);
-  s += clouds(c, 5, 160, 320, '#e8dccc', 0.35, 1.2);
-  const stone = p.stone;
-  const dk = p.stoneDark;
-  // main curtain wall
-  s += rect(0, 360, W, 230, shade(stone, -0.08));
-  s += masonry(0, 360, W, 230, 28, dk, 0.35);
-  s += crenellations(0, W, 362, 26, 26, shade(stone, -0.08));
-  s += rect(0, 360, W, 6, shade(stone, 0.3));
-  // arrow slits
-  let slits = '';
-  for (let x = 300; x < 1320; x += 110) if (x < 600 || x > 1000) slits += `M${x},420h8v44h-8Z`;
-  s += path(slits, '#1a1d22');
-  // flanking towers
-  const tower = (x: number, w: number, top: number) => {
-    let t = rect(x, top, w, 590 - top, stone);
-    t += rect(x + w * 0.6, top, w * 0.4, 590 - top, '#000', 'opacity=".18"');
-    t += masonry(x, top, w, 590 - top, 30, dk, 0.4);
-    t += crenellations(x - 8, x + w + 8, top, 24, 30, stone);
-    t += rect(x - 8, top - 2, w + 16, 14, shade(stone, -0.15));
-    t += path(`M${n(x + w / 2 - 10)},${top + 70}h20v60h-20Z`, '#1a1d22');
-    t += banner(x + w / 2 - 34, top + 160, 68, 220, p.accent, p.accent2, wreathGlyph(x + w / 2, top + 240, 18, p.accent2));
-    return t;
-  };
-  s += tower(80, 230, 170) + tower(1290, 230, 180);
-  // gatehouse
-  s += rect(600, 250, 400, 340, shade(stone, 0.06));
-  s += masonry(600, 250, 400, 340, 30, dk, 0.35);
-  s += crenellations(592, 1010, 250, 26, 30, shade(stone, 0.06));
-  s += rect(592, 248, 416, 12, shade(stone, -0.2));
-  s += path('M690,590V430A110,110 0 0,1 910,430V590Z', '#14171b');
-  let grid = '';
-  for (let x = 705; x < 900; x += 24) grid += `M${x},${x < 800 ? 430 - (x - 690) * 0.7 : 430 - (910 - x) * 0.7}V590`;
-  for (let y = 420; y < 590; y += 26) grid += `M690,${y}H910`;
-  s += path(grid, 'none', `stroke="${shade(stone, -0.35)}" stroke-width="5"`);
-  s += path('M680,590V430A120,120 0 0,1 920,430V590', 'none', `stroke="${shade(stone, 0.35)}" stroke-width="10"`);
-  s += banner(620, 280, 50, 150, p.accent, p.accent2) + banner(930, 280, 50, 150, p.accent, p.accent2);
-  // iron aquila above the gate
-  s += standard(800, 300, 30, 'aquila', p.accent, p.accent2, 0.9);
-  s += ground(c, 590, mix(stone, p.light, 0.25), shade(p.dark, -0.25));
-  let flags = '';
-  for (let i = 1; i < 6; i++) flags += `M0,${590 + i * i * 12}H${W}`;
-  for (let i = -8; i <= 8; i++) flags += `M${800 + i * 70},590L${800 + i * 260},900`;
-  s += path(flags, 'none', `stroke="${shade(stone, -0.4)}" stroke-width="2" opacity=".25"`);
-  return s + vignette(c, 0.5);
-}
-
-function court(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1]);
-  s += glow(c, 'sn', 800, 260, 520, '#fff0c0', 0.8);
-  s += clouds(c, 4, 90, 200, '#fff3dc', 0.4, 1.4);
-  // two-storey sandstone arcade wrapping the court
-  s += arcade(0, 410, W, 180, 16, p.stone, shade(p.stoneDark, -0.35), 0.72, 0.18);
-  s += arcade(0, 270, W, 140, 20, shade(p.stone, 0.08), shade(p.stoneDark, -0.25), 0.7, 0.18);
-  s += rect(0, 262, W, 14, shade(p.stoneDark, 0.1));
-  // terracotta roof
-  s += path(`M-20,262L40,226H1560L1620,262Z`, mix(p.accent, '#a0522d', 0.5));
-  let tiles = '';
-  for (let x = 40; x < 1560; x += 18) tiles += `M${x},228L${x - 4},262`;
-  s += path(tiles, 'none', `stroke="${shade(p.accent, -0.35)}" stroke-width="2" opacity=".5"`);
-  // banners hanging between arches
-  for (let i = 0; i < 8; i++) {
-    const x = 70 + i * 200;
-    s += banner(x, 286, 46, 150, i % 2 ? p.accent2 : p.accent, '#e8b04b', i % 2 ? '' : wreathGlyph(x + 23, 340, 12, '#e8b04b'));
-  }
-  // statues on plinths at both sides
-  const statue = (x: number) =>
-    rect(x - 40, 470, 80, 120, shade(p.stone, 0.15)) +
-    rect(x - 46, 462, 92, 12, shade(p.stone, 0.3)) +
-    path(`M${x - 12},462L${x - 16},400Q${x - 26},390 ${x - 34},360L${x - 22},356L${x - 10},380L${x - 8},350Q${x - 14},334 ${x},330Q${x + 14},334 ${x + 8},350L${x + 12},386L${x + 18},340L${x + 26},344L${x + 18},400L${x + 14},462Z`, shade(p.stone, 0.35)) +
-    path(`M${x + 18},340L${x + 24},250`, 'none', `stroke="${shade(p.stone, 0.35)}" stroke-width="5"`);
-  s += statue(150) + statue(1450);
-  s += palm(310, 600, 300, '#7a4a28', '#4a7a3a', -1) + palm(1290, 600, 320, '#7a4a28', '#4a7a3a', 1);
-  s += ground(c, 590, mix(p.light, '#f2d8a8', 0.4), mix(p.dark, p.stoneDark, 0.35));
-  s += `<ellipse cx="800" cy="790" rx="900" ry="190" fill="none" stroke="${shade(p.light, 0.3)}" stroke-width="6" opacity=".35"/>`;
-  s += rect(0, 590, W, 10, shade(p.stoneDark, -0.1), 'opacity=".4"');
-  return s + vignette(c, 0.45);
-}
-
-function forum(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1]);
-  s += glow(c, 'sn', 800, 200, 520, '#ffffff', 0.7);
-  s += clouds(c, 6, 90, 280, '#ffffff', 0.8, 1.2);
-  s += ridge(c.r, 470, 60, 260, mix(p.sky[0], '#7a9ab0', 0.4), 'opacity=".5"');
-  defColumn(c, 'cl', p.stone, p.stoneDark, shade(p.stone, 0.1));
-  // distant colonnade (basilica) across the back
-  s += rect(0, 470, W, 110, shade(p.stone, -0.06));
-  s += colonnade(c, 'cl', 20, 1580, 580, 26, 0.5);
-  s += rect(0, 470, W, 14, p.stone);
-  // temples left & right
-  s += temple(c, 'cl', -80, 590, 540, 1.45, 6, p.stone, p.accent, p.stoneDark);
-  s += temple(c, 'cl', 1140, 590, 540, 1.45, 6, p.stone, p.accent, p.stoneDark);
-  // triumphal arch centre
-  const ax = 590;
-  const aw = 420;
-  s += rect(ax, 270, aw, 320, p.stone);
-  s += rect(ax + aw * 0.65, 270, aw * 0.35, 320, p.stoneDark, 'opacity=".22"');
-  s += path(`M${ax + 150},590V430A60,60 0 0,1 ${ax + 270},430V590ZM${ax + 30},590V470A32,32 0 0,1 ${ax + 94},470V590ZM${ax + 326},590V470A32,32 0 0,1 ${ax + 390},470V590Z`, shade(p.stoneDark, -0.25));
-  s += path(`M${ax + 144},590V430A66,66 0 0,1 ${ax + 276},430V590`, 'none', `stroke="${p.accent}" stroke-width="4"`);
-  s += rect(ax - 10, 250, aw + 20, 24, shade(p.stone, 0.15)) + rect(ax - 6, 200, aw + 12, 52, p.stone);
-  s += rect(ax + 60, 212, aw - 120, 28, shade(p.stoneDark, -0.1), 'opacity=".3"');
-  let lines = '';
-  for (let i = 0; i < 3; i++) lines += `M${ax + 90},${219 + i * 8}H${ax + aw - 90}`;
-  s += path(lines, 'none', `stroke="${p.accent}" stroke-width="3"`);
-  // engaged columns
-  for (const x of [ax + 12, ax + 112, ax + 290, ax + 390]) s += rect(x, 280, 18, 310, shade(p.stone, 0.18)) + rect(x - 4, 276, 26, 8, p.accent);
-  // golden quadriga on top
-  const gold = p.accent;
-  const qx = 800;
-  let horses = '';
-  for (let i = 0; i < 4; i++) {
-    const hx = qx - 105 + i * 44;
-    horses += `M${hx},200l4,-30q-10,-14 0,-30l10,-12q8,0 12,8l8,-2q-4,10 -10,12l2,24l6,30h-6l-6,-28l-10,0l-4,28Z`;
-  }
-  s += path(horses, gold);
-  s += path(`M${qx + 60},200V160Q${qx + 70},145 ${qx + 90},150V200Z`, shade(gold, -0.15));
-  s += path(`M${qx + 72},150l-6,-30a8,8 0 1,1 12,0l6,30Z`, gold);
-  s += ground(c, 610, p.light, mix(p.dark, p.stone, 0.4));
-  let pave = '';
-  for (let i = 0; i < 6; i++) pave += `M0,${612 + i * i * 9}H${W}`;
-  for (let i = -10; i <= 10; i++) pave += `M${800 + i * 60},610L${800 + i * 220},900`;
-  s += path(pave, 'none', `stroke="${p.stoneDark}" stroke-width="2" opacity=".22"`);
-  return s + vignette(c, 0.35);
-}
-
-function bastion(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1], mix(p.sky[0], p.sky[1], 0.6));
-  s += stars(c, 60, 300, '#fff', 0.8);
-  s += `<circle cx="1260" cy="150" r="46" fill="#f4e6d0"/><circle cx="1280" cy="138" r="44" fill="${mix(p.sky[0], p.sky[1], 0.15)}"/>`;
-  s += glow(c, 'sn', 800, 560, 600, '#ff9a6a', 0.55);
-  s += ridge(c.r, 470, 70, 240, mix(p.sky[0], '#1a1020', 0.5), 'opacity=".8"');
-  const wall = mix(p.stone, p.accent, 0.35);
-  const wallD = shade(mix(p.stoneDark, p.accent, 0.25), -0.2);
-  // angled bastions (trace italienne flavour)
-  const bast = (x: number, w: number, top: number) => {
-    const b = path(`M${x},590L${x + w * 0.12},${top}H${x + w * 0.88}L${x + w},590Z`, wall);
-    const sh = path(`M${x + w * 0.5},590V${top}H${x + w * 0.88}L${x + w},590Z`, '#000', 'opacity=".25"');
-    return b + sh + masonry(x + w * 0.1, top + 4, w * 0.8, 586 - top, 26, wallD, 0.45) + crenellations(x + w * 0.12, x + w * 0.88, top, 22, 24, wall);
-  };
-  s += rect(0, 400, W, 190, wallD);
-  s += crenellations(0, W, 400, 22, 22, wallD);
-  s += bast(-40, 420, 300) + bast(1220, 420, 290) + bast(560, 480, 340);
-  // gate with dark recess
-  s += path('M720,590V470A80,80 0 0,1 880,470V590Z', '#140a0c');
-  s += path('M708,590V470A92,92 0 0,1 892,470V590', 'none', `stroke="${p.accent2}" stroke-width="6"`);
-  // scorpion banners
-  for (const [x, y, h] of [[90, 330, 230], [300, 330, 230], [620, 370, 170], [930, 370, 170], [1260, 320, 230], [1470, 320, 230]] as [number, number, number][]) {
-    const w = h * 0.3;
-    s += banner(x, y, w, h, p.accent, p.accent2, scorpionGlyph(x + w / 2, y + h * 0.42, w * 0.03, p.accent2));
-  }
-  s += torch(c, 470, 400, 't1') + torch(c, 1130, 400, 't2') + torch(c, 700, 450, 't3') + torch(c, 900, 450, 't4');
-  s += ground(c, 590, shade(mix(p.dark, p.stoneDark, 0.5), -0.1), shade(p.stoneDark, -0.5));
-  s += glow(c, 'gl', 800, 600, 500, '#ff9a5a', 0.25);
-  return s + vignette(c, 0.6);
-}
-
-function curia(c: Ctx): string {
-  const p = c.pal;
-  // interior: back wall of green marble with ivory columns
-  let s = sky(c, shade(p.stoneDark, -0.35), shade(p.stoneDark, -0.1));
-  // coffered ceiling band
-  s += rect(0, 0, W, 130, shade(p.stoneDark, -0.45));
-  let coff = '';
-  for (let x = 10; x < W; x += 100) coff += `M${x},20h80v80h-80Z`;
-  s += path(coff, shade(p.stoneDark, -0.25));
-  s += path(coff.replace(/h80v80h-80Z/g, 'h80'), 'none', `stroke="${p.accent2}" stroke-width="3" opacity=".5"`);
-  s += rect(0, 120, W, 22, p.stone) + rect(0, 142, W, 8, '#c9a040');
-  // marble panels
-  c.defs.push(linGrad(`${c.id}mb`, [[0, shade(p.accent2, 0.15)], [0.5, p.accent2], [1, shade(p.accent2, -0.35)]], 0, 0, 1, 1));
-  s += rect(0, 150, W, 450, `url(#${c.id}mb)`);
-  let veins = '';
-  for (let i = 0; i < 26; i++) {
-    const x = c.r.next() * W;
-    const y = 160 + c.r.next() * 420;
-    veins += `M${n(x)},${n(y)}q${n(30 + c.r.next() * 60)},${n(-20 + c.r.next() * 40)} ${n(90 + c.r.next() * 80)},${n(-10 + c.r.next() * 30)}`;
-  }
-  s += path(veins, 'none', 'stroke="#e8f2e8" stroke-width="2" opacity=".25"');
-  defColumn(c, 'cl', p.stone, p.stoneDark, '#c9a040');
-  s += colonnade(c, 'cl', 60, 1540, 600, 9, 2.2);
-  // central doorway with pediment & bronze doors
-  s += rect(660, 300, 280, 300, '#3a2a14');
-  s += rect(676, 316, 120, 284, '#8a5a24') + rect(804, 316, 120, 284, '#7a4e1e');
-  let studs = '';
-  for (let y = 340; y < 590; y += 40) for (const x of [700, 740, 772, 828, 860, 900]) studs += `M${x},${y}h.1`;
-  s += path(studs, 'none', 'stroke="#e8c070" stroke-width="7" stroke-linecap="round"');
-  s += rect(640, 270, 320, 30, p.stone) + pediment(630, 270, 340, 80, p.stone, '#c9a040', p.stoneDark);
-  // light shafts from high windows
-  s += path('M300,150L380,150L620,600L420,600Z M1220,150L1300,150L1180,600L980,600Z', '#fff8e0', 'opacity=".09"');
-  // tiered senate benches on both sides
-  for (let i = 0; i < 4; i++) {
-    const y = 600 - i * 40;
-    s += path(`M-10,${y + 40}L${380 - i * 70},${y + 40}L${380 - i * 70},${y}L-10,${y}Z`, i % 2 ? shade(p.stone, -0.12) : p.stone);
-    s += path(`M1610,${y + 40}L${1220 + i * 70},${y + 40}L${1220 + i * 70},${y}L1610,${y}Z`, i % 2 ? shade(p.stone, -0.12) : p.stone);
-    s += rect(-10, y, 390 - i * 70, 5, shade(p.stone, 0.4)) + rect(1220 + i * 70, y, 390 - i * 70, 5, shade(p.stone, 0.4));
-  }
-  // red cushions on benches
-  s += path('M40,553h120v7h-120ZM200,553h100v7h-100ZM1300,553h120v7h-120ZM1450,553h100v7h-100Z', p.accent);
-  // opus sectile floor
-  s += ground(c, 640, mix(p.light, p.stone, 0.4), mix(p.dark, p.stoneDark, 0.6));
-  let floor = '';
-  for (let i = 0; i < 5; i++) floor += `M0,${642 + i * i * 11}H${W}`;
-  for (let i = -9; i <= 9; i++) floor += `M${800 + i * 80},640L${800 + i * 240},900`;
-  s += path(floor, 'none', `stroke="${p.accent2}" stroke-width="3" opacity=".3"`);
-  s += rect(0, 636, W, 8, '#c9a040', 'opacity=".7"');
-  return s + vignette(c, 0.55);
-}
-
-function palace(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1], mix(p.sky[0], p.sky[1], 0.55));
-  s += glow(c, 'sn', 800, 470, 600, '#ffd27a', 0.85);
-  s += `<circle cx="800" cy="470" r="110" fill="#ffe2a0" opacity=".85"/>`;
-  s += clouds(c, 6, 140, 360, shade(p.sky[1], 0.15), 0.45, 1.6);
-  const gold = p.accent;
-  const red = p.stone;
-  defColumn(c, 'cl', mix(red, '#ffffff', 0.12), shade(red, -0.45), gold);
-  // central dome hall
-  s += path('M560,330C560,210 1040,210 1040,330Z', mix(gold, '#a0782a', 0.3));
-  s += path('M600,330C600,240 800,220 800,220C700,250 690,300 690,330Z', '#fff', 'opacity=".2"');
-  s += rect(790, 180, 20, 46, gold) + `<circle cx="800" cy="176" r="14" fill="${gold}"/>`;
-  s += rect(540, 330, 520, 260, red);
-  s += rect(540, 320, 520, 16, gold);
-  s += colonnade(c, 'cl', 575, 1025, 590, 6, 1.25);
-  // long wings
-  s += rect(0, 400, 540, 190, shade(red, -0.12)) + rect(1060, 400, 540, 190, shade(red, -0.12));
-  s += rect(0, 392, 540, 12, gold) + rect(1060, 392, 540, 12, gold);
-  s += colonnade(c, 'cl', 30, 510, 590, 7, 0.9) + colonnade(c, 'cl', 1090, 1570, 590, 7, 0.9);
-  // corner towers with gold roofs
-  const tw = (x: number) => rect(x, 260, 150, 330, shade(red, -0.05)) + path(`M${x - 14},260L${x + 75},170L${x + 164},260Z`, gold) + rect(x - 10, 252, 170, 12, shade(gold, -0.2)) + path(`M${x + 55},300h40v70h-40Z`, '#2a0808');
-  s += tw(150) + tw(1300);
-  s += banner(185, 300, 80, 210, p.accent2, gold, wreathGlyph(225, 380, 22, gold)) + banner(1335, 300, 80, 210, p.accent2, gold, wreathGlyph(1375, 380, 22, gold));
-  // terrace with balustrade
-  s += ground(c, 590, mix(p.light, red, 0.35), shade(p.dark, -0.4));
-  let bal = '';
-  for (let x = 0; x < W; x += 24) if (x < 480 || x > 1100) bal += `M${x + 6},604h10v36h-10Z`;
-  s += path(bal, mix(p.light, red, 0.2)) + rect(0, 596, 490, 10, gold) + rect(1100, 596, 500, 10, gold) + rect(0, 638, 490, 8, shade(gold, -0.25)) + rect(1100, 638, 500, 8, shade(gold, -0.25));
-  s += path('M800,590L1200,900H400Z', '#ffd27a', 'opacity=".08"');
-  return s + vignette(c, 0.5);
-}
-
-function colosseum(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1]);
-  s += glow(c, 'sn', 800, 120, 520, '#fff2c0', 0.7);
-  // velarium awning strips at the top edge
-  let vel = '';
-  for (let i = 0; i < 16; i++) {
-    const x0 = i * 100;
-    vel += `M${x0},0L${x0 + 100},0L${800 + (x0 + 50 - 800) * 0.7},${70 + Math.abs(x0 + 50 - 800) * 0.05}Z`;
-  }
-  s += path(vel, '#f2e6c8', 'opacity=".9"');
-  let velR = '';
-  for (let i = 0; i < 16; i += 2) {
-    const x0 = i * 100;
-    velR += `M${x0},0L${x0 + 100},0L${800 + (x0 + 50 - 800) * 0.7},${70 + Math.abs(x0 + 50 - 800) * 0.05}Z`;
-  }
-  s += path(velR, p.accent, 'opacity=".9"');
-  // tiers: curved bands that bow upward toward the edges (inside the bowl)
-  const tiers = [
-    { y: 150, h: 95, cnt: 30, col: shade(p.stone, 0.12) },
-    { y: 245, h: 110, cnt: 26, col: p.stone },
-    { y: 355, h: 120, cnt: 22, col: shade(p.stone, -0.08) },
-    { y: 475, h: 120, cnt: 18, col: shade(p.stone, -0.16) },
-  ];
-  const bow = 70;
-  for (const t of tiers) {
-    const yTop = (x: number) => t.y - bow * Math.pow((x - 800) / 800, 2) * 1.0;
-    let band = `M0,${n(yTop(0))}`;
-    for (let x = 100; x <= W; x += 100) band += `L${x},${n(yTop(x))}`;
-    band += `L${W},${n(yTop(W) + t.h)}`;
-    for (let x = W - 100; x >= 0; x -= 100) band += `L${x},${n(yTop(x) + t.h)}`;
-    s += path(band + 'Z', t.col);
-    // crowd strip on the seating
-    let crowdA = '';
-    let crowdB = '';
-    for (let x = 6; x < W; x += 13) {
-      const yy = yTop(x) + t.h * 0.08 + ((x * 7) % 5);
-      if ((x * 31) % 3 === 0) crowdB += `M${x},${n(yy)}h.1`;
-      else crowdA += `M${x},${n(yy)}h.1`;
-    }
-    s += path(crowdA, 'none', `stroke="${shade(p.stoneDark, -0.1)}" stroke-width="9" stroke-linecap="round" opacity=".55"`);
-    s += path(crowdB, 'none', `stroke="${p.accent}" stroke-width="9" stroke-linecap="round" opacity=".6"`);
-    // arches
-    let arches = '';
-    const cw = W / t.cnt;
-    for (let i = 0; i < t.cnt; i++) {
-      const x = i * cw + cw * 0.2;
-      const aw = cw * 0.6;
-      const by = yTop(x + aw / 2) + t.h - 6;
-      const top = yTop(x + aw / 2) + t.h * 0.32;
-      arches += `M${n(x)},${n(by)}V${n(top + aw / 2)}A${n(aw / 2)},${n(aw / 2)} 0 0,1 ${n(x + aw)},${n(top + aw / 2)}V${n(by)}Z`;
-    }
-    s += path(arches, shade(p.stoneDark, -0.25));
-    let lip = `M0,${n(yTop(0) + t.h * 0.25)}`;
-    for (let x = 100; x <= W; x += 100) lip += `L${x},${n(yTop(x) + t.h * 0.25)}`;
-    s += path(lip, 'none', `stroke="${shade(p.stone, 0.4)}" stroke-width="4"`);
-  }
-  // emperor's box (pulvinar) at centre
-  s += rect(700, 470, 200, 70, p.accent) + rect(690, 460, 220, 14, p.accent2) + path('M720,540V500A20,20 0 0,1 760,500V540ZM780,540V500A20,20 0 0,1 820,500V540ZM840,540V500A20,20 0 0,1 880,500V540Z', '#3a0a08');
-  s += banner(620, 470, 40, 110, p.accent, p.accent2) + banner(940, 470, 40, 110, p.accent, p.accent2);
-  // podium wall
-  s += rect(0, 590, W, 26, shade(p.stoneDark, 0.1)) + rect(0, 590, W, 5, p.accent2);
-  s += ground(c, 616, mix(p.light, p.sky[1], 0.25), mix(p.dark, p.stoneDark, 0.3));
-  s += glow(c, 'gl', 800, 760, 700, '#fff0c0', 0.22);
-  return s + vignette(c, 0.45);
-}
-
-function palatine(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1], mix(p.sky[0], p.sky[1], 0.45));
-  s += stars(c, 140, 420, '#fff', 0.95);
-  s += glow(c, 'mn', 1240, 170, 260, '#ffe8ff', 0.6);
-  s += `<circle cx="1240" cy="170" r="62" fill="#fff4fa"/><circle cx="1222" cy="158" r="12" fill="#e8d8f0" opacity=".6"/><circle cx="1262" cy="190" r="8" fill="#e8d8f0" opacity=".6"/>`;
-  s += clouds(c, 4, 260, 400, '#d8a8d0', 0.25, 1.8);
-  const stone = p.stone;
-  const dark = p.stoneDark;
-  const gold = p.accent;
-  defColumn(c, 'cl', stone, shade(dark, -0.2), gold);
-  // distant city hills
-  s += ridge(c.r, 470, 60, 180, shade(dark, -0.3), 'opacity=".9"');
-  // palace complex
-  const dome = (x: number, w: number, y: number) =>
-    path(`M${x - w / 2},${y}C${x - w / 2},${y - w * 0.75} ${x + w / 2},${y - w * 0.75} ${x + w / 2},${y}Z`, mix(gold, '#8a5a8a', 0.25)) +
-    path(`M${x - w / 2 + 10},${y}C${x - w / 2 + 10},${y - w * 0.6} ${x - w * 0.05},${y - w * 0.56} ${x},${y - w * 0.56}C${x - w * 0.2},${y - w * 0.5} ${x - w * 0.25},${y - 20} ${x - w * 0.2},${y}Z`, '#fff', 'opacity=".25"') +
-    rect(x - 4, y - w * 0.56 - 30, 8, 32, gold) +
-    rect(x - w / 2 - 10, y, w + 20, 14, gold);
-  s += rect(520, 330, 560, 260, shade(stone, -0.3));
-  s += dome(800, 300, 330);
-  s += colonnade(c, 'cl', 550, 1050, 590, 8, 1.15);
-  s += rect(0, 420, 520, 170, shade(stone, -0.45)) + rect(1080, 420, 520, 170, shade(stone, -0.45));
-  s += dome(260, 180, 420) + dome(1340, 180, 420);
-  let win = '';
-  for (let x = 30; x < 500; x += 60) win += `M${x},460h24v40h-24ZM${x + 1080},460h24v40h-24Z`;
-  s += path(win, '#ffd77a', 'opacity=".9"');
-  s += glow(c, 'wl', 800, 470, 360, '#ffd77a', 0.35);
-  s += cypress(80, 600, 300, '#160c22') + cypress(150, 600, 240, '#1c1030') + cypress(1450, 600, 300, '#160c22') + cypress(1530, 600, 230, '#1c1030');
-  s += banner(470, 440, 44, 130, p.accent2, gold) + banner(1086, 440, 44, 130, p.accent2, gold);
-  s += ground(c, 590, mix(p.dark, dark, 0.4), shade(dark, -0.55));
-  s += path('M560,590L1040,590L1300,900H300Z', '#ffd77a', 'opacity=".06"');
-  return s + vignette(c, 0.55);
-}
-
-function hall(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1]);
-  // barrel vault with coffers
-  s += path(`M0,0H${W}V200Q800,40 0,200Z`, shade(p.sky[0], -0.3));
-  let coff = '';
-  for (let r = 0; r < 2; r++)
-    for (let i = 0; i < 14; i++) {
-      const x = 30 + i * 115;
-      const y = 20 + r * 60 + Math.pow((x + 40 - 800) / 800, 2) * 60;
-      coff += `M${x},${n(y)}h80v44h-80Z`;
-    }
-  s += path(coff, shade(p.sky[0], -0.1), `stroke="${p.accent}" stroke-width="2" stroke-opacity=".35"`);
-  s += glow(c, 'sk1', 800, 120, 380, '#ffe7a8', 0.45);
-  // hall wall with niches & statues
-  const wall = shade(p.stoneDark, 0.05);
-  s += rect(0, 200, W, 400, wall);
-  s += rect(0, 196, W, 14, p.accent);
-  defColumn(c, 'cl', p.stone, shade(p.stoneDark, -0.1), p.accent);
-  const niches = [80, 280, 480, 1120, 1320, 1520];
-  for (const [i, x] of niches.entries()) {
-    s += path(`M${x - 62},590V330A62,62 0 0,1 ${x + 62},330V590Z`, shade(p.stoneDark, -0.45));
-    s += glow(c, `n${i}`, x, 360, 140, '#ffd98a', 0.35);
-    // plinth + statue/bust silhouettes (alternate)
-    s += rect(x - 40, 520, 80, 70, p.stone) + rect(x - 46, 512, 92, 10, shade(p.stone, 0.2));
-    if (i % 2 === 0) {
-      s += path(`M${x - 18},512L${x - 22},440Q${x - 34},420 ${x - 30},390Q${x - 26},360 ${x - 12},356Q${x - 18},336 ${x},330Q${x + 18},336 ${x + 12},356Q${x + 28},362 ${x + 30},392L${x + 26},440L${x + 20},512Z`, p.stone);
-      s += path(`M${x + 30},392L${x + 42},300`, 'none', `stroke="${p.stone}" stroke-width="6"`);
-    } else {
-      s += path(`M${x - 34},512Q${x - 36},470 ${x - 16},462Q${x - 26},440 ${x - 20},420Q${x - 16},396 ${x},394Q${x + 16},396 ${x + 20},420Q${x + 26},440 ${x + 16},462Q${x + 36},470 ${x + 34},512Z`, p.stone);
-      s += path(`M${x - 22},412Q${x},396 ${x + 22},412`, 'none', `stroke="${p.accent}" stroke-width="5"`);
-    }
-    s += path(`M${x - 62},590V330A62,62 0 0,1 ${x + 62},330V590`, 'none', `stroke="${p.accent}" stroke-width="5"`);
-  }
-  s += colonnade(c, 'cl', 180, 1420, 600, 8, 1.95);
-  // hanging bronze lamps
-  for (const x of [380, 1220]) {
-    s += path(`M${x},200V300`, 'none', `stroke="${p.accent}" stroke-width="3"`);
-    s += glow(c, `l${x}`, x, 320, 120, '#ffcf6a', 0.6);
-    s += path(`M${x - 30},300h60l-12,22h-36Z`, p.accent);
-  }
-  // red runner banners
-  s += banner(700, 220, 60, 200, p.accent2, p.accent, wreathGlyph(730, 290, 18, p.accent)) + banner(840, 220, 60, 200, p.accent2, p.accent, wreathGlyph(870, 290, 18, p.accent));
-  // polished floor with reflections
-  s += ground(c, 600, mix(p.dark, p.stone, 0.15), shade(p.stoneDark, -0.55));
-  s += rect(0, 600, W, 6, p.accent, 'opacity=".6"');
-  let refl = '';
-  for (let i = 0; i < 8; i++) {
-    const x = 180 + (i * 1240) / 7;
-    refl += `M${n(x - 30)},606h60l${n((x - 800) * 0.06)},120h-60Z`;
-  }
-  s += path(refl, p.stone, 'opacity=".08"');
-  return s + vignette(c, 0.55);
-}
-
-function celestial(c: Ctx): string {
-  const p = c.pal;
-  let s = sky(c, p.sky[0], p.sky[1], mix(p.sky[0], p.sky[1], 0.5));
-  s += glow(c, 'nb1', 300, 260, 420, '#c06ac0', 0.35) + glow(c, 'nb2', 1300, 200, 460, '#4a8ae0', 0.3) + glow(c, 'nb3', 1100, 500, 380, '#e0605a', 0.18);
-  s += stars(c, 220, 620, '#fff', 1);
-  // golden radiance behind the throne
-  s += glow(c, 'th', 800, 330, 560, '#ffe39a', 0.9);
-  let rays = '';
-  for (let i = 0; i < 28; i++) {
-    const a = (i / 28) * Math.PI * 2;
-    rays += `M800,330L${n(800 + Math.cos(a - 0.035) * 900)},${n(330 + Math.sin(a - 0.035) * 900)}L${n(800 + Math.cos(a + 0.035) * 900)},${n(330 + Math.sin(a + 0.035) * 900)}Z`;
-  }
-  s += path(rays, '#ffe7a8', 'opacity=".1"');
-  const gold = p.accent;
-  // soft cloud banks behind the throne
-  s += clouds(c, 8, 470, 560, '#d8c8ff', 0.4, 1.3);
-  // floating broken columns at the edges
-  defColumn(c, 'cl', p.stone, p.stoneDark, gold);
-  s += useAt(c, 'cl', 180, 540, 1.6) + useAt(c, 'cl', 380, 450, 1.1) + useAt(c, 'cl', 1420, 540, 1.6) + useAt(c, 'cl', 1220, 450, 1.1);
-  // throne on a golden dais
-  const ol = `stroke="${shade(p.stoneDark, -0.4)}" stroke-width="4" stroke-linejoin="round"`;
-  s += path('M690,480V300Q690,240 740,220L760,170H840L860,220Q910,240 910,300V480Z', gold, ol);
-  s += path('M690,480V300Q690,240 740,220L760,170H800V480Z', '#fff', 'opacity=".18"');
-  s += path('M722,470V312Q722,266 770,254H830Q878,266 878,312V470Z', mix(p.stoneDark, p.accent2, 0.25), ol);
-  s += path('M760,170L800,118L840,170Z', gold, ol) + `<circle cx="800" cy="108" r="13" fill="#fffbe8"/>`;
-  s += path('M650,480H950V450Q950,428 928,428H672Q650,428 650,450Z', gold, ol);
-  s += path('M620,520H980V480H620Z', shade(gold, -0.25), ol);
-  s += path('M600,550H1000V520H600Z', shade(gold, -0.4), ol);
-  s += wreathGlyph(800, 340, 46, gold);
-  s += ridge(c.r, 560, 50, 140, mix(p.sky[1], '#ffffff', 0.45), 'opacity=".85"');
-  s += ridge(c.r, 640, 40, 170, mix(p.sky[1], '#ffffff', 0.25), 'opacity=".75"');
-  c.defs.push(linGrad(`${c.id}cl`, [[0, mix(p.sky[1], '#ffffff', 0.2)], [1, p.sky[0]]]));
-  s += rect(0, 680, W, 220, `url(#${c.id}cl)`, 'opacity=".9"');
-  s += glow(c, 'bt', 800, 700, 600, '#ffe39a', 0.25);
-  return s + vignette(c, 0.5);
-}
-
-const BUILDERS: Record<string, (c: Ctx) => string> = {
-  ludus,
-  camp,
-  fortress,
-  court,
-  forum,
-  bastion,
-  curia,
-  palace,
-  colosseum,
-  palatine,
-  hall,
-  celestial,
+const GLYPHS: Record<string, [number, string]> = {
+  A: [10, 'M0,14L5,0L10,14M2.2,9.2L7.8,9.2'],
+  C: [9, 'M9,2.6Q7.4,0 4.8,0Q0,0 0,7Q0,14 4.8,14Q7.4,14 9,11.4'],
+  D: [9.5, 'M0,0L0,14M0,0L3.8,0Q9.5,0 9.5,7Q9.5,14 3.8,14L0,14'],
+  E: [8, 'M8,0L0,0L0,14L8,14M0,7L6,7'],
+  G: [9.5, 'M9,2.6Q7.4,0 4.8,0Q0,0 0,7Q0,14 4.8,14Q9.5,14 9.5,8.6L5.4,8.6'],
+  I: [0, 'M0,0L0,14'],
+  L: [7.5, 'M0,0L0,14L7.5,14'],
+  M: [12, 'M0,14L1.2,0L6,12L10.8,0L12,14'],
+  N: [9.5, 'M0,14L0,0L9.5,14L9.5,0'],
+  O: [10.5, 'M5.25,0Q0,0 0,7Q0,14 5.25,14Q10.5,14 10.5,7Q10.5,0 5.25,0Z'],
+  P: [8.5, 'M0,14L0,0L4.2,0Q8.5,0 8.5,3.8Q8.5,7.6 4.2,7.6L0,7.6'],
+  Q: [10.5, 'M5.25,0Q0,0 0,7Q0,14 5.25,14Q10.5,14 10.5,7Q10.5,0 5.25,0ZM6.5,11.5L10.5,15.5'],
+  R: [9, 'M0,14L0,0L4.2,0Q8.5,0 8.5,3.8Q8.5,7.6 4.2,7.6L0,7.6M4.2,7.6L9,14'],
+  S: [8.5, 'M8.2,2.2Q6.6,0 4.2,0Q0.2,0 0.2,3.6Q0.2,6.4 4.2,7Q8.5,7.6 8.5,10.6Q8.5,14 4.2,14Q1.4,14 0,11.8'],
+  T: [10, 'M0,0L10,0M5,0L5,14'],
+  V: [10, 'M0,0L5,14L10,0'],
+  X: [10, 'M0,0L10,14M10,0L0,14'],
+  ' ': [5, ''],
+  '·': [2, 'M1,7L1,7.01'],
 };
 
-export function arenaBackdropSvg(arenaIndex: number): string {
-  const ai = ((Math.floor(arenaIndex) || 0) % ARENAS.length + ARENAS.length) % ARENAS.length;
-  const arena = ARENAS[ai];
-  const c: Ctx = { id: idPrefix('backdrop', ai), r: createRng(mixSeed('backdrop', arena.id)), pal: arena.palette, defs: [] };
-  const build = BUILDERS[arena.architecture] ?? ludus;
-  const body = build(c);
-  return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" width="${W}" height="${H}">` +
-    `<defs>${c.defs.join('')}</defs>${body}</svg>`
+/** Path data for Roman capitals (stroked). Returns [d, width]. Cap height 14 units * scale. */
+export function romanText(text: string, x: number, y: number, scale: number, spacing = 3.4): [string, number] {
+  let d = '';
+  let cx = 0;
+  for (const ch of text.toUpperCase()) {
+    const gl = GLYPHS[ch === 'U' ? 'V' : ch] ?? GLYPHS[' '];
+    const [w, gd] = gl;
+    if (gd) {
+      d += gd.replace(/([MLQZ])([^MLQZ]*)/g, (_m, cmd: string, args: string) => {
+        if (cmd === 'Z') return 'Z';
+        const nums = args.split(/[ ,]/).filter(Boolean).map(Number);
+        const o: string[] = [];
+        for (let i = 0; i < nums.length; i += 2) o.push(n(x + (cx + nums[i]) * scale) + ',' + n(y + nums[i + 1] * scale));
+        return cmd + o.join(' ');
+      });
+    }
+    cx += w + spacing;
+  }
+  return [d, (cx - spacing) * scale];
+}
+
+function inscription(text: string, cx: number, y: number, capH: number, color: string, extra = ''): string {
+  const sc = capH / 14;
+  const [, w] = romanText(text, 0, 0, sc);
+  const [d] = romanText(text, cx - w / 2, y, sc);
+  return stroke(d, color, Math.max(0.8, sc * 1.7), `stroke-linecap="square" stroke-linejoin="miter" ${extra}`);
+}
+
+// ------------------------------------------------------------------ textures
+
+/** Ashlar stone courses overlay (transparent background). */
+function patStone(s: S, cw: number, ch: number, line: string, hi: string, lineOp = 0.35, hiOp = 0.25): string {
+  const id = s.uid();
+  const w = cw;
+  const h = ch * 2;
+  s.def(
+    `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n(w)}" height="${n(h)}">` +
+      `<path d="M0,${n(ch - 0.5)}H${n(w)}M0,${n(h - 0.5)}H${n(w)}M0.5,0V${n(ch)}M${n(w / 2)},${n(ch)}V${n(h)}" stroke="${line}" stroke-opacity="${n(lineOp)}" stroke-width="1.2" fill="none"/>` +
+      `<path d="M0,${n(ch + 0.8)}H${n(w)}M0,0.8H${n(w)}" stroke="${hi}" stroke-opacity="${n(hiOp)}" stroke-width="1" fill="none"/>` +
+      `</pattern>`,
   );
+  return `url(#${id})`;
+}
+
+/** Terracotta roof tiles: imbrex ridges + course shadows. */
+function patTiles(s: S, tw: number, th: number, base: string, slant = 0): string {
+  const id = s.uid();
+  const dk = shade(base, -0.32);
+  const lt = shade(base, 0.22);
+  s.def(
+    `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n(tw)}" height="${n(th)}"${slant ? ` patternTransform="skewX(${n(slant)})"` : ''}>` +
+      rect(0, 0, tw, th, base) +
+      rect(tw * 0.08, 0, tw * 0.34, th, lt) +
+      rect(tw * 0.42, 0, tw * 0.1, th, dk, op(0.7)) +
+      rect(0, th * 0.82, tw, th * 0.18, dk, op(0.45)) +
+      `</pattern>`,
+  );
+  return `url(#${id})`;
+}
+
+/** Distant crowd: heads and colourful tunics. */
+function patCrowd(s: S, scale: number, bg: string, tunics: string[], skins: string[], dim = 0): string {
+  const id = s.uid();
+  const w = 30 * scale;
+  const h = 17 * scale;
+  let inner = rect(0, 0, w, h, bg);
+  const pos = [
+    [3, 6], [9, 7], [15, 5.5], [21, 6.5], [27, 6],
+    [0, 14], [6, 14.5], [12, 13.5], [18, 14.2], [24, 13.6], [30, 14],
+  ];
+  pos.forEach(([px, py], i) => {
+    const t = mix(tunics[(i * 3 + 1) % tunics.length], bg, dim);
+    const k = mix(skins[(i * 5) % skins.length], bg, dim);
+    inner += rect((px - 2.6) * scale, (py - 0.5) * scale, 5.2 * scale, 5 * scale, t, `rx="${n(2 * scale)}"`);
+    inner += `<circle cx="${n(px * scale)}" cy="${n((py - 2.2) * scale)}" r="${n(1.7 * scale)}" fill="${k}"/>`;
+  });
+  s.def(`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n(w)}" height="${n(h)}">${inner}</pattern>`);
+  return `url(#${id})`;
+}
+
+/** Sparse dots/streaks for sand/grass texture. */
+function speckles(s: S, x0: number, y0: number, x1: number, y1: number, count: number, color: string, alpha: number, size: number): string {
+  let d = '';
+  for (let i = 0; i < count; i++) {
+    const t = s.r.next();
+    const y = y0 + (y1 - y0) * t * t;
+    const x = x0 + (x1 - x0) * s.r.next();
+    const sz = size * (0.35 + ((y - y0) / Math.max(1, y1 - y0)) * 0.9);
+    d += `M${P(x, y)}h${n(sz * s.rnd(1, 2.5))}`;
+  }
+  return stroke(d, color, size * 0.6, `stroke-linecap="round" ${op(alpha)}`);
+}
+
+// ------------------------------------------------------------------ architecture
+
+type ColKind = 'doric' | 'ionic' | 'corinth';
+
+/** Column symbol, origin at base centre, 10 wide x 100 tall (shaft cylinder shading). */
+function defColumn(s: S, light: string, base: string, dark: string, kind: ColKind = 'ionic', capC?: string, flutes = true): string {
+  const id = s.uid();
+  const cyl = s.lg(
+    s.lit > 0
+      ? [[0, mix(light, base, 0.3)], [0.28, shade(light, 0.25)], [0.55, base], [0.85, dark], [1, shade(dark, -0.15)]]
+      : [[0, shade(dark, -0.15)], [0.15, dark], [0.45, base], [0.72, shade(light, 0.25)], [1, mix(light, base, 0.3)]],
+    0, 0, 1, 0,
+  );
+  const cc = capC ?? light;
+  let cap = '';
+  if (kind === 'doric') cap = rect(-6.2, -96, 12.4, 4, cc) + rect(-7, -100, 14, 4, cc);
+  else if (kind === 'ionic')
+    cap = rect(-7.2, -100, 14.4, 3, cc) + path(`M-7,-97h14v3h-14z`, cc) + `<circle cx="-6.6" cy="-94.8" r="2.6" fill="${cc}"/><circle cx="6.6" cy="-94.8" r="2.6" fill="${cc}"/><circle cx="-6.6" cy="-94.8" r="1.1" fill="${dark}" opacity=".5"/><circle cx="6.6" cy="-94.8" r="1.1" fill="${dark}" opacity=".5"/>`;
+  else
+    cap =
+      path(`M-5,-91L-7.6,-99.5H7.6L5,-91Z`, cc) +
+      path(`M-5,-91Q-6.8,-94 -7,-97M5,-91Q6.8,-94 7,-97M0,-91V-98M-2.6,-91Q-3,-95 -4,-98M2.6,-91Q3,-95 4,-98`, 'none', `stroke="${dark}" stroke-width=".7" opacity=".45"`) +
+      rect(-8, -101.5, 16, 2.4, cc);
+  const fl = flutes ? stroke('M-2.6,-90V-8M0,-90V-8M2.6,-90V-8', dark, 0.6, op(0.28)) : '';
+  s.def(
+    `<g id="${id}">` +
+      rect(-7.4, -3.2, 14.8, 3.2, cc) +
+      rect(-6.4, -6.6, 12.8, 3.6, cc, 'rx="1.6"') +
+      path('M-5.1,-7L-4.4,-91H4.4L5.1,-7Z', cyl) +
+      fl +
+      cap +
+      `</g>`,
+  );
+  return id;
+}
+
+/** Place a column symbol: base centre (x,y), height h. */
+function col(id: string, x: number, y: number, h: number, wScale = 1): string {
+  const sy = h / 100;
+  return `<use href="#${id}" transform="translate(${n(x)} ${n(y)}) scale(${n(sy * wScale)} ${n(sy)})"/>`;
+}
+
+type TempleStyle = { stone: string; light: string; dark: string; roof: string; gold: string; colId: string; inner?: string };
+
+/** Classical temple front (hexastyle etc.) centred at cx with stylobate at baseY. */
+function temple(s: S, cx: number, baseY: number, w: number, colH: number, cols: number, st: TempleStyle, opts: { steps?: number; pedH?: number; relief?: boolean } = {}): string {
+  const x0 = cx - w / 2;
+  const steps = opts.steps ?? 3;
+  const stepH = colH * 0.045;
+  let o = '';
+  // steps
+  for (let i = 0; i < steps; i++) {
+    const ww = w + (steps - i) * colH * 0.06;
+    const y = baseY - (i + 1) * stepH;
+    o += rect(cx - ww / 2, y, ww, stepH + 0.5, i % 2 ? st.stone : shade(st.stone, -0.06));
+    o += rect(cx - ww / 2, y, ww, Math.max(1, stepH * 0.22), st.light, op(0.8));
+  }
+  const top = baseY - steps * stepH;
+  // cella wall in shadow
+  o += rect(x0 + w * 0.04, top - colH, w * 0.92, colH, s.lg([[0, shade(st.inner ?? st.dark, -0.25)], [1, st.inner ?? st.dark]]));
+  // doorway glow
+  o += rect(cx - w * 0.08, top - colH * 0.62, w * 0.16, colH * 0.62, s.lg([[0, shade(st.gold, -0.35)], [1, st.gold]]), op(0.7));
+  // columns
+  const cw = (colH / 100) * 10;
+  for (let i = 0; i < cols; i++) {
+    const x = x0 + cw * 0.9 + ((w - cw * 1.8) * i) / (cols - 1);
+    o += col(st.colId, x, top, colH);
+  }
+  // entablature
+  const eH = colH * 0.2;
+  const ey = top - colH - eH;
+  o += rect(x0 - w * 0.01, ey + eH * 0.55, w * 1.02, eH * 0.45, st.stone);
+  o += rect(x0 - w * 0.01, ey + eH * 0.55, w * 1.02, eH * 0.08, st.light);
+  o += rect(x0 - w * 0.01, ey + eH * 0.15, w * 1.02, eH * 0.42, shade(st.stone, -0.08));
+  // frieze dentils
+  let dent = '';
+  const dn = Math.max(8, Math.round(w / 9));
+  for (let i = 0; i < dn; i++) dent += `M${P(x0 + (w * (i + 0.3)) / dn, ey + eH * 0.18)}h${n((w / dn) * 0.4)}v${n(eH * 0.12)}h${n((-w / dn) * 0.4)}z`;
+  o += path(dent, st.dark, op(0.4));
+  o += rect(x0 + w * 0.12, ey + eH * 0.3, w * 0.76, eH * 0.2, st.gold, op(0.55));
+  o += rect(x0 - w * 0.03, ey, w * 1.06, eH * 0.17, st.light);
+  // cast shadow of entablature onto columns
+  o += rect(x0, top - colH, w, colH * 0.16, s.lg([[0, '#000', 0.28], [1, '#000', 0]]));
+  // pediment
+  const pH = opts.pedH ?? w * 0.17;
+  const py = ey;
+  o += path(poly([x0 - w * 0.04, py, cx, py - pH, x0 + w * 1.04, py]), st.light);
+  o += path(poly([x0 + w * 0.04, py - pH * 0.08, cx, py - pH * 0.84, x0 + w * 0.96, py - pH * 0.08]), s.lg([[0, shade(st.stone, -0.18)], [1, shade(st.stone, -0.05)]]));
+  if (opts.relief !== false) {
+    // simple relief: reclining figures + central wreath
+    o += `<circle cx="${n(cx)}" cy="${n(py - pH * 0.36)}" r="${n(pH * 0.17)}" fill="none" stroke="${st.gold}" stroke-width="${n(pH * 0.05)}"/>`;
+    o += path(
+      `M${P(cx - w * 0.33, py - pH * 0.12)}q${n(w * 0.06)},${n(-pH * 0.22)} ${n(w * 0.14)},${n(-pH * 0.24)}l${n(w * 0.03)},${n(pH * 0.24)}zM${P(cx + w * 0.33, py - pH * 0.12)}q${n(-w * 0.06)},${n(-pH * 0.22)} ${n(-w * 0.14)},${n(-pH * 0.24)}l${n(-w * 0.03)},${n(pH * 0.24)}z`,
+      st.light,
+      op(0.75),
+    );
+  }
+  // roof line + acroteria
+  o += stroke(`M${P(x0 - w * 0.05, py + 1)}L${P(cx, py - pH - 2)}L${P(x0 + w * 1.05, py + 1)}`, st.roof, Math.max(2, pH * 0.06), 'stroke-linejoin="round"');
+  const ac = pH * 0.18;
+  o += path(`M${P(cx - ac * 0.6, py - pH - 1)}Q${P(cx, py - pH - ac * 2)} ${P(cx + ac * 0.6, py - pH - 1)}Z`, st.gold);
+  o += path(`M${P(x0 - w * 0.05, py)}l${n(ac * 0.4)},${n(-ac * 1.3)}l${n(ac * 0.6)},${n(ac * 1.3)}zM${P(x0 + w * 1.05, py)}l${n(-ac * 0.4)},${n(-ac * 1.3)}l${n(-ac * 0.6)},${n(ac * 1.3)}z`, st.gold);
+  return o;
+}
+
+/** A row of arched openings cut into a wall band (returns path data for the holes). */
+function archHoles(x: number, y: number, w: number, h: number, count: number, ratio = 0.62, springAt = 0.55): string {
+  let d = '';
+  const bay = w / count;
+  const aw = bay * ratio;
+  const r = aw / 2;
+  for (let i = 0; i < count; i++) {
+    const ax = x + bay * i + (bay - aw) / 2;
+    const sy = y + h * (1 - springAt);
+    d += `M${P(ax, y + h)}V${n(sy)}A${n(r)},${n(r)} 0 0,1 ${P(ax + aw, sy)}V${n(y + h)}Z`;
+  }
+  return d;
+}
+
+/** Point toward a vanishing point. */
+const toward = (x: number, y: number, vx: number, vy: number, t: number): [number, number] => [x + (vx - x) * t, y + (vy - y) * t];
+
+type Box = {
+  x: number; base: number; w: number; h: number;
+  depth: number; // 0..1 toward VP
+  side: 1 | -1; // which side face shows (+1 right)
+  vp: [number, number];
+  front: string; sideC: string;
+  roof?: { h: number; color: string; over?: number };
+  stone?: string; // pattern url overlay
+};
+
+/** 2.5D building block: front face + receding side face + optional hip roof. */
+function box(s: S, b: Box): string {
+  const { x, base, w, h, depth, side, vp, front, sideC } = b;
+  const top = base - h;
+  const ex = side > 0 ? x + w : x;
+  const [fx1, fy1] = toward(ex, top, vp[0], vp[1], depth);
+  const [fx2, fy2] = toward(ex, base, vp[0], vp[1], depth);
+  let o = path(`M${P(ex, top)}L${P(fx1, fy1)}L${P(fx2, fy2)}L${P(ex, base)}Z`, sideC);
+  o += rect(x, top, w, h, front);
+  if (b.stone) o += rect(x, top, w, h, b.stone) + path(`M${P(ex, top)}L${P(fx1, fy1)}L${P(fx2, fy2)}L${P(ex, base)}Z`, b.stone);
+  if (b.roof) {
+    const ov = b.roof.over ?? w * 0.04;
+    const rh = b.roof.h;
+    const rx0 = x - ov;
+    const rx1 = x + w + ov;
+    const tiles = patTiles(s, Math.max(6, rh * 0.22), Math.max(5, rh * 0.18), b.roof.color);
+    // front slope
+    o += path(`M${P(rx0, top + 2)}L${P(x + w * 0.12, top - rh)}L${P(x + w * 0.88, top - rh)}L${P(rx1, top + 2)}Z`, tiles);
+    // side slope receding
+    const ox = side > 0 ? rx1 : rx0;
+    const ix = side > 0 ? x + w * 0.88 : x + w * 0.12;
+    const [a1, a2] = toward(ox, top + 2, vp[0], vp[1], depth);
+    const [c1, c2] = toward(ix, top - rh, vp[0], vp[1], depth * 0.92);
+    o += path(`M${P(ox, top + 2)}L${P(ix, top - rh)}L${P(c1, c2)}L${P(a1, a2)}Z`, shade(b.roof.color, -0.2));
+    o += rect(rx0, top + 1, rx1 - rx0, Math.max(2, rh * 0.09), shade(b.roof.color, -0.45));
+    o += rect(x, top + 2, w, Math.max(4, h * 0.08), s.lg([[0, '#000', 0.3], [1, '#000', 0]]));
+  }
+  return o;
+}
+
+/** Crenellated wall segment. */
+function crenels(x0: number, x1: number, y: number, mw: number, mh: number, gap = 0.55): string {
+  let d = '';
+  for (let x = x0; x < x1 - mw * 0.5; x += mw * (1 + gap)) d += `M${P(x, y)}h${n(mw)}v${n(-mh)}h${n(-mw)}z`;
+  return d;
+}
+
+/** Brazier/torch with glow. */
+function torch(s: S, x: number, y: number, scale: number, pole: string, glowC = '#ffb347'): string {
+  const f = scale;
+  let o = `<circle cx="${n(x)}" cy="${n(y - 14 * f)}" r="${n(70 * f)}" fill="${s.rgu([[0, glowC, 0.55], [0.3, glowC, 0.22], [1, glowC, 0]], x, y - 14 * f, 70 * f)}"/>`;
+  o += path(`M${P(x - 9 * f, y)}h${n(18 * f)}l${n(-5 * f)},${n(9 * f)}h${n(-8 * f)}z`, pole);
+  o += path(`M${P(x, y - 34 * f)}C${P(x + 12 * f, y - 18 * f)} ${P(x + 11 * f, y)} ${P(x, y)}C${P(x - 11 * f, y)} ${P(x - 12 * f, y - 16 * f)} ${P(x - 3 * f, y - 26 * f)}C${P(x - 2 * f, y - 20 * f)} ${P(x + 1 * f, y - 22 * f)} ${P(x, y - 34 * f)}Z`, '#ff7a1a');
+  o += path(`M${P(x, y - 22 * f)}C${P(x + 6 * f, y - 12 * f)} ${P(x + 6 * f, y)} ${P(x, y)}C${P(x - 6 * f, y)} ${P(x - 6 * f, y - 10 * f)} ${P(x, y - 22 * f)}Z`, '#ffe27a');
+  return o;
+}
+
+/** Tiny legionary / figure silhouette (for life in the mid-ground). */
+function figure(x: number, base: number, h: number, body: string, accent: string, spear = true, dir = 1): string {
+  const u = h / 10;
+  let o = path(`M${P(x - 1.4 * u, base)}L${P(x - 1.1 * u, base - 4 * u)}L${P(x - 1.8 * u, base - 7.6 * u)}Q${P(x, base - 8.4 * u)} ${P(x + 1.8 * u, base - 7.6 * u)}L${P(x + 1.1 * u, base - 4 * u)}L${P(x + 1.4 * u, base)}Z`, body);
+  o += `<circle cx="${n(x)}" cy="${n(base - 9 * u)}" r="${n(1.1 * u)}" fill="${body}"/>`;
+  o += path(`M${P(x - 1.3 * u, base - 9.6 * u)}Q${P(x, base - 11.4 * u)} ${P(x + 1.3 * u, base - 9.6 * u)}Z`, accent);
+  o += rect(x + dir * 0.6 * u - (dir < 0 ? 2.4 * u : 0), base - 7 * u, 2.4 * u, 4.6 * u, accent, `rx="${n(0.5 * u)}"`);
+  if (spear) o += stroke(`M${P(x - dir * 2 * u, base)}L${P(x - dir * 2 * u, base - 13 * u)}`, body, Math.max(0.8, 0.35 * u));
+  return o;
+}
+
+/** Clumps of grass blades (filled, two-tone) scattered in a rect. */
+function tufts(s: S, x0: number, x1: number, y0: number, y1: number, count: number, dark: string, light: string, hMax: number): string {
+  let dk = '';
+  let lt = '';
+  for (let i = 0; i < count; i++) {
+    const x = s.rnd(x0, x1);
+    const y = s.rnd(y0, y1);
+    const blades = 5 + Math.floor(s.r.next() * 4);
+    for (let b = 0; b < blades; b++) {
+      const a = -Math.PI / 2 + s.rnd(-0.75, 0.75);
+      const h = hMax * s.rnd(0.45, 1);
+      const bx = x + s.rnd(-8, 8);
+      const tx = bx + Math.cos(a) * h;
+      const ty = y + Math.sin(a) * h;
+      const w = h * 0.07;
+      const d = `M${P(bx - w, y)}Q${P(bx + (tx - bx) * 0.3 - w, y + (ty - y) * 0.6)} ${P(tx, ty)}Q${P(bx + (tx - bx) * 0.3 + w, y + (ty - y) * 0.6)} ${P(bx + w, y)}Z`;
+      if (b % 2) lt += d;
+      else dk += d;
+    }
+  }
+  return path(dk, dark) + path(lt, light);
+}
+
+/** Subtle warm frame vignette (never muddy). */
+function vignette(s: S, color: string, strength = 0.35): void {
+  s.add(rect(0, 0, W, H, s.rgu([[0.55, color, 0], [0.85, color, strength * 0.6], [1, color, strength]], W / 2, H * 0.48, W * 0.62, 0.78)));
+}
+
+/** Gentle centre calm-down glow behind the board card. */
+function centerGlow(s: S, color: string, strength = 0.35, cy = 470): void {
+  s.add(`<ellipse cx="800" cy="${n(cy)}" rx="520" ry="330" fill="${s.rgu([[0, color, strength], [0.6, color, strength * 0.5], [1, color, 0]], 800, cy, 520, 330 / 520)}"/>`);
+}
+
+// ================================================================== scenes
+
+/** 0 · The Dust Pits — sunrise over a ludus training yard. */
+function dustPits(s: S): void {
+  s.lit = 1;
+  const HY = 520; // sand horizon
+  sky(s, [[0, '#4a5fa0'], [0.3, '#a07fb4'], [0.5, '#f0a088'], [0.62, '#ffc48a'], [0.75, '#ffe2a8']]);
+  sun(s, 860, 430, 48, '#fff6dc', '#ffc982', 620, 0.85);
+  shafts(s, 860, 430, -Math.PI * 0.97, -Math.PI * 0.03, 14, 1000, '#fff0c8', 0.2);
+  cloud(s, 230, 210, 420, 95, '#ffe6cf', '#d98e98');
+  cloud(s, 1370, 170, 460, 110, '#ffe3c8', '#cf8496');
+  cloud(s, 640, 120, 200, 46, '#ffe9d6', '#e3a2a6', 0.85);
+  cloud(s, 1080, 285, 230, 44, '#fff0d8', '#eeb0a0', 0.8);
+  cloud(s, 120, 360, 260, 40, '#ffe8c8', '#f0b090', 0.7);
+  birds(s, 1010, 250, 7, 70, '#7a4a5e', 9);
+  birds(s, 520, 300, 3, 30, '#8a5a6a', 7);
+  // far hazy mountains
+  mountains(s, HY - 40, [[80, 120, 220], [330, 160, 230], [560, 110, 200], [1150, 140, 240], [1400, 175, 250], [1580, 120, 180]], '#c896ab', '#e9b6ae');
+  haze(s, 300, HY - 30, '#ffd3a8', 0, 0.55);
+  // distant aqueduct
+  const aq = '#d2958f';
+  s.add(rect(940, 398, 660, 14, aq));
+  s.add(path(`M940,412h660v60h-660z` + archHoles(940, 412, 660, 60, 15, 0.6, 0.62), aq, 'fill-rule="evenodd"'));
+  // distant hill town on the left
+  let town = '';
+  for (let i = 0; i < 9; i++) {
+    const x = 380 + i * 34 + s.rnd(-6, 6);
+    const h = s.rnd(16, 34);
+    town += `M${P(x, 462)}v${n(-h)}l${n(14)},${n(-8)}l${n(14)},${n(8)}v${n(h)}z`;
+  }
+  s.add(path(town, '#d29a96'));
+  // rolling mid hills with trees
+  s.add(hills(s, 492, 28, 6, '#c99070'));
+  let trees = '';
+  for (let i = 0; i < 12; i++) {
+    const x = 60 + i * 135 + s.rnd(-30, 30);
+    if (x > 600 && x < 1000) continue;
+    trees += cypress(s, x, 492 + s.rnd(-6, 8), s.rnd(40, 70), 12, '#8a6a5e', '#c99a7e');
+  }
+  s.add(trees, umbrellaPine(s, 1290, 494, 70, 90, '#8a6058', '#9a7a62', '#c8a080'));
+  haze(s, 380, HY + 10, '#ffd8b0', 0, 0.45);
+  // sand yard
+  s.add(rect(0, HY - 30, W, H - HY + 30, s.lg([[0, '#ffd9a0'], [0.25, '#f2bf84'], [1, '#d8925a']])));
+  // sun reflection on sand
+  s.add(ell(860, HY + 40, 520, 90, s.rgu([[0, '#fff2cf', 0.75], [1, '#fff2cf', 0]], 860, HY + 40, 520, 0.18)));
+  // rake marks
+  let rake = '';
+  for (let i = 0; i < 16; i++) {
+    const y = HY + 30 + i * i * 1.6 + i * 10;
+    rake += `M${P(-50, y + 30)}Q800,${n(y - 25 - i * 2)} 1650,${n(y + 30)}`;
+  }
+  s.add(stroke(rake, '#b8743f', 2, op(0.22)), stroke(rake.replace(/(\d+\.?\d*),(\d+\.?\d*)/g, (_m, a, b) => `${a},${n(+b + 3)}`), '#fff0cf', 1.6, op(0.3)));
+  s.add(speckles(s, 0, HY, W, H, 260, '#a8653a', 0.35, 3));
+  // palisade ring behind the yard
+  let stakesL = '';
+  let stakesD = '';
+  for (let x = 330; x < 1290; x += 15) {
+    const t = (x - 800) / 480;
+    const base = HY + 4 - t * t * 0 + Math.abs(t) * 14;
+    const h = 44 + Math.abs(t) * 30 + s.rnd(-5, 5);
+    const d = `M${P(x, base)}V${n(base - h)}l7,-11l7,11V${n(base)}Z`;
+    if ((x / 15) % 2 < 1) stakesL += d;
+    else stakesD += d;
+  }
+  s.add(path(stakesD, '#8a5632'), path(stakesL, '#a8693c'));
+  s.add(stroke('M330,488Q800,484 1290,488M330,506Q800,502 1290,506', '#5e3418', 4, op(0.85)));
+  // rim light on stake tips
+  s.add(stroke('M330,446Q800,438 1290,446', '#ffd79a', 2, op(0)));
+  // gate in palisade
+  s.add(path('M740,522V448q60,-40 120,0V522Z', '#6a3a1c'), path('M752,522V454q48,-32 96,0V522Z', '#ffe0a8', op(0.75)));
+  s.add(rect(728, 430, 14, 94, '#7a4626'), rect(858, 430, 14, 94, '#7a4626'));
+  // left barracks
+  const vp: [number, number] = [800, 470];
+  const stone = patStone(s, 46, 20, '#6e3a20', '#ffe0b0', 0.25, 0.2);
+  s.add(box(s, { x: -40, base: 640, w: 430, h: 280, depth: 0.22, side: 1, vp, front: s.lg([[0, '#d99a6a'], [1, '#b8754c']]), sideC: s.lg([[0, '#ffcf92'], [1, '#e8a466']], 0, 0, 1, 0), roof: { h: 70, color: '#c4553a' }, stone }));
+  // barracks windows & arcade
+  s.add(path(archHoles(-20, 520, 380, 120, 4, 0.58, 0.62), s.lg([[0, '#4a2414'], [1, '#7a3a20']])));
+  let win = '';
+  for (let i = 0; i < 5; i++) win += `M${P(10 + i * 74, 400)}h26v36h-26z`;
+  s.add(path(win, '#4a2414'), stroke(win.replace(/M(\d+)/g, (_m, a) => `M${a}`), '#ffd9a0', 1.5, op(0.5)));
+  // wooden balcony
+  s.add(rect(-40, 470, 430, 10, '#6e3c1e'), rect(-40, 452, 430, 4, '#8a5030'));
+  let rail = '';
+  for (let x = -30; x < 390; x += 14) rail += `M${n(x)},456v14`;
+  s.add(stroke(rail, '#6e3c1e', 4), rect(-40, 480, 430, 16, s.lg([[0, '#000', 0.25], [1, '#000', 0]])));
+  // hanging banners on barracks
+  s.add(hangingBanner(s, 60, 300, 42, 120, '#c0392b', '#f0c060', `<circle cx="81" cy="352" r="9" fill="none" stroke="#f0c060" stroke-width="3"/>`));
+  s.add(hangingBanner(s, 250, 300, 42, 120, '#c0392b', '#f0c060', `<circle cx="271" cy="352" r="9" fill="none" stroke="#f0c060" stroke-width="3"/>`));
+  // right building: two-storey tower house
+  s.add(box(s, { x: 1235, base: 630, w: 420, h: 330, depth: 0.2, side: -1, vp, front: s.lg([[0, '#dca070'], [1, '#b8764c']]), sideC: s.lg([[0, '#e8a466'], [1, '#ffd49a']], 0, 0, 1, 0), roof: { h: 80, color: '#c4553a' }, stone }));
+  s.add(path(archHoles(1255, 520, 360, 110, 3, 0.55, 0.62), s.lg([[0, '#4a2414'], [1, '#7a3a20']])));
+  let win2 = '';
+  for (let i = 0; i < 4; i++) win2 += `M${P(1272 + i * 86, 360)}h28v46h-28z`;
+  s.add(path(win2, '#4a2414'));
+  s.add(hangingBanner(s, 1300, 430, 40, 90, '#e8b04b', '#b4442b'), hangingBanner(s, 1480, 430, 40, 90, '#e8b04b', '#b4442b'));
+  // pennant flags on roofs
+  s.add(flag(s, 205, 196, 70, 30, '#c0392b', '#5a3018', 1, 0.6), flag(s, 1430, 168, 70, 30, '#c0392b', '#5a3018', -1, 1.4));
+  // training posts (palus) with long shadows toward viewer
+  const post = (x: number, base: number, h: number) => {
+    const w = h * 0.12;
+    return (
+      path(`M${P(x - w / 2, base)}L${P(x + w / 2, base)}L${P(x + (x - 860) * 0.5 + w, base + h * 0.9)}L${P(x + (x - 860) * 0.5 - w, base + h * 0.9)}Z`, '#8a4a28', op(0.28)) +
+      rect(x - w / 2, base - h, w, h, s.lg([[0, '#ffc98a'], [0.4, '#a8693c'], [1, '#6a3a1c']], 0, 0, 1, 0)) +
+      stroke(`M${P(x - w / 2, base - h * 0.62)}h${n(w)}M${P(x - w / 2, base - h * 0.55)}h${n(w)}M${P(x - w / 2, base - h * 0.3)}h${n(w)}`, '#e8c890', 2.5) +
+      ell(x, base - h, w / 2, w * 0.18, '#c98d58')
+    );
+  };
+  s.add(post(470, 600, 110), post(560, 570, 80), post(1110, 590, 100), post(1190, 625, 120));
+  // weapon rack (left) with wooden swords and shields
+  const rack = (x: number, y: number, sc: number) => {
+    let o = rect(x, y - 70 * sc, 6 * sc, 70 * sc, '#5e3418') + rect(x + 84 * sc, y - 70 * sc, 6 * sc, 70 * sc, '#5e3418');
+    o += rect(x - 4 * sc, y - 58 * sc, 98 * sc, 6 * sc, '#7a4626') + rect(x - 4 * sc, y - 22 * sc, 98 * sc, 6 * sc, '#7a4626');
+    let sw = '';
+    for (let i = 0; i < 6; i++) sw += `M${P(x + (12 + i * 13) * sc, y - 78 * sc)}v${n(56 * sc)}`;
+    o += stroke(sw, '#d8a868', 4 * sc, 'stroke-linecap="round"');
+    o += stroke(sw.replace(/v[\d.]+/g, `v${n(10 * sc)}`), '#6a3a1c', 7 * sc);
+    return o;
+  };
+  s.add(rack(300, 660, 1.1));
+  // scutum shields leaning
+  const scutum = (x: number, y: number, w: number, h: number, c: string, rot: number) =>
+    g(
+      rect(-w / 2, -h, w, h, s.lg([[0, shade(c, 0.25)], [0.5, c], [1, shade(c, -0.3)]], 0, 0, 1, 0), `rx="${n(w * 0.18)}"`) +
+        stroke(`M0,${n(-h)}V0M${n(-w / 2)},${n(-h / 2)}H${n(w / 2)}`, '#f0c060', w * 0.07) +
+        `<circle cx="0" cy="${n(-h / 2)}" r="${n(w * 0.16)}" fill="#f0c060"/>`,
+      `transform="translate(${n(x)} ${n(y)}) rotate(${n(rot)})"`,
+    );
+  s.add(scutum(420, 705, 48, 86, '#b4442b', -8), scutum(1270, 712, 50, 90, '#2f6db3', 9), scutum(1215, 700, 44, 80, '#b4442b', 4));
+  // sparring figures
+  s.add(figure(640, 560, 40, '#5e3020', '#b4442b', false, 1), figure(690, 560, 40, '#5e3020', '#e8b04b', true, -1));
+  s.add(figure(1010, 552, 34, '#5e3020', '#2f6db3', true, 1));
+  // foreground: amphorae, barrel, grass tufts
+  const amph = (x: number, y: number, sc: number) =>
+    path(`M${P(x - 6 * sc, y - 70 * sc)}h${n(12 * sc)}v${n(8 * sc)}q${n(22 * sc)},${n(10 * sc)} ${n(18 * sc)},${n(34 * sc)}q${n(-4 * sc)},${n(20 * sc)} ${n(-15 * sc)},${n(28 * sc)}h${n(-18 * sc)}q${n(-11 * sc)},${n(-8 * sc)} ${n(-15 * sc)},${n(-28 * sc)}q${n(-4 * sc)},${n(-24 * sc)} ${n(18 * sc)},${n(-34 * sc)}z`, s.lg([[0, '#f0a070'], [0.45, '#c4683c'], [1, '#7a3418']], 0, 0, 1, 0));
+  s.add(amph(70, 880, 2.1), amph(150, 900, 1.7), amph(1520, 890, 2));
+  // foreground dropped rudis + small shield in sand (visible in phone crop)
+  s.add(g(rect(-80, -6, 160, 12, '#c8955c', 'rx="4"') + rect(-96, -10, 22, 20, '#6a3a1c', 'rx="3"'), 'transform="translate(760 820) rotate(-12)"'));
+  s.add(ell(880, 838, 52, 18, '#9a5a30', op(0.35)), ell(880, 828, 50, 22, s.lg([[0, '#f0c060'], [1, '#b4442b']])), ell(880, 826, 12, 5, '#ffe2a0'));
+  s.add(tufts(s, -20, 300, 850, 900, 7, '#8a7a3a', '#d8c070', 60), tufts(s, 1330, 1620, 850, 900, 7, '#8a7a3a', '#d8c070', 60));
+  s.add(ell(200, 645, 320, 16, '#7a3a1c', op(0.25)), ell(1420, 636, 300, 16, '#7a3a1c', op(0.25)));
+  vignette(s, '#7a3a28', 0.32);
+}
+
+const SCENES: ((s: S) => void)[] = [dustPits];
+
+/** Full-bleed arena backdrop SVG for arena 0..11. */
+export function arenaBackdropSvg(arenaIndex: number): string {
+  const i = Math.max(0, Math.min(11, Math.floor(Number.isFinite(arenaIndex) ? arenaIndex : 0)));
+  const s = new S(i);
+  (SCENES[i] ?? SCENES[0])(s);
+  return s.svg();
 }

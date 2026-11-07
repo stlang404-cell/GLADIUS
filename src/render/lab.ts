@@ -1,18 +1,84 @@
 // Dev-only art lab (not part of the production build).
 //   ?mode=pieces  close-up piece renders     ?mode=board  scripted Board3D for animation tests
 import * as THREE from 'three';
-import { Chess, type Square } from 'chess.js';
 import { loadPieceSet } from './pieceAssets';
 import { FINISHES, pieceMaterials, studioEnvironment } from './materials';
-import { Board3D, type MoveAnim } from './board3d';
-import { ARENAS } from '../world/arenas';
-import { parseUci } from '../chess/rules';
 
 const params = new URLSearchParams(location.search);
 const el = document.getElementById('c')!;
 const W = window as unknown as Record<string, unknown>;
 
-if (params.get('mode') === 'trophies') {
+if (params.get('mode') === 'sprites') {
+  // Bake 2D sprites: one transparent render per piece per finish.
+  void (async () => {
+    const SIZE = Number(params.get('size') ?? 320);
+    const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    r.setPixelRatio(1);
+    r.setSize(SIZE, SIZE);
+    r.toneMapping = THREE.ACESFilmicToneMapping;
+    r.outputColorSpace = THREE.SRGBColorSpace;
+    const scene = new THREE.Scene();
+    scene.environment = studioEnvironment(r);
+    scene.environmentIntensity = 0.75;
+    const key = new THREE.DirectionalLight(0xfff2de, 2.6);
+    key.position.set(-2.5, 4, 3.5);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0xd6e6ff, 1.4);
+    rim.position.set(3, 2.5, -3);
+    scene.add(rim);
+    const fill = new THREE.DirectionalLight(0xfff0e0, 0.6);
+    fill.position.set(2, 1, 4);
+    scene.add(fill);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x705040, 0.45));
+    const cam = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, 0.1, 20);
+    const elev = (16 * Math.PI) / 180;
+    cam.position.set(0, 0.5 + Math.sin(elev) * 6, Math.cos(elev) * 6);
+    cam.lookAt(0, 0.5, 0);
+    const set = await loadPieceSet();
+    const out: Record<string, string> = {};
+    for (const fid of (params.get('finishes') ?? 'classical,imperial,marble').split(',')) {
+      const m = pieceMaterials(FINISHES[fid]);
+      for (const color of ['w', 'b'] as const) {
+        for (const t of ['p', 'n', 'b', 'r', 'q', 'k']) {
+          const g = set[t];
+          const grp = new THREE.Group();
+          grp.add(new THREE.Mesh(g.body, color === 'w' ? m.w : m.b));
+          if (g.accent) grp.add(new THREE.Mesh(g.accent, color === 'w' ? m.metalW : m.metalB));
+          // Common scale: king fills ~92% height; pawn enlarged for readability.
+          const s = (t === 'p' ? 1.16 : t === 'n' ? 1.02 : 1) * 0.76;
+          grp.scale.setScalar(s);
+          if (t === 'n') grp.rotation.y = Math.PI - 0.45; // knights face left, turned slightly to the viewer
+          grp.position.y = 0.035;
+          scene.add(grp);
+          r.render(scene, cam);
+          out[`${fid}/${color}${t}`] = r.domElement.toDataURL('image/webp', 0.93);
+          scene.remove(grp);
+        }
+      }
+    }
+    W.__sprites = out;
+    W.__ready = true;
+  })();
+} else if (params.get('mode') === 'trophy-sprites') {
+  void (async () => {
+    const { renderTrophy } = await import('./trophyRenderer');
+    const { TROPHY_DEFS } = await import('../world/trophies');
+    const out: Record<string, string> = {};
+    for (const d of TROPHY_DEFS) {
+      const png = await renderTrophy(d.id, { size: 256, arena: d.arena, arenaTier: d.arenaTier });
+      // re-encode as WebP via canvas
+      const img = new Image();
+      img.src = png;
+      await img.decode();
+      const c = document.createElement('canvas');
+      c.width = c.height = 256;
+      c.getContext('2d')!.drawImage(img, 0, 0);
+      out[d.id] = c.toDataURL('image/webp', 0.9);
+    }
+    W.__sprites = out;
+    W.__ready = true;
+  })();
+} else if (params.get('mode') === 'trophies') {
   void (async () => {
     const { renderTrophy } = await import('./trophyRenderer');
     el.style.cssText = 'display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:12px;background:#f3e7cf;height:auto';
@@ -26,43 +92,6 @@ if (params.get('mode') === 'trophies') {
     }
     W.__ready = true;
   })();
-} else if (params.get('mode') === 'board') {
-  const board = new Board3D(el, ARENAS[Number(params.get('arena') ?? 0)].palette);
-  board.setTilt(Number(params.get('tilt') ?? 0.55));
-  board.setMoveDuration(Number(params.get('ms') ?? 480));
-  const chess = new Chess(params.get('fen') ?? undefined);
-  board.setPosition(chess.fen());
-  board.onReady = () => (W.__ready = true);
-  W.setArena = (i: number) => { board.setPalette(ARENAS[i].palette); board.setArena(i); };
-  if (params.get('env') !== null) (W.setArena as (i: number) => void)(Number(params.get('env')));
-  const toAnim = (m: ReturnType<Chess['move']>): MoveAnim => {
-    const a: MoveAnim = { from: m.from, to: m.to, promotion: m.promotion, captured: !!m.captured };
-    if (m.isKingsideCastle()) a.castle = m.color === 'w' ? { rookFrom: 'h1', rookTo: 'f1' } : { rookFrom: 'h8', rookTo: 'f8' };
-    if (m.isQueensideCastle()) a.castle = m.color === 'w' ? { rookFrom: 'a1', rookTo: 'd1' } : { rookFrom: 'a8', rookTo: 'd8' };
-    if (m.isEnPassant()) a.epSquare = (m.to[0] + m.from[1]) as Square;
-    return a;
-  };
-  /** Deterministic sampling of one move's animation (virtual clock). */
-  W.sample = (uci: string, step = 16, extraSquares: string[] = []) => {
-    const m = chess.move(parseUci(uci));
-    const a = toAnim(m);
-    const times: number[] = [];
-    for (let t = 0; t <= 3000; t += step) times.push(t);
-    const sq = [m.to, ...(a.castle ? [a.castle.rookTo] : []), ...extraSquares] as Square[];
-    const res = board.sampleTimeline(() => board.setPosition(chess.fen(), a, chess.isCheckmate()), times, sq);
-    return { san: m.san, to: m.to, rookTo: a.castle?.rookTo ?? null, res };
-  };
-  W.play = (uci: string) => {
-    const m = chess.move(parseUci(uci));
-    const a: MoveAnim = { from: m.from, to: m.to, promotion: m.promotion, captured: !!m.captured };
-    if (m.isKingsideCastle()) a.castle = m.color === 'w' ? { rookFrom: 'h1', rookTo: 'f1' } : { rookFrom: 'h8', rookTo: 'f8' };
-    if (m.isQueensideCastle()) a.castle = m.color === 'w' ? { rookFrom: 'a1', rookTo: 'd1' } : { rookFrom: 'a8', rookTo: 'd8' };
-    if (m.isEnPassant()) a.epSquare = (m.to[0] + m.from[1]) as Square;
-    board.setPosition(chess.fen(), a, chess.isCheckmate());
-    board.setHighlights({ selected: null, targets: [], captures: [], lastMove: [m.from, m.to], check: null });
-    return m.san;
-  };
-  W.board = board;
 } else {
   const r = new THREE.WebGLRenderer({ antialias: true });
   r.setPixelRatio(window.devicePixelRatio);

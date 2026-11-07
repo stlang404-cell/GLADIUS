@@ -7,7 +7,7 @@ import {
   PLAYER_ID, advanceDay, recordPlayerTournamentGame, playerPairing, withdrawPlayer, type PlayerHooks,
 } from '../world/calendar';
 import {
-  DEFAULT_SETTINGS, SAVE_SCHEMA, TIME_CONTROLS,
+  DEFAULT_SETTINGS, SAVE_SCHEMA, TIME_CONTROLS, CLOCKS_ENABLED, UNTIMED_TC,
   type Save, type PlayerState, type GameRecord, type GameKind, type Invitation, type WorldState, type WorldTournament, type Side,
 } from './state';
 import * as INF from './influence';
@@ -163,12 +163,14 @@ export function newGameId(s: Save): string {
 export type StartOpts = { kind: GameKind; tcId: string; color?: 'w' | 'b' | 'random'; rated?: boolean; tournamentId?: string; pairingId?: string; startFen?: string };
 
 export function startGame(s: Save, opp: Competitor, o: StartOpts): GameRecord {
-  const tc = TIME_CONTROLS.find((t) => t.id === o.tcId) ?? TIME_CONTROLS[2];
+  // Untimed by default: unless clocks are explicitly enabled, every game has unlimited thinking time.
+  const tc = CLOCKS_ENABLED ? (TIME_CONTROLS.find((t) => t.id === o.tcId) ?? TIME_CONTROLS[2]) : TIME_CONTROLS.find((t) => t.id === UNTIMED_TC)!;
   let color: 'w' | 'b';
   if (o.color === 'w' || o.color === 'b') color = o.color;
   else color = createRng(mixSeed(s.seed, 'color', s.player.ratedGames + s.library.length)).chance(0.5) ? 'w' : 'b';
-  const rated = o.rated ?? (o.kind !== 'casual' && o.kind !== 'drill' && tc.pool !== 'untimed');
-  const pool: TimeControlPool = rated && o.kind !== 'casual' ? (o.kind === 'tournament' || o.kind === 'trial' ? s.settings.careerPool : tc.pool) : tc.pool;
+  const rated = o.rated ?? (o.kind !== 'casual' && o.kind !== 'drill' && (CLOCKS_ENABLED ? tc.pool !== 'untimed' : true));
+  // All rated games count toward the single career rating.
+  const pool: TimeControlPool = rated ? (CLOCKS_ENABLED && o.kind !== 'tournament' && o.kind !== 'trial' ? tc.pool : s.settings.careerPool) : 'untimed';
   const me = playerSide(s);
   me.rating = s.player.ratings[pool].rating;
   const them = sideFor(opp);

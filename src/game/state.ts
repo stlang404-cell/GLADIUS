@@ -7,6 +7,13 @@ import type { ResultCode, Termination } from '../chess/rules';
 export const SAVE_SCHEMA = 1;
 
 export type TimeControl = { id: string; pool: TimeControlPool; label: string; baseSec: number; incSec: number };
+/**
+ * GLADIUS is untimed: the human player always has unlimited thinking time.
+ * Clocked play is kept only as a disabled, hidden future option.
+ */
+export const CLOCKS_ENABLED = false;
+export const UNTIMED_TC = 'untimed';
+
 export const TIME_CONTROLS: TimeControl[] = [
   { id: 'blitz-5', pool: 'blitz', label: '5 min', baseSec: 300, incSec: 0 },
   { id: 'blitz-3-2', pool: 'blitz', label: '3 + 2', baseSec: 180, incSec: 2 },
@@ -35,15 +42,17 @@ export type Settings = {
   cameraTilt: number; // 0..1
   animMs?: number; // custom move duration (150–1200)
   textScale?: number; // 0.9–1.3 UI text scaling
-  scenery?: 'auto' | 'scenic' | 'focused'; // arena environment around the 2.5D board
+  scenery?: 'auto' | 'scenic' | 'focused'; // legacy (2.5D removed)
+  boardTheme?: string; // board collection id, or 'arena' (the arena's signature board)
+  pieceStyle?: string; // 'classical' | 'imperial' | 'marble' | 'board'
   reduceMotion: boolean;
   highContrast: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
-  boardMode: '3d', animSpeed: 'balanced', pieceSet: 0, boardSet: 0, sound: true, ambience: false,
+  boardMode: '2d', animSpeed: 'majestic', pieceSet: 0, boardSet: 0, sound: true, ambience: false,
   showLegal: true, showCoords: true, autoQueen: false, opponentPace: 'natural', careerPool: 'rapid',
-  defaultTc: 'rapid-10', cameraTilt: 0.55, reduceMotion: false, highContrast: false,
+  defaultTc: 'untimed', cameraTilt: 0.55, reduceMotion: false, highContrast: false,
 };
 
 export type PlayerH2H = { w: number; d: number; l: number; lastDay: number };

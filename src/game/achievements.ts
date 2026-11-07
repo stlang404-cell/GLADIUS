@@ -96,7 +96,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     ['arena-veteran', 'Arena Veteran', 'Win 200 eligible rated games.', 'epic', 200, C('eligibleWins')],
     ['undying-legend', 'Undying Legend', 'Win 1,000 eligible rated games.', 'legendary', 1000, C('eligibleWins')],
     ['shadow-legion', 'Shadow Legion', 'Win 25 eligible games with Black.', 'rare', 25, C('eligibleWinsBlack')],
-    ['master-of-time', 'Master of Time', 'Win eligible games in blitz, rapid and classical.', 'rare', 3, (x) => (x.L.sets.poolsWon ?? []).filter((p) => p !== 'untimed').length],
+    ['master-of-time', 'Master of Patience', 'Win eligible games with 5 different openings.', 'rare', 5, (x) => (x.L.sets.openingsWon ?? []).length],
     ['iron-shield', 'Iron Shield', 'Draw 10 rated games against opponents rated 100+ above you.', 'rare', 10, C('drawsHigher')],
     ['student', 'Student of the Game', 'Analyse 10 of your games.', 'common', 10, (x) => Object.values(x.s.libraryMeta).filter((m) => m.analysed && m.playerColor).length],
     ['scholar', 'Scholar of the Board', 'Analyse 50 of your games.', 'rare', 50, (x) => Object.values(x.s.libraryMeta).filter((m) => m.analysed && m.playerColor).length],
