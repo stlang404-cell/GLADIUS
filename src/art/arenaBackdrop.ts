@@ -1,6 +1,6 @@
 /**
  * Arena backdrops — stylized Roman key-art illustrations (viewBox 0 0 1600 900,
- * preserveAspectRatio slice). Twelve unique places, one per ARENAS[i].
+ * preserveAspectRatio slice). Twenty-four unique places, one per arena 0..23.
  *
  * Composition contract: the chessboard card sits in the centre. Landmark
  * architecture lives in the upper third and on the left/right edges; the
@@ -31,9 +31,10 @@ class S {
   /** +1: light comes from the left (lit faces on the left); -1 from the right. */
   lit = 1;
 
-  constructor(arena: number) {
+  /** @param arena canonical index (ids) · @param seed RNG seed slot (legacy scenes keep their old slot so artwork is unchanged) */
+  constructor(arena: number, seed = arena) {
     this.id = idPrefix('arena-art', arena);
-    this.r = createRng(0x51a7 + arena * 7919);
+    this.r = createRng(0x51a7 + seed * 7919);
   }
   uid(): string {
     return this.id + (this.k++).toString(36);
@@ -2297,15 +2298,2176 @@ function eternalThrone(s: S): void {
   vignette(s, '#141033', 0.3);
 }
 
-const SCENES: ((s: S) => void)[] = [
-  dustPits, legionCamp, ironCitadel, gladiatorsCourt, forumOfTriumph, praetorianBastion,
-  senateHall, consularPalace, grandColosseum, imperialPalace, hallOfCaesars, eternalThrone,
+// ==== NEW-HELPERS-START
+// ------------------------------------------------------------------ toolkit for arenas added in the 24-arena empire
+
+type Pt = [number, number];
+
+/** One-point perspective camera: world (X right, Y down, Z depth) → screen. */
+function cam(VX: number, VY: number, f: number) {
+  const pj = (X: number, Y: number, Z: number): Pt => [VX + (X * f) / Z, VY + (Y * f) / Z];
+  const quad = (a: Pt, b: Pt, c: Pt, d: Pt) => `M${P(a[0], a[1])}L${P(b[0], b[1])}L${P(c[0], c[1])}L${P(d[0], d[1])}Z`;
+  /** Rectangle on the floor/ceiling plane Y between X0..X1 and Z0..Z1. */
+  const flat = (X0: number, X1: number, Y: number, Z0: number, Z1: number) => quad(pj(X0, Y, Z0), pj(X1, Y, Z0), pj(X1, Y, Z1), pj(X0, Y, Z1));
+  /** Rectangle on a side wall plane X between Y0..Y1 and Z0..Z1. */
+  const side = (X: number, Y0: number, Y1: number, Z0: number, Z1: number) => quad(pj(X, Y0, Z0), pj(X, Y0, Z1), pj(X, Y1, Z1), pj(X, Y1, Z0));
+  /** Rectangle facing the camera at depth Z. */
+  const front = (X0: number, X1: number, Y0: number, Y1: number, Z: number) => quad(pj(X0, Y0, Z), pj(X1, Y0, Z), pj(X1, Y1, Z), pj(X0, Y1, Z));
+  return { pj, quad, flat, side, front, f };
+}
+
+/** Civilian in a tunic or toga (base centre x, feet at base, height h). */
+function person(x: number, base: number, h: number, robe: string, skin: string, opts: { hair?: string; sash?: string; arm?: number; dir?: number } = {}): string {
+  const u = h / 10;
+  const dir = opts.dir ?? 1;
+  let o = path(`M${P(x - 1.9 * u, base)}L${P(x - 1.5 * u, base - 5 * u)}Q${P(x - 1.6 * u, base - 7.7 * u)} ${P(x, base - 7.9 * u)}Q${P(x + 1.6 * u, base - 7.7 * u)} ${P(x + 1.5 * u, base - 5 * u)}L${P(x + 1.9 * u, base)}Z`, robe);
+  if (opts.sash) o += path(`M${P(x - 1.4 * u, base - 7.4 * u)}L${P(x + 1.5 * u, base - 3 * u)}L${P(x + 1.6 * u, base - 4.2 * u)}L${P(x - 0.6 * u, base - 7.8 * u)}Z`, opts.sash);
+  if (opts.arm) o += stroke(`M${P(x + dir * 1.2 * u, base - 7.2 * u)}l${n(dir * 2.4 * u)},${n(-opts.arm * u)}`, robe, Math.max(1, 0.9 * u), 'stroke-linecap="round"');
+  o += `<circle cx="${n(x)}" cy="${n(base - 8.9 * u)}" r="${n(1.05 * u)}" fill="${skin}"/>`;
+  if (opts.hair) o += path(`M${P(x - 1.1 * u, base - 8.8 * u)}Q${P(x, base - 10.6 * u)} ${P(x + 1.1 * u, base - 8.8 * u)}Z`, opts.hair);
+  return o;
+}
+
+/** Training gladiator: bare torso, helmet, shield and wooden sword. */
+function gladiator(x: number, base: number, h: number, c: { skin: string; cloth: string; metal: string; shield: string }, dir = 1, lunge = 0): string {
+  const u = h / 10;
+  const hip = base - 4.6 * u;
+  let o = stroke(`M${P(x - 0.8 * u, hip)}L${P(x - (1.6 + lunge * 1.4) * u * dir, base)}M${P(x + 0.8 * u, hip)}L${P(x + (1.4 + lunge * 1.8) * u * dir, base)}`, c.skin, 1.1 * u, 'stroke-linecap="round"');
+  o += path(`M${P(x - 1.5 * u, hip + 0.6 * u)}L${P(x - 1.3 * u, base - 8 * u)}Q${P(x, base - 8.5 * u)} ${P(x + 1.3 * u, base - 8 * u)}L${P(x + 1.5 * u, hip + 0.6 * u)}Z`, c.skin);
+  o += path(`M${P(x - 1.7 * u, hip - 0.6 * u)}h${n(3.4 * u)}l${n(-0.4 * u)},${n(2.2 * u)}h${n(-2.6 * u)}z`, c.cloth);
+  o += rect(x - 1.7 * u, hip - 0.9 * u, 3.4 * u, 0.6 * u, c.metal);
+  // sword arm
+  o += stroke(`M${P(x + dir * 1 * u, base - 7.6 * u)}L${P(x + dir * 3.2 * u, base - (6.4 + lunge) * u)}`, c.skin, 0.9 * u, 'stroke-linecap="round"');
+  o += stroke(`M${P(x + dir * 3.2 * u, base - (6.4 + lunge) * u)}l${n(dir * 3.4 * u)},${n(-2.2 * u)}`, '#c8955c', 0.8 * u, 'stroke-linecap="round"');
+  // helmet
+  o += `<circle cx="${n(x)}" cy="${n(base - 9.1 * u)}" r="${n(1.25 * u)}" fill="${c.metal}"/>`;
+  o += path(`M${P(x - 1.9 * u, base - 8.6 * u)}h${n(3.8 * u)}v${n(0.5 * u)}h${n(-3.8 * u)}z`, c.metal);
+  o += path(`M${P(x - 0.3 * u, base - 10.2 * u)}q${n(-dir * 1.4 * u)},${n(-1.2 * u)} ${n(-dir * 2.4 * u)},${n(-0.2 * u)}l${n(dir * 2.2 * u)},${n(0.8 * u)}z`, c.cloth);
+  // shield (scutum) on the off-hand side
+  o += rect(x - dir * 3.6 * u - 1.4 * u, base - 8 * u, 2.8 * u, 4.6 * u, c.shield, `rx="${n(0.5 * u)}"`);
+  o += rect(x - dir * 3.6 * u - 0.25 * u, base - 8 * u, 0.5 * u, 4.6 * u, c.metal, op(0.8));
+  return o;
+}
+
+/** Soft rising smoke / steam wisps from (x,y). */
+function smoke(s: S, x: number, y: number, h: number, w: number, color: string, alpha: number, drift = 0.4): string {
+  let d = '';
+  const k = 12;
+  for (let i = 0; i < k; i++) {
+    const t = i / k;
+    const cx = x + Math.sin(t * 6 + s.rnd(0, 0.6)) * w * 0.35 + drift * h * t * t;
+    const cy = y - h * t;
+    const r = w * (0.3 + t * 0.7);
+    d += `M${P(cx - r, cy)}a${n(r)},${n(r * 0.8)} 0 1,0 ${n(2 * r)},0a${n(r)},${n(r * 0.8)} 0 1,0 ${n(-2 * r)},0Z`;
+  }
+  return path(d, color, op(alpha));
+}
+
+/** Horizontal water glints (short strokes) within a band. */
+function glints(s: S, x0: number, x1: number, y0: number, y1: number, count: number, color: string, alpha: number, len = 30): string {
+  let d = '';
+  for (let i = 0; i < count; i++) {
+    const t = s.r.next();
+    const y = y0 + (y1 - y0) * t * t;
+    const sc = 0.3 + ((y - y0) / Math.max(1, y1 - y0)) * 1.2;
+    const x = s.rnd(x0, x1);
+    d += `M${P(x, y)}h${n(len * sc * s.rnd(0.5, 1.4))}`;
+  }
+  return stroke(d, color, 2, `stroke-linecap="round" ${op(alpha)}`);
+}
+
+/** Garland swags between consecutive x positions at height y. */
+function garlands(xs: number[], y: number, sag: number, leaf: string, hi: string, w = 6): string {
+  let d = '';
+  for (let i = 0; i < xs.length - 1; i++) d += `M${P(xs[i], y)}Q${P((xs[i] + xs[i + 1]) / 2, y + sag * 2)} ${P(xs[i + 1], y)}`;
+  return stroke(d, leaf, w, 'stroke-linecap="round"') + stroke(d, hi, w * 0.3, op(0.8));
+}
+
+/** Simple wooden sailing merchant ship (corbita), facing dir, base = waterline. */
+function corbita(s: S, x: number, base: number, sc: number, hull: string, sail: string, stripe: string, dir = 1): string {
+  const u = sc;
+  const X = (v: number) => x + dir * v * u;
+  let o = path(`M${P(X(-60), base - 22 * u)}L${P(X(54), base - 22 * u)}Q${P(X(70), base - 30 * u)} ${P(X(66), base - 46 * u)}Q${P(X(78), base - 26 * u)} ${P(X(56), base)}L${P(X(-48), base)}Q${P(X(-66), base - 8 * u)} ${P(X(-60), base - 22 * u)}Z`, s.lg([[0, shade(hull, 0.15)], [1, shade(hull, -0.35)]]));
+  // stern swan-neck
+  o += stroke(`M${P(X(-58), base - 22 * u)}Q${P(X(-74), base - 40 * u)} ${P(X(-62), base - 50 * u)}`, hull, 4 * u, 'stroke-linecap="round"');
+  o += stroke(`M${P(X(-56), base - 14 * u)}L${P(X(58), base - 14 * u)}`, stripe, 2.4 * u);
+  // mast + sail
+  o += stroke(`M${P(X(0), base - 22 * u)}V${n(base - 118 * u)}M${P(X(-40), base - 110 * u)}L${P(X(40), base - 110 * u)}`, shade(hull, -0.3), 2.6 * u);
+  o += path(`M${P(X(-38), base - 108 * u)}L${P(X(38), base - 108 * u)}Q${P(X(46), base - 70 * u)} ${P(X(36), base - 36 * u)}L${P(X(-36), base - 36 * u)}Q${P(X(-44), base - 70 * u)} ${P(X(-38), base - 108 * u)}Z`, s.lg([[0, shade(sail, 0.25)], [0.6, sail], [1, shade(sail, -0.2)]], dir > 0 ? 0 : 1, 0, dir > 0 ? 1 : 0, 0));
+  o += stroke(`M${P(X(-20), base - 108 * u)}Q${P(X(-24), base - 72 * u)} ${P(X(-19), base - 36 * u)}M${P(X(0), base - 108 * u)}V${n(base - 36 * u)}M${P(X(20), base - 108 * u)}Q${P(X(24), base - 72 * u)} ${P(X(19), base - 36 * u)}`, shade(sail, -0.3), 1.2 * u, op(0.5));
+  // artemon (small bow sail)
+  o += stroke(`M${P(X(56), base - 26 * u)}L${P(X(76), base - 66 * u)}`, shade(hull, -0.3), 1.6 * u);
+  o += path(`M${P(X(66), base - 64 * u)}l${n(dir * 16 * u)},${n(-4 * u)}l${n(-dir * 4 * u)},${n(22 * u)}l${n(-dir * 14 * u)},${n(2 * u)}z`, sail);
+  // reflection
+  o += path(`M${P(X(-52), base + 2 * u)}L${P(X(54), base + 2 * u)}L${P(X(40), base + 18 * u)}L${P(X(-40), base + 18 * u)}Z`, hull, op(0.22));
+  return o;
+}
+
+/** Brazier on a tripod with tall flame and glow (larger, more ornate than torch()). */
+function brazier(s: S, x: number, base: number, sc: number, metal: string, glowC = '#ffb347'): string {
+  const u = sc;
+  let o = `<circle cx="${n(x)}" cy="${n(base - 70 * u)}" r="${n(120 * u)}" fill="${s.rgu([[0, glowC, 0.5], [0.35, glowC, 0.18], [1, glowC, 0]], x, base - 70 * u, 120 * u)}"/>`;
+  o += stroke(`M${P(x, base - 48 * u)}L${P(x - 16 * u, base)}M${P(x, base - 48 * u)}L${P(x + 16 * u, base)}M${P(x, base - 48 * u)}V${n(base)}`, shade(metal, -0.35), 3 * u, 'stroke-linecap="round"');
+  o += path(`M${P(x - 22 * u, base - 62 * u)}h${n(44 * u)}q${n(-4 * u)},${n(14 * u)} ${n(-22 * u)},${n(16 * u)}q${n(-18 * u)},${n(-2 * u)} ${n(-22 * u)},${n(-16 * u)}z`, s.lg([[0, shade(metal, 0.4)], [0.5, metal], [1, shade(metal, -0.4)]], 0, 0, 1, 0));
+  o += rect(x - 24 * u, base - 65 * u, 48 * u, 4 * u, shade(metal, 0.3), `rx="${n(2 * u)}"`);
+  o += path(`M${P(x - 18 * u, base - 64 * u)}C${P(x - 22 * u, base - 90 * u)} ${P(x - 4 * u, base - 96 * u)} ${P(x - 2 * u, base - 124 * u)}C${P(x + 8 * u, base - 104 * u)} ${P(x + 26 * u, base - 92 * u)} ${P(x + 18 * u, base - 64 * u)}Z`, '#ff7a1a');
+  o += path(`M${P(x - 10 * u, base - 64 * u)}C${P(x - 12 * u, base - 80 * u)} ${P(x - 2 * u, base - 86 * u)} ${P(x, base - 102 * u)}C${P(x + 6 * u, base - 88 * u)} ${P(x + 14 * u, base - 80 * u)} ${P(x + 10 * u, base - 64 * u)}Z`, '#ffd25a');
+  o += path(`M${P(x - 4 * u, base - 64 * u)}C${P(x - 5 * u, base - 72 * u)} ${P(x, base - 76 * u)} ${P(x, base - 84 * u)}C${P(x + 3 * u, base - 76 * u)} ${P(x + 6 * u, base - 72 * u)} ${P(x + 4 * u, base - 64 * u)}Z`, '#fff6c8');
+  return o;
+}
+
+/** Statue of winged Victory (local: base centre x, feet at base, height h). */
+function victoryStatue(s: S, x: number, base: number, h: number, gold: string, dark: string): string {
+  const u = h / 100;
+  const body = s.lg([[0, shade(gold, 0.45)], [0.45, gold], [1, dark]], 0, 0, 1, 0);
+  let o = '';
+  // wings: raised, with a scalloped feather edge and inner feather lines
+  for (const k of [-1, 1]) {
+    const sx = x + k * 4 * u;
+    const sy = base - 72 * u;
+    const tx = x + k * 78 * u;
+    const ty = base - 150 * u;
+    const lx = x + k * 22 * u;
+    const ly = base - 50 * u;
+    let d = `M${P(sx, sy)}C${P(x + k * 6 * u, base - 120 * u)} ${P(x + k * 40 * u, base - 150 * u)} ${P(tx, ty)}`;
+    const m = 7;
+    let lines = '';
+    for (let i = 1; i <= m; i++) {
+      const t = i / m;
+      const px = tx + (lx - tx) * t;
+      const py = ty + (ly - ty) * t;
+      const pt = tx + (lx - tx) * (t - 0.5 / m);
+      const qt = ty + (ly - ty) * (t - 0.5 / m);
+      d += `Q${P(pt + k * 12 * u, qt + 10 * u)} ${P(px, py)}`;
+      lines += `M${P(px, py)}Q${P((px + sx) / 2 + k * 4 * u, (py + sy) / 2 - 6 * u)} ${P(sx + k * 2 * u, sy - 4 * u)}`;
+    }
+    d += `Q${P(x + k * 8 * u, base - 60 * u)} ${P(sx, sy)}Z`;
+    o += path(d, body) + stroke(lines, dark, 0.8 * u, op(0.45));
+  }
+  // robe (flowing chiton)
+  o += path(`M${P(x - 9 * u, base)}C${P(x - 14 * u, base - 30 * u)} ${P(x - 8 * u, base - 50 * u)} ${P(x - 7 * u, base - 72 * u)}Q${P(x, base - 78 * u)} ${P(x + 7 * u, base - 72 * u)}C${P(x + 10 * u, base - 50 * u)} ${P(x + 22 * u, base - 24 * u)} ${P(x + 24 * u, base - 4 * u)}Q${P(x + 8 * u, base + 2 * u)} ${P(x - 9 * u, base)}Z`, body);
+  o += stroke(`M${P(x - 3 * u, base - 66 * u)}Q${P(x - 1 * u, base - 30 * u)} ${P(x - 4 * u, base - 2 * u)}M${P(x + 3 * u, base - 60 * u)}Q${P(x + 8 * u, base - 30 * u)} ${P(x + 14 * u, base - 4 * u)}`, dark, 1.2 * u, op(0.5));
+  // raised arm with laurel wreath
+  o += stroke(`M${P(x + 5 * u, base - 72 * u)}L${P(x + 14 * u, base - 96 * u)}`, gold, 4 * u, 'stroke-linecap="round"');
+  o += `<circle cx="${n(x + 16 * u)}" cy="${n(base - 104 * u)}" r="${n(7 * u)}" fill="none" stroke="#9ad05a" stroke-width="${n(3 * u)}"/>`;
+  // palm branch in other hand
+  o += stroke(`M${P(x - 6 * u, base - 60 * u)}Q${P(x - 18 * u, base - 50 * u)} ${P(x - 22 * u, base - 30 * u)}`, gold, 2 * u);
+  // head
+  o += `<circle cx="${n(x)}" cy="${n(base - 82 * u)}" r="${n(5.5 * u)}" fill="${gold}"/>`;
+  return o;
+}
+
+/** Wave (running dog / vitruvian scroll) border along a horizontal line, as path data. */
+function waveBand(x0: number, x1: number, y: number, h: number): string {
+  let d = '';
+  const step = h * 1.6;
+  for (let x = x0; x < x1; x += step) d += `M${P(x, y + h)}C${P(x, y)} ${P(x + step * 0.6, y)} ${P(x + step * 0.6, y + h * 0.45)}C${P(x + step * 0.6, y + h * 0.75)} ${P(x + step * 0.3, y + h * 0.75)} ${P(x + step * 0.32, y + h * 0.5)}`;
+  return d;
+}
+
+/** Racing quadriga in profile: four horses abreast, light chariot, charioteer in faction colours. */
+function raceChariot(s: S, x: number, base: number, sc: number, dir: number, faction: string, coats: string[]): string {
+  let o = ell(x + dir * 30 * sc, base + 2 * sc, 70 * sc, 6 * sc, '#6a3a1a', op(0.3));
+  // dust plume behind
+  o += smoke(s, x - dir * 40 * sc, base - 4 * sc, 40 * sc, 34 * sc, '#f2d6a0', 0.35, -dir * 1.6);
+  for (let i = 3; i >= 0; i--) {
+    const hx = x + dir * (34 + i * 5) * sc;
+    const hy = base - (40 - i * 1.5) * sc;
+    o += `<path d="${HORSE}" fill="${coats[i % coats.length]}" transform="translate(${n(hx)} ${n(hy)}) scale(${n(sc * dir)} ${n(sc)})"/>`;
+  }
+  o += stroke(`M${P(x + dir * 6 * sc, base - 30 * sc)}L${P(x + dir * 44 * sc, base - 26 * sc)}`, '#5a3a20', 1.6 * sc);
+  // chariot body + wheel
+  o += path(`M${P(x - 12 * sc, base - 30 * sc)}h${n(24 * sc)}l${n(-3 * sc)},${n(16 * sc)}h${n(-18 * sc)}z`, s.lg([[0, '#f2c860'], [1, '#a8762a']]));
+  o += `<circle cx="${n(x)}" cy="${n(base - 9 * sc)}" r="${n(9 * sc)}" fill="none" stroke="#5a3a20" stroke-width="${n(2.4 * sc)}"/>` + stroke(`M${P(x - 9 * sc, base - 9 * sc)}h${n(18 * sc)}M${P(x, base - 18 * sc)}v${n(18 * sc)}`, '#5a3a20', 1.2 * sc);
+  // charioteer leaning forward
+  o += path(`M${P(x - 5 * sc, base - 28 * sc)}l${n(dir * 6 * sc)},${n(-20 * sc)}h${n(dir * 7 * sc)}l${n(-dir * 1 * sc)},${n(20 * sc)}z`, faction);
+  o += `<circle cx="${n(x + dir * 7 * sc)}" cy="${n(base - 53 * sc)}" r="${n(4 * sc)}" fill="#c88a62"/>` + path(`M${P(x + dir * 3 * sc, base - 55 * sc)}q${n(dir * 4 * sc)},${n(-7 * sc)} ${n(dir * 8 * sc)},0z`, '#d8d0c0');
+  o += stroke(`M${P(x + dir * 9 * sc, base - 44 * sc)}L${P(x + dir * 40 * sc, base - 34 * sc)}`, '#3a2414', 1 * sc);
+  return o;
+}
+
+/** Caryatid (local: base centre x, feet at base, height h). */
+function caryatid(x: number, base: number, h: number, stone: string, shadeC: string): string {
+  const u = h / 100;
+  let o = rect(x - 10 * u, base - 6 * u, 20 * u, 6 * u, stone);
+  o += path(`M${P(x - 9 * u, base - 6 * u)}C${P(x - 11 * u, base - 40 * u)} ${P(x - 8 * u, base - 62 * u)} ${P(x - 7 * u, base - 76 * u)}Q${P(x, base - 80 * u)} ${P(x + 7 * u, base - 76 * u)}C${P(x + 8 * u, base - 62 * u)} ${P(x + 11 * u, base - 40 * u)} ${P(x + 9 * u, base - 6 * u)}Z`, stone);
+  o += stroke(`M${P(x - 4 * u, base - 70 * u)}Q${P(x - 5 * u, base - 36 * u)} ${P(x - 3 * u, base - 8 * u)}M${P(x + 1 * u, base - 70 * u)}V${n(base - 8 * u)}M${P(x + 5 * u, base - 66 * u)}Q${P(x + 6 * u, base - 36 * u)} ${P(x + 4 * u, base - 8 * u)}`, shadeC, 1 * u, op(0.6));
+  o += `<circle cx="${n(x)}" cy="${n(base - 84 * u)}" r="${n(5 * u)}" fill="${stone}"/>`;
+  o += rect(x - 7 * u, base - 96 * u, 14 * u, 7 * u, stone) + rect(x - 10 * u, base - 100 * u, 20 * u, 4 * u, stone);
+  return o;
+}
+
+/** Peacock displaying its fan (local: feet at base, height h of the body). */
+function peacock(s: S, x: number, base: number, h: number, dir: number): string {
+  const u = h / 100;
+  const X = (v: number) => x + dir * v * u;
+  const cx = X(-6);
+  const cy = base - 40 * u;
+  let fan = '';
+  let eyes = '';
+  let eyes2 = '';
+  const N = 17;
+  for (let i = 0; i < N; i++) {
+    const a = -Math.PI * 0.95 + (i / (N - 1)) * Math.PI * 0.9;
+    const L = 150 * u;
+    const ex = cx + Math.cos(a) * L;
+    const ey = cy + Math.sin(a) * L;
+    const nx = -Math.sin(a) * 9 * u;
+    const ny = Math.cos(a) * 9 * u;
+    fan += `M${P(cx, cy)}Q${P((cx + ex) / 2 + nx, (cy + ey) / 2 + ny)} ${P(ex, ey)}Q${P((cx + ex) / 2 - nx, (cy + ey) / 2 - ny)} ${P(cx, cy)}Z`;
+    eyes += circ(ex - Math.cos(a) * 10 * u, ey - Math.sin(a) * 10 * u, 8 * u);
+    eyes2 += circ(ex - Math.cos(a) * 10 * u, ey - Math.sin(a) * 10 * u, 4 * u);
+  }
+  let o = path(fan, s.rgu([[0, '#1e5a4a'], [0.6, '#2a8a6a'], [1, '#7ac06a']], cx, cy, 150 * u));
+  o += path(eyes, '#f2c64a') + path(eyes2, '#1e3a8a');
+  o += path(`M${P(X(-14), base - 30 * u)}Q${P(X(-16), base - 56 * u)} ${P(X(6), base - 58 * u)}Q${P(X(14), base - 80 * u)} ${P(X(16), base - 96 * u)}Q${P(X(26), base - 100 * u)} ${P(X(26), base - 90 * u)}Q${P(X(22), base - 70 * u)} ${P(X(24), base - 48 * u)}Q${P(X(20), base - 26 * u)} ${P(X(-14), base - 30 * u)}Z`, s.lg([[0, '#3a6ad8'], [1, '#1e3a8a']]));
+  o += path(`M${P(X(26), base - 94 * u)}l${n(dir * 8 * u)},${n(3 * u)}l${n(-dir * 8 * u)},${n(3 * u)}z`, '#e8b84a');
+  let crest = '';
+  for (let i = -1; i <= 1; i++) crest += `M${P(X(20), base - 99 * u)}l${n(dir * i * 3 * u)},${n(-10 * u)}`;
+  o += stroke(crest, '#1e3a8a', 1.2 * u) + `<circle cx="${n(X(22))}" cy="${n(base - 94 * u)}" r="${n(1.6 * u)}" fill="#fff"/>`;
+  o += stroke(`M${P(X(0), base - 30 * u)}V${n(base)}M${P(X(8), base - 30 * u)}V${n(base)}`, '#8a6a4a', 2 * u);
+  return o;
+}
+// ==== NEW-HELPERS-END
+
+/** 1 · The Ludus Yard — a gladiator school courtyard: barracks cells, palus posts, lanista's balcony. */
+function ludusYard(s: S): void {
+  s.lit = 1;
+  const { pj, side, flat, front } = cam(800, 370, 800);
+  const FY = 280; // ground plane
+  const TOP = -520; // roof line
+  const MID = -150; // gallery floor
+  const ZB = 2300; // back wall
+  const WX = 1400;
+  sky(s, [[0, '#2f7fc4'], [0.35, '#6fb4e2'], [0.6, '#cfe8ee'], [0.75, '#fff0d4']]);
+  sun(s, 300, 90, 30, '#ffffff', '#fff2c0', 380, 0.8);
+  shafts(s, 300, 90, Math.PI * 0.05, Math.PI * 0.6, 8, 1100, '#fffbe8', 0.12);
+  cloud(s, 1240, 110, 420, 96, '#ffffff', '#b8d2e6');
+  cloud(s, 700, 60, 220, 48, '#ffffff', '#c4dcec', 0.9);
+  cloud(s, 1500, 220, 240, 44, '#ffffff', '#cfe0ea', 0.8);
+  birds(s, 980, 150, 5, 60, '#3a5a7a', 8);
+  // distant city beyond the walls: the Flavian amphitheatre's upper ring + hills
+  s.add(hills(s, 240, 26, 4, '#a9c6c0'));
+  const am = '#e9cfa8';
+  s.add(path('M120,250V168Q300,140 520,150V250Z', am));
+  let ar = '';
+  for (let r = 0; r < 2; r++) for (let k = 0; k < 13; k++) ar += `M${P(140 + k * 28, 236 - r * 34)}v-16a7,7 0 0,1 14,0v16z`;
+  s.add(path(ar, '#c49a72'), stroke('M120,200Q300,172 520,184M120,168Q300,140 520,152', '#fff4e0', 3, op(0.7)));
+  let pines = '';
+  for (const [px, ph] of [[600, 60], [1060, 74], [1130, 58], [1400, 66], [60, 54]]) pines += umbrellaPine(s, px, 254, ph, ph * 1.15, '#7a6a5a', '#6f9a7a', '#a2c49a');
+  s.add(pines);
+  haze(s, 120, 270, '#f4f6ec', 0, 0.55);
+
+  // ---- back wall: two storeys, cells below and gallery above
+  const plaster = s.lg([[0, '#f2d6a6'], [1, '#e2b47e']]);
+  s.add(path(front(-WX, WX, TOP, FY, ZB), plaster));
+  const stone = patStone(s, 38, 16, '#9a6a3a', '#fff2d6', 0.22, 0.2);
+  s.add(path(front(-WX, WX, MID, FY, ZB), stone));
+  // red dado and cell doors
+  s.add(path(front(-WX, WX, 120, FY, ZB), '#b8432e', op(0.85)));
+  let doors = '';
+  let doorTop = '';
+  for (let X = -1300; X < 1300; X += 200) {
+    if (Math.abs(X + 50) < 260) continue;
+    const a = pj(X, -40, ZB);
+    const b = pj(X + 100, FY, ZB);
+    doors += `M${P(a[0], b[1])}V${n(a[1] + 8)}a${n((b[0] - a[0]) / 2)},${n((b[0] - a[0]) / 2)} 0 0,1 ${n(b[0] - a[0])},0V${n(b[1])}Z`;
+    doorTop += `M${P(a[0] - 3, a[1] + 8)}h${n(b[0] - a[0] + 6)}`;
+  }
+  s.add(path(doors, s.lg([[0, '#4a2a18'], [1, '#7a4a2a']])), stroke(doorTop, '#fff2d6', 2, op(0.6)));
+  // gallery: wooden floor + posts + railing
+  s.add(path(front(-WX, WX, MID - 14, MID + 10, ZB), '#7a4626'));
+  s.add(path(front(-WX, WX, TOP + 30, MID - 14, ZB), s.lg([[0, '#6a3a22'], [1, '#a8683e']]), op(0.55)));
+  let posts = '';
+  for (let X = -1350; X <= 1350; X += 150) {
+    const a = pj(X - 10, TOP + 26, ZB);
+    const b = pj(X + 10, MID, ZB);
+    posts += `M${P(a[0], a[1])}H${n(b[0])}V${n(b[1])}H${n(a[0])}Z`;
+  }
+  s.add(path(posts, '#8a5030'));
+  let rail = '';
+  for (let X = -1390; X <= 1390; X += 22) {
+    const a = pj(X, MID - 70, ZB);
+    rail += `M${P(a[0], a[1])}V${n(pj(X, MID - 14, ZB)[1])}`;
+  }
+  s.add(stroke(rail, '#6a3a1e', 2.4), path(front(-WX, WX, MID - 76, MID - 66, ZB), '#8a5030'));
+  // roof tiles along the back wall
+  const tl = pj(-WX, TOP, ZB);
+  const tr = pj(WX, TOP, ZB);
+  s.add(path(`M${P(tl[0] - 10, tl[1] + 6)}L${P(tl[0] + 20, tl[1] - 22)}H${n(tr[0] - 20)}L${P(tr[0] + 10, tr[1] + 6)}Z`, patTiles(s, 9, 7, '#c4553a')));
+  s.add(rect(tl[0] - 10, tl[1] + 2, tr[0] - tl[0] + 20, 6, '#7a2e1c'));
+
+  // ---- lanista's tribunal (projecting balcony with awning) — top centre
+  const bx = 800;
+  const by = pj(0, MID, ZB)[1];
+  s.add(rect(bx - 150, by - 4, 300, 16, '#f6ead2'), rect(bx - 150, by + 12, 300, 8, '#c49a72'));
+  s.add(path(`M${P(bx - 140, by + 20)}l20,26h240l20,-26z`, '#d8b688'));
+  let bal = '';
+  for (let x = bx - 140; x <= bx + 140; x += 14) bal += `M${n(x)},${n(by - 4)}v-34`;
+  s.add(stroke(bal, '#f6ead2', 5), rect(bx - 150, by - 46, 300, 10, '#fff6e4'));
+  // lanista & guests behind the balustrade
+  s.add(person(bx - 20, by - 8, 70, '#f6f0e4', '#c88a62', { sash: '#9a2a24', hair: '#3a2416', arm: 2.6 }));
+  s.add(person(bx + 60, by - 8, 58, '#3f7a8a', '#d8a078', { hair: '#2a1a10' }), person(bx - 90, by - 8, 56, '#c49a42', '#c08060', { hair: '#5a3a20' }));
+  // striped awning
+  let stripes = '';
+  const aw0 = bx - 190;
+  for (let i = 0; i < 12; i++) if (i % 2 === 0) stripes += `M${P(aw0 + i * 31.7, by - 140)}h31.7l${n(i < 6 ? -4 : 4)},56h-31.7z`;
+  s.add(path(`M${P(aw0, by - 140)}h380l12,56h-404z`, '#fff4e2'), path(stripes, '#b8342a'));
+  let scal = '';
+  for (let i = 0; i < 12; i++) scal += `M${P(aw0 - 12 + i * 33.7, by - 84)}q16.8,16 33.7,0z`;
+  s.add(path(scal, '#b8342a'), rect(aw0, by - 146, 380, 8, '#7a2a1c'));
+  s.add(stroke(`M${P(bx - 180, by - 84)}V${n(by - 8)}M${P(bx + 180, by - 84)}V${n(by - 8)}`, '#6a3a1e', 6));
+  s.add(flag(s, bx, by - 200, 80, 34, '#b8342a', '#5a3018', 1, 0.8));
+  s.add(hangingBanner(s, bx - 130, by + 22, 36, 90, '#b8342a', '#f0c060', `<circle cx="${n(bx - 112)}" cy="${n(by + 64)}" r="8" fill="none" stroke="#f0c060" stroke-width="3"/>`));
+  s.add(hangingBanner(s, bx + 94, by + 22, 36, 90, '#b8342a', '#f0c060', `<circle cx="${n(bx + 112)}" cy="${n(by + 64)}" r="8" fill="none" stroke="#f0c060" stroke-width="3"/>`));
+  // heavy gate under the tribunal (to the arena tunnel)
+  const g0 = pj(-150, -60, ZB);
+  const g1 = pj(150, FY, ZB);
+  s.add(path(`M${P(g0[0], g1[1])}V${n(g0[1] + 40)}a${n((g1[0] - g0[0]) / 2)},${n(40)} 0 0,1 ${n(g1[0] - g0[0])},0V${n(g1[1])}Z`, '#3a2214'));
+  let bars = '';
+  for (let x = g0[0] + 10; x < g1[0]; x += 14) bars += `M${n(x)},${n(g1[1])}V${n(g0[1] + 26)}`;
+  s.add(stroke(bars, '#6a5a4a', 3), stroke(`M${P(g0[0], g0[1] + 70)}H${n(g1[0])}M${P(g0[0], g0[1] + 120)}H${n(g1[0])}`, '#6a5a4a', 3));
+
+  // ---- side wings (receding): left in shade, right sunlit
+  for (const k of [-1, 1]) {
+    const X = k * WX;
+    const lit = k > 0;
+    s.add(path(side(X, TOP, FY, 520, ZB), s.lg(lit ? [[0, '#e9b47a'], [1, '#f6d6a2']] : [[0, '#a8724a'], [1, '#c89060']], 0, 0, 1, 0)));
+    s.add(path(side(X, MID, FY, 520, ZB), stone));
+    s.add(path(side(X, 120, FY, 520, ZB), lit ? '#b8432e' : '#8a3020', op(0.85)));
+    let cd = '';
+    for (let Z = 700; Z < ZB - 100; Z += 260) cd += side(X, -40, FY, Z, Z + 130);
+    s.add(path(cd, lit ? '#6a3a22' : '#3a2214'));
+    s.add(path(side(X, MID - 14, MID + 10, 520, ZB), '#7a4626'));
+    let gp = '';
+    for (let Z = 560; Z < ZB; Z += 220) gp += side(X, TOP + 26, MID, Z, Z + 16);
+    s.add(path(gp, '#8a5030'));
+    s.add(path(side(X, TOP + 30, MID - 14, 520, ZB), '#5a3018', op(0.4)));
+    let wn = '';
+    for (let Z = 640; Z < ZB - 100; Z += 220) wn += side(X, TOP + 120, TOP + 250, Z + 50, Z + 150);
+    s.add(path(wn, lit ? '#7a4426' : '#3a2214', op(0.85)));
+    // roof overhang along the wing
+    const r0 = pj(X, TOP, 520);
+    const r1 = pj(X, TOP, ZB);
+    const r2 = pj(X - k * 160, TOP - 60, ZB);
+    const r3 = pj(X - k * 160, TOP - 60, 520);
+    s.add(path(`M${P(r0[0], r0[1])}L${P(r1[0], r1[1])}L${P(r2[0], r2[1])}L${P(r3[0], r3[1])}Z`, patTiles(s, 12, 9, '#c4553a', k * 30)));
+  }
+  // banners on the wings
+  for (const k of [-1, 1]) {
+    for (const Z of [900, 1400]) {
+      const a = pj(k * WX, MID + 14, Z);
+      const sc = 800 / Z;
+      s.add(hangingBanner(s, a[0] - 20 * sc * 2, a[1], 40 * sc * 2, 110 * sc * 2, k < 0 ? '#2c6a7a' : '#b8342a', '#f0c060'));
+    }
+  }
+
+  // ---- sand yard
+  s.add(path(flat(-WX, WX, FY, 300, ZB), s.lg([[0, '#f6dcae'], [0.4, '#ecc690'], [1, '#d6a066']])));
+  // shade cast by the left wing
+  s.add(path(`${flat(-WX, -760, FY, 300, ZB)}`, '#8a4a28', op(0.22)));
+  // rake arcs and a training circle
+  let rake = '';
+  for (let Z = 500; Z < ZB; Z *= 1.12) {
+    const a = pj(-WX, FY, Z);
+    const b = pj(WX, FY, Z);
+    rake += `M${P(a[0], a[1])}L${P(b[0], b[1])}`;
+  }
+  s.add(stroke(rake, '#b8743f', 1.5, op(0.18)));
+  s.add(speckles(s, 0, 470, W, H, 220, '#a8653a', 0.3, 3));
+  const ring = (Z: number, r: number) => {
+    const c = pj(0, FY, Z);
+    return `<ellipse cx="${n(c[0])}" cy="${n(c[1])}" rx="${n((r * 800) / Z)}" ry="${n((r * 800 * 0.16) / Z)}" fill="none" stroke="#fff2d0" stroke-width="3" opacity=".55"/>`;
+  };
+  s.add(ring(1200, 520));
+
+  // ---- palus posts with sparring gladiators (back to front)
+  const palus = (X: number, Z: number) => {
+    const [x, y] = pj(X, FY, Z);
+    const sc = 800 / Z;
+    const h = 230 * sc;
+    const w = 30 * sc;
+    return (
+      path(`M${P(x - w / 2, y)}L${P(x + w / 2, y)}L${P(x + w / 2 + 160 * sc, y + 30 * sc)}L${P(x - w / 2 + 160 * sc, y + 34 * sc)}Z`, '#7a3a1c', op(0.25)) +
+      rect(x - w / 2, y - h, w, h, s.lg([[0, '#ffd296'], [0.35, '#b8784a'], [1, '#6a3a1c']], 0, 0, 1, 0)) +
+      stroke(`M${P(x - w / 2, y - h * 0.62)}l${n(w)},${n(-4 * sc)}M${P(x - w / 2, y - h * 0.4)}l${n(w)},${n(3 * sc)}M${P(x - w / 2, y - h * 0.75)}l${n(w)},${n(2 * sc)}`, '#5a2e14', 2 * sc, op(0.8)) +
+      ell(x, y - h, w / 2, w * 0.2, '#d8a06a')
+    );
+  };
+  const glad = (X: number, Z: number, dir: number, cl: string, sh: string, lunge: number) => {
+    const [x, y] = pj(X, FY, Z);
+    return ell(x, y, 40 * (800 / Z), 8 * (800 / Z), '#7a3a1c', op(0.25)) + gladiator(x, y, 190 * (800 / Z), { skin: '#b87850', cloth: cl, metal: '#d8d0c0', shield: sh }, dir, lunge);
+  };
+  s.add(palus(-640, 1900), glad(-540, 1900, -1, '#b8342a', '#b8342a', 0.6));
+  s.add(palus(700, 1750), glad(590, 1750, 1, '#2c6a7a', '#2c6a7a', 0.8));
+  s.add(glad(-150, 1600, 1, '#e8b04b', '#b8342a', 0.7), glad(80, 1600, -1, '#f4ece0', '#2c6a7a', 0.3));
+  // the doctor (trainer) watching with his rod
+  {
+    const [x, y] = pj(-30, FY, 2050);
+    s.add(person(x, y, 84, '#6a4a3a', '#b87850', { hair: '#2a1a10', arm: 3 }), stroke(`M${P(x + 8, y - 70)}l18,-30`, '#5a3018', 2.5));
+  }
+  s.add(palus(-1020, 1100), palus(1040, 1050));
+  s.add(glad(-880, 1100, -1, '#b8342a', '#e8b04b', 0.5));
+
+  // ---- foreground props
+  const rack = (x: number, y: number, sc: number, flip: number) => {
+    let o = ell(x + 45 * sc, y + 4 * sc, 70 * sc, 10 * sc, '#5a2e14', op(0.3));
+    o += rect(x, y - 90 * sc, 7 * sc, 90 * sc, '#5e3418') + rect(x + 90 * sc, y - 90 * sc, 7 * sc, 90 * sc, '#5e3418');
+    o += rect(x - 6 * sc, y - 76 * sc, 110 * sc, 7 * sc, '#8a5030') + rect(x - 6 * sc, y - 26 * sc, 110 * sc, 7 * sc, '#8a5030');
+    let sw = '';
+    for (let i = 0; i < 6; i++) sw += `M${P(x + (14 + i * 14) * sc, y - 98 * sc)}v${n(70 * sc)}`;
+    o += stroke(sw, '#e0b070', 5 * sc, 'stroke-linecap="round"') + stroke(sw.replace(/v[\d.]+/g, `v${n(12 * sc)}`), '#5a2e14', 8 * sc);
+    // helmets on top
+    o += `<circle cx="${n(x + (flip > 0 ? 20 : 74) * sc)}" cy="${n(y - 92 * sc)}" r="${n(13 * sc)}" fill="${s.lg([[0, '#fff0c8'], [1, '#a8783a']])}"/>`;
+    return o;
+  };
+  s.add(rack(110, 860, 1.6, 1), rack(1340, 870, 1.6, -1));
+  // round parmula + crossed wooden swords in the sand (below the board on phones)
+  s.add(ell(800, 852, 140, 18, '#7a3a1c', op(0.22)));
+  s.add(g(rect(-110, -7, 220, 14, '#d8a868', 'rx="5"') + rect(-132, -11, 26, 22, '#5a2e14', 'rx="4"') + rect(-110, -7, 220, 4, '#ffe0a8', op(0.6)), 'transform="translate(770 842) rotate(-14)"'));
+  s.add(g(rect(-110, -7, 220, 14, '#c8955c', 'rx="5"') + rect(106, -11, 26, 22, '#5a2e14', 'rx="4"'), 'transform="translate(830 842) rotate(12)"'));
+  s.add(ell(800, 838, 56, 22, s.lg([[0, '#f6d27a'], [0.5, '#c8902e'], [1, '#7a4a14']])), ell(800, 836, 40, 15, '#b8342a'), ell(800, 834, 12, 5, '#ffe2a0'));
+  // retiarius net and trident dropped on the sand
+  s.add(stroke('M470,800L640,742', '#8a8270', 5, 'stroke-linecap="round"'), stroke('M630,734l18,14M640,728l14,22M650,724l10,26', '#c8c0b0', 4, 'stroke-linecap="round"'));
+  let net = '';
+  for (let i = 0; i < 7; i++) net += `M${P(420 + i * 14, 770 + i * 2)}q30,40 70,${n(36 - i * 4)}M${P(410, 790 + i * 8)}q60,${n(-12 + i)} 120,${n(i * 2)}`;
+  s.add(stroke(net, '#e8dcc0', 1.6, op(0.75)));
+  // water trough + amphora at right, sacks at left
+  s.add(rect(1080, 790, 170, 46, s.lg([[0, '#c8b08a'], [1, '#8a7258']])), rect(1086, 790, 158, 10, '#5a9ab0'), rect(1086, 790, 158, 3, '#bfe6f0'));
+  const amph = (x: number, y: number, sc: number) =>
+    path(`M${P(x - 6 * sc, y - 70 * sc)}h${n(12 * sc)}v${n(8 * sc)}q${n(22 * sc)},${n(10 * sc)} ${n(18 * sc)},${n(34 * sc)}q${n(-4 * sc)},${n(20 * sc)} ${n(-15 * sc)},${n(28 * sc)}h${n(-18 * sc)}q${n(-11 * sc)},${n(-8 * sc)} ${n(-15 * sc)},${n(-28 * sc)}q${n(-4 * sc)},${n(-24 * sc)} ${n(18 * sc)},${n(-34 * sc)}z`, s.lg([[0, '#f0a070'], [0.45, '#c4683c'], [1, '#7a3418']], 0, 0, 1, 0));
+  s.add(amph(1290, 846, 1.6), amph(1520, 900, 2.2), amph(330, 880, 1.5));
+  s.add(tufts(s, -20, 240, 870, 905, 5, '#8a7a3a', '#d8c070', 50), tufts(s, 1400, 1620, 870, 905, 5, '#8a7a3a', '#d8c070', 50));
+  // dust motes in the sunbeam
+  let mo = '';
+  for (let i = 0; i < 40; i++) mo += circ(s.rnd(200, 1200), s.rnd(300, 800), s.rnd(1, 2.6));
+  s.add(path(mo, '#fff6dc', op(0.6)));
+  vignette(s, '#6a3a22', 0.28);
+}
+
+/** 3 · The Rhine Frontier — timber fort on a misty northern river, deep forest, watchtowers. */
+function rhineFrontier(s: S): void {
+  s.lit = 1;
+  const HY = 430;
+  sky(s, [[0, '#4f6f92'], [0.25, '#8eaac0'], [0.45, '#d8d4c8'], [0.55, '#f6d6aa'], [0.62, '#fbe6c4']]);
+  sun(s, 860, 300, 40, '#fff4dc', '#ffd8a0', 520, 0.75);
+  shafts(s, 860, 300, -Math.PI * 0.95, -Math.PI * 0.05, 12, 900, '#fff2d4', 0.14);
+  cloud(s, 260, 130, 460, 80, '#f6e4d0', '#8ea0b8', 0.95, 7);
+  cloud(s, 1330, 90, 520, 90, '#f8e8d4', '#94a6bc', 0.95, 7);
+  cloud(s, 780, 50, 260, 40, '#f6e6d6', '#a8b4c4', 0.7);
+  // geese in a V
+  let v = '';
+  for (let i = 0; i < 9; i++) {
+    const k = i % 2 ? 1 : -1;
+    const j = Math.ceil(i / 2);
+    const x = 820 + k * j * 26;
+    const y = 150 + j * 15;
+    v += `M${P(x - 8, y - 3)}Q${P(x - 3, y - 6)} ${P(x, y)}Q${P(x + 3, y - 6)} ${P(x + 8, y - 3)}`;
+  }
+  s.add(stroke(v, '#3a4a5e', 2.2, 'stroke-linecap="round"'));
+  // forested ridges fading into mist
+  const ridge = (y: number, amp: number, th: number, fill: string, seedShift: number) => {
+    let d = `M0,900L0,${n(y)}`;
+    for (let x = 0; x <= W + th; ) {
+      const base = y - Math.sin(x / 260 + seedShift) * amp - Math.sin(x / 97 + seedShift * 2) * amp * 0.35;
+      const t = th * s.rnd(0.45, 1.3);
+      const w = th * s.rnd(0.35, 0.7);
+      d += `L${P(x, base)}L${P(x + w * 0.5, base - t)}L${P(x + w, base)}`;
+      x += w * s.rnd(0.6, 1.1);
+    }
+    return path(d + `L${W},900Z`, fill);
+  };
+  s.add(ridge(330, 40, 16, '#8fa2b0', 1));
+  haze(s, 250, 360, '#f2e2cc', 0, 0.55);
+  s.add(ridge(375, 34, 22, '#6d8a8c', 2.3));
+  haze(s, 300, 400, '#eadccc', 0, 0.5);
+  s.add(ridge(410, 20, 30, '#4f6f68', 4.1));
+  haze(s, 360, HY + 20, '#e6e0d4', 0, 0.55);
+  // the river: silver ribbon from the horizon, widening toward the viewer
+  const river = `M${P(760, HY)}C${P(700, 520)} ${P(620, 560)} ${P(460, 640)}C${P(300, 720)} ${P(260, 820)} ${P(200, 900)}L${P(1460, 900)}C${P(1240, 800)} ${P(1060, 700)} ${P(980, 600)}C${P(900, 520)} ${P(880, 470)} ${P(840, HY)}Z`;
+  // banks first (meadow green), then the water on top
+  s.add(rect(0, HY - 6, W, H - HY + 6, s.lg([[0, '#7a9a6a'], [0.4, '#5f8a4e'], [1, '#3f6a36']])));
+  s.add(path(river, s.lg([[0, '#f6e6c8'], [0.25, '#b8ccd4'], [0.6, '#7fa2b4'], [1, '#4f7890']])));
+  s.add(path(river, s.lg([[0, '#ffffff', 0.5], [0.4, '#ffffff', 0]]), op(0.8)));
+  // sun path on the water
+  s.add(ell(820, 520, 70, 110, s.rgu([[0, '#fff6e0', 0.45], [1, '#fff6e0', 0]], 820, 520, 110)));
+  s.add(glints(s, 600, 1150, 470, 880, 70, '#ffffff', 0.5, 26));
+  // reflections of the far trees
+  s.add(stroke('M770,440L760,470M800,440L800,476M826,440L834,468', '#4f6f68', 4, op(0.3)));
+  // pontoon bridge crossing the river in the middle distance
+  const by = 486;
+  let boats = '';
+  for (let x = 700; x < 960; x += 26) boats += `M${P(x, by + 6)}q13,10 22,0z`;
+  s.add(path(boats, '#5a3a24'), rect(680, by - 2, 300, 7, '#8a6038'), stroke('M680,' + (by - 8) + 'H980', '#6a4a2c', 2));
+  s.add(figure(760, by - 2, 22, '#3a2a20', '#a8322a', true, 1), figure(790, by - 2, 22, '#3a2a20', '#a8322a', true, 1), figure(818, by - 2, 22, '#3a2a20', '#a8322a', true, 1));
+  // ---- left bank: the timber fort on its earth rampart
+  s.add(path('M-20,560Q120,470 360,470Q520,470 640,530Q610,580 560,600Q300,650 -20,660Z', s.lg([[0, '#8a7a52'], [1, '#5a5a36']])));
+  s.add(path('M-20,560Q120,470 360,470Q520,470 610,540', 'none', 'stroke="#b8a878" stroke-width="4" opacity=".6"'));
+  const palisade = (x0: number, x1: number, base: number, h: number) => {
+    let lt = '';
+    let dk = '';
+    for (let x = x0, i = 0; x < x1; x += 13, i++) {
+      const hh = h + s.rnd(-4, 4);
+      const d = `M${P(x, base)}V${n(base - hh)}l6.5,-12l6.5,12V${n(base)}Z`;
+      if (i % 2) lt += d;
+      else dk += d;
+    }
+    return path(dk, '#6a4a2c') + path(lt, '#8a6440') + stroke(`M${P(x0, base - h * 0.75)}H${n(x1)}M${P(x0, base - h * 0.3)}H${n(x1)}`, '#3a2414', 3, op(0.7));
+  };
+  {
+  const fort: string[] = [];
+  const add0 = s.add.bind(s);
+  s.add = (...x: string[]) => { fort.push(...x); };
+  // barracks roofs inside the fort
+  let huts = '';
+  for (let i = 0; i < 6; i++) {
+    const x = 40 + i * 80;
+    huts += `M${P(x, 470)}l40,-34l40,34z`;
+  }
+  s.add(path(huts, patTiles(s, 9, 7, '#a8583a')));
+  s.add(smoke(s, 180, 430, 160, 30, '#e8e4dc', 0.35, 0.5), smoke(s, 360, 436, 130, 24, '#e8e4dc', 0.3, 0.5));
+  s.add(palisade(-10, 560, 520, 70));
+  // gate tower + two corner towers
+  s.add(watchtower(s, 70, 520, 230, '#8a6440', '#5a3a2c'), watchtower(s, 520, 528, 210, '#8a6440', '#5a3a2c'));
+  s.add(rect(250, 430, 110, 90, s.lg([[0, '#a07a50'], [1, '#6a4a2c']], 0, 0, 1, 0)), path('M240,432L305,380L370,432Z', '#5a3a2c'), path('M280,520V478a25,25 0 0,1 50,0V520Z', '#2a1a10'));
+  s.add(flag(s, 305, 340, 70, 30, '#a8322a', '#3a2414', 1, 0.4), standard(s, 214, 520, 110, 'vex', '#a8322a', '#e8c060'));
+  // sentries on the wall walk
+  s.add(figure(150, 450, 26, '#2a1e18', '#a8322a', true, 1), figure(430, 452, 26, '#2a1e18', '#a8322a', true, -1));
+  s.add = add0;
+  s.add(g(fort.join(''), 'transform="translate(70 0)"'));
+  }
+  // ---- right bank: forest and a beacon tower on a rock
+  s.add(path('M975,596C1060,700 1240,800 1460,900H1620V470Q1460,480 1260,500Q1100,520 975,596Z', s.lg([[0, '#6a8a5a'], [1, '#3f6a36']])));
+  s.add(path('M1180,520L1230,430L1330,410L1380,470L1400,540Z', s.lg([[0, '#a8a89a'], [1, '#6a6a62']], 0, 0, 1, 0)));
+  s.add(watchtower(s, 1290, 432, 190, '#8a6440', '#5a3a2c'));
+  s.add(brazier(s, 1290, 260, 0.5, '#5a4a3a'), smoke(s, 1300, 210, 200, 34, '#d8d4cc', 0.35, 0.8));
+  let firs = '';
+  const firRow = (x0: number, x1: number, base: number, hMin: number, hMax: number, dark: string, light: string, gap: number) => {
+    for (let x = x0; x < x1; x += gap * s.rnd(0.7, 1.2)) firs += fir(x, base + s.rnd(-10, 10), s.rnd(hMin, hMax), dark, light);
+  };
+  firRow(1040, 1180, 560, 60, 90, '#2f4f3a', '#4f7a52', 34);
+  firRow(1400, 1640, 520, 90, 150, '#2f4f3a', '#4f7a52', 40);
+  firRow(600, 700, 470, 30, 44, '#3f5f4a', '#5f8a62', 26);
+  firRow(940, 1040, 480, 30, 46, '#3f5f4a', '#5f8a62', 24);
+  s.add(firs);
+  haze(s, 420, 620, '#f0ece4', 0.35, 0);
+  // mist banks drifting over the water
+  for (const [x, y, w] of [[600, 520, 520], [1000, 590, 560], [300, 640, 480]] as [number, number, number][]) s.add(ell(x, y, w / 2, 26, s.rgu([[0, '#ffffff', 0.55], [1, '#ffffff', 0]], x, y, w / 2, 0.1)));
+  // patrol boat (navis lusoria) on the river — lower centre
+  {
+    const x = 800;
+    const y = 800;
+    s.add(path(`M${P(x - 190, y - 24)}L${P(x + 190, y - 24)}Q${P(x + 236, y - 40)} ${P(x + 230, y - 70)}Q${P(x + 246, y - 26)} ${P(x + 196, y)}L${P(x - 180, y)}Q${P(x - 214, y - 12)} ${P(x - 190, y - 24)}Z`, s.lg([[0, '#9a6a40'], [1, '#4a2e1a']])));
+    s.add(stroke(`M${P(x - 180, y - 14)}H${n(x + 196)}`, '#c8a050', 4));
+    let shields = '';
+    for (let i = 0; i < 9; i++) shields += `M${P(x - 160 + i * 38, y - 52)}h26v30q-13,6 -26,0z`;
+    s.add(path(shields, '#a8322a'), stroke(shields, '#e8c060', 2));
+    let oars = '';
+    for (let i = 0; i < 9; i++) oars += `M${P(x - 150 + i * 38, y - 18)}l${n(-24)},${n(52)}`;
+    s.add(stroke(oars, '#6a4a2c', 4, 'stroke-linecap="round"'));
+    s.add(stroke(`M${P(x - 10, y - 24)}V${n(y - 170)}`, '#4a2e1a', 5), path(`M${P(x - 60, y - 160)}h110q8,40 -4,80h-102q-12,-40 -4,-80z`, s.lg([[0, '#f4ead6'], [1, '#c8b49a']], 0, 0, 1, 0)), path(`M${P(x - 30, y - 140)}h50v40h-50z`, '#a8322a', op(0.85)));
+    s.add(path(`M${P(x - 180, y + 2)}L${P(x + 196, y + 2)}L${P(x + 150, y + 28)}L${P(x - 150, y + 28)}Z`, '#3a2a1a', op(0.25)));
+    s.add(stroke(`M${P(x - 260, y + 10)}q40,-8 80,0M${P(x + 220, y + 6)}q40,-8 80,0M${P(x - 300, y + 40)}q50,-8 100,0`, '#ffffff', 2.5, op(0.55)));
+  }
+  // ---- foreground: reeds, boulders, framing firs, a sentinel
+  const reeds = (x0: number, x1: number, base: number) => {
+    let d = '';
+    let tops = '';
+    for (let i = 0; i < 26; i++) {
+      const x = s.rnd(x0, x1);
+      const h = s.rnd(60, 140);
+      const lean = s.rnd(-20, 20);
+      d += `M${P(x, base)}q${n(lean * 0.3)},${n(-h * 0.5)} ${n(lean)},${n(-h)}`;
+      if (i % 3 === 0) tops += `M${P(x + lean, base - h)}l${n(lean * 0.05)},${n(-18)}`;
+    }
+    return stroke(d, '#6a7a3a', 3, 'stroke-linecap="round"') + stroke(tops, '#7a4a2a', 7, 'stroke-linecap="round"');
+  };
+  s.add(path('M-20,900V700Q120,660 260,720Q340,760 380,900Z', s.lg([[0, '#5a7a46'], [1, '#2f4a26']])));
+  s.add(path('M1620,900V690Q1460,650 1320,720Q1240,770 1210,900Z', s.lg([[0, '#5a7a46'], [1, '#2f4a26']])));
+  s.add(path('M180,820Q220,770 290,780Q340,800 330,860Q260,880 180,860Z', s.lg([[0, '#b8b8a8'], [1, '#6a6a62']])), path('M1280,840Q1300,790 1360,790Q1420,800 1410,860Z', s.lg([[0, '#b8b8a8'], [1, '#6a6a62']])));
+  s.add(reeds(300, 470, 880), reeds(1150, 1320, 890));
+  let fg = '';
+  fg += fir(-10, 900, 540, '#1f3a2a', '#3a6046') + fir(120, 930, 300, '#24432e', '#40684a') + fir(1560, 910, 560, '#1f3a2a', '#3a6046') + fir(1660, 900, 420, '#24432e', '#40684a');
+  s.add(fg);
+  // sentinel in a red cloak with oval shield on the right bank
+  {
+    const x = 1350;
+    const y = 790;
+    s.add(path(`M${P(x - 24, y)}L${P(x - 18, y - 70)}Q${P(x, y - 84)} ${P(x + 18, y - 70)}L${P(x + 26, y)}Z`, '#a8322a'), `<circle cx="${x}" cy="${y - 92}" r="13" fill="#c89a72"/>`, path(`M${P(x - 15, y - 96)}q15,-22 30,0z`, '#c8c8c0'), path(`M${P(x - 2, y - 116)}q-6,-14 10,-16q-2,10 -6,16z`, '#a8322a'));
+    s.add(ell(x - 34, y - 46, 22, 40, s.lg([[0, '#c8423a'], [1, '#6a1a14']], 0, 0, 1, 0)), ell(x - 34, y - 46, 6, 6, '#e8c060'), stroke(`M${P(x + 22, y)}V${n(y - 170)}`, '#5a3a20', 4), path(`M${P(x + 22, y - 182)}l5,14h-10z`, '#c8c8c0'));
+  }
+  s.add(tufts(s, 0, 360, 840, 900, 6, '#3f5a2a', '#7a9a4a', 50), tufts(s, 1240, 1600, 840, 900, 6, '#3f5a2a', '#7a9a4a', 50));
+  vignette(s, '#2a3a4a', 0.3);
+}
+
+/** 5 · The Harbour of Ostia — lighthouse on the mole, merchant ships, warehouses, bright blue sea. */
+function harbourOstia(s: S): void {
+  s.lit = -1;
+  const HY = 410;
+  sky(s, [[0, '#1f6fc0'], [0.3, '#5eb0e6'], [0.44, '#bfe6f4'], [0.46, '#e6f6f6']]);
+  sun(s, 1320, 120, 34, '#ffffff', '#fff8dc', 420, 0.75);
+  cloud(s, 300, 140, 440, 100, '#ffffff', '#a8cce6');
+  cloud(s, 1060, 70, 300, 60, '#ffffff', '#b8d6ec', 0.95);
+  cloud(s, 640, 300, 360, 50, '#ffffff', '#cfe6f2', 0.8, 7);
+  cloud(s, 1450, 300, 300, 46, '#ffffff', '#cfe6f2', 0.75, 6);
+  birds(s, 620, 200, 5, 70, '#ffffff', 11);
+  birds(s, 1000, 240, 4, 50, '#3a5a7a', 8);
+  // far coast
+  s.add(path(`M0,${HY}Q200,${HY - 30} 420,${HY - 14}Q520,${HY - 6} 600,${HY}Z`, '#8ab0b8'), path(`M1080,${HY}Q1300,${HY - 26} 1600,${HY - 20}V${HY}Z`, '#94b8c0'));
+  // sea
+  s.add(rect(0, HY, W, H - HY, s.lg([[0, '#3a8cc8'], [0.35, '#1f74b0'], [0.7, '#2a9ab8'], [1, '#3ab4c0']])));
+  s.add(rect(0, HY, W, 40, s.lg([[0, '#e6f6f6', 0.7], [1, '#e6f6f6', 0]])));
+  // sun glitter
+  s.add(glints(s, 1100, 1600, HY + 6, 640, 60, '#ffffff', 0.7, 24), glints(s, 0, 1600, HY + 6, 760, 90, '#bfeaf4', 0.5, 30));
+  // ---- the moles with arcades curving to the lighthouse island
+  const mole = (pts: string, shadeC: string) => path(pts, shadeC);
+  s.add(mole(`M-20,520Q300,470 640,452L700,446L700,462L640,468Q300,488 -20,540Z`, '#e8dcc4'));
+  s.add(path(`M-20,540Q300,488 640,468L700,462L700,474L640,480Q300,502 -20,560Z`, '#b8a888'));
+  let a1 = '';
+  for (let i = 0; i < 18; i++) {
+    const t = i / 18;
+    const x = -10 + t * 690;
+    const y = 540 - t * 72 - Math.sin(t * Math.PI) * 10;
+    const w = 26 - t * 16;
+    a1 += `M${P(x, y + w * 0.75)}v${n(-w * 0.45)}a${n(w * 0.3)},${n(w * 0.3)} 0 0,1 ${n(w * 0.6)},0v${n(w * 0.45)}z`;
+  }
+  s.add(path(a1, '#5a6a7a', op(0.75)));
+  s.add(path(`M1620,520Q1300,470 960,452L900,446L900,462L960,468Q1300,488 1620,540Z`, '#efe4cc'), path(`M1620,540Q1300,488 960,468L900,462L900,474L960,480Q1300,502 1620,560Z`, '#c4b494'));
+  // lighthouse island
+  s.add(path(`M690,${HY + 52}Q800,${HY + 26} 910,${HY + 52}Z`, '#d8ccb0'));
+  // lighthouse: square base, octagonal middle, round lantern with fire — top centre
+  {
+    const x = 800;
+    const b = HY + 46;
+    const stone = s.lg([[0, '#fff8ea'], [0.55, '#ece0c8'], [1, '#b8a888']], 0, 0, 1, 0);
+    s.add(rect(x - 46, b - 120, 92, 120, stone), rect(x - 50, b - 126, 100, 8, '#fffaf0'));
+    let win = '';
+    for (const yy of [b - 100, b - 60]) for (const xx of [x - 26, x + 14]) win += `M${P(xx, yy)}h12v18h-12z`;
+    s.add(path(win, '#5a6070'), path(`M${P(x - 14, b)}v-30a14,14 0 0,1 28,0v30z`, '#4a4a58'));
+    s.add(rect(x - 32, b - 206, 64, 80, stone), rect(x - 36, b - 212, 72, 8, '#fffaf0'), path(`M${P(x - 6, b - 190)}h12v22h-12z`, '#5a6070'));
+    s.add(rect(x - 20, b - 262, 40, 50, stone), rect(x - 24, b - 266, 48, 6, '#fffaf0'));
+    s.add(stroke(`M${P(x - 18, b - 268)}V${n(b - 290)}M${P(x + 18, b - 268)}V${n(b - 290)}M${P(x, b - 268)}V${n(b - 290)}`, '#c8b48a', 4), path(`M${P(x - 26, b - 290)}h52l-26,-22z`, '#b8862a'));
+    s.add(`<circle cx="${x}" cy="${b - 282}" r="150" fill="${s.rgu([[0, '#ffe08a', 0.7], [0.2, '#ffc860', 0.3], [1, '#ffc860', 0]], x, b - 282, 150)}"/>`);
+    s.add(path(`M${P(x - 12, b - 268)}C${P(x - 16, b - 284)} ${P(x - 4, b - 290)} ${P(x - 2, b - 304)}C${P(x + 6, b - 292)} ${P(x + 16, b - 284)} ${P(x + 12, b - 268)}Z`, '#ff8a2a'), path(`M${P(x - 6, b - 268)}C${P(x - 8, b - 278)} ${P(x, b - 284)} ${P(x, b - 292)}C${P(x + 4, b - 282)} ${P(x + 8, b - 276)} ${P(x + 6, b - 268)}Z`, '#ffe27a'));
+    // golden statue atop
+    s.add(path(`M${P(x - 3, b - 312)}l3,-18l3,18z`, '#e8b84a'), `<circle cx="${x}" cy="${b - 334}" r="4" fill="#e8b84a"/>`);
+    s.add(path(`M${P(x - 46, b)}l-14,8h120l-14,-8z`, '#c8b494'));
+  }
+  // small distant ships near the harbour mouth
+  s.add(corbita(s, 600, 486, 0.36, '#6a4a32', '#f6ecd8', '#b8342a', 1), corbita(s, 1010, 480, 0.3, '#6a4a32', '#f6ecd8', '#2a5a9a', -1), corbita(s, 1160, 500, 0.4, '#6a4a32', '#f0c070', '#b8342a', -1));
+  haze(s, HY - 30, 520, '#eef8fa', 0, 0.2);
+  // ---- left: warehouses (horrea) receding along the quay, a treadwheel crane
+  const vp: [number, number] = [800, 470];
+  const brick = patStone(s, 30, 11, '#7a3418', '#ffd8b0', 0.3, 0.18);
+  s.add(box(s, { x: -60, base: 760, w: 360, h: 330, depth: 0.32, side: 1, vp, front: s.lg([[0, '#d88a5a'], [1, '#b0623a']]), sideC: s.lg([[0, '#f0a874'], [1, '#d88a5a']], 0, 0, 1, 0), roof: { h: 70, color: '#c4553a' }, stone: brick }));
+  s.add(path(archHoles(-50, 600, 340, 160, 3, 0.6, 0.6), s.lg([[0, '#3a1e12'], [1, '#6a3420']])));
+  let w2 = '';
+  for (let i = 0; i < 4; i++) w2 += `M${P(-20 + i * 86, 480)}h22v36h-22z`;
+  s.add(path(w2, '#4a2414'));
+  s.add(hangingBanner(s, 110, 452, 40, 100, '#2a5a9a', '#f0c060', `<circle cx="130" cy="494" r="8" fill="none" stroke="#f0c060" stroke-width="3"/>`));
+  s.add(box(s, { x: 380, base: 600, w: 170, h: 120, depth: 0.25, side: 1, vp, front: s.lg([[0, '#dc9a68'], [1, '#b8744a']]), sideC: '#f0b07c', roof: { h: 34, color: '#c4553a' }, stone: brick }));
+  s.add(path(archHoles(388, 540, 150, 60, 3, 0.55, 0.6), '#4a2414'));
+  // quay along the left
+  s.add(path('M-20,760L380,600L700,560L760,600L440,700L-20,900Z', s.lg([[0, '#e6d8bc'], [1, '#c8b494']])));
+  s.add(path('M-20,900L440,700L760,600L780,616L470,724L60,900Z', '#9a8a6a'));
+  let qp = '';
+  for (let i = 1; i < 9; i++) qp += `M${P(-20 + i * 50, 760 - i * 20 + 140 * (i / 9))}L${P(380 + i * 40, 600 - i * 4)}`;
+  for (let i = 1; i < 6; i++) qp += `M${P(-20 + i * 70, 760 + i * 28)}L${P(380 + i * 70, 600 + i * 20)}`;
+  s.add(stroke(qp, '#a8987a', 1.2, op(0.45)));
+  // crane: A-frame with treadwheel
+  {
+    const x = 560;
+    const b = 610;
+    s.add(stroke(`M${P(x - 40, b)}L${P(x + 10, b - 200)}L${P(x + 40, b)}M${P(x + 10, b - 200)}L${P(x + 120, b - 250)}M${P(x + 120, b - 250)}V${n(b - 120)}`, '#6a4a2c', 6, 'stroke-linecap="round"'));
+    s.add(`<circle cx="${x}" cy="${b - 50}" r="44" fill="none" stroke="#8a6038" stroke-width="7"/>`, stroke(`M${P(x - 44, b - 50)}H${n(x + 44)}M${P(x, b - 94)}V${n(b - 6)}M${P(x - 31, b - 81)}L${P(x + 31, b - 19)}M${P(x + 31, b - 81)}L${P(x - 31, b - 19)}`, '#8a6038', 3));
+    s.add(path(`M${P(x + 100, b - 120)}h40v26h-40z`, '#a87a4a'), stroke(`M${P(x + 104, b - 120)}l16,-16l16,16`, '#5a3a20', 2));
+  }
+  // dock workers with amphorae
+  s.add(person(440, 640, 46, '#c8a070', '#a86a48', { hair: '#2a1a10', arm: 4 }), person(500, 620, 42, '#e8dcc4', '#a86a48', { hair: '#2a1a10' }), person(640, 590, 34, '#b8342a', '#a86a48', { hair: '#2a1a10' }));
+  // ---- right: big merchant ship moored at the quay
+  s.add(path('M1620,640L1180,700L1100,760L1620,760Z', '#1f6aa0', op(0.4)));
+  s.add(corbita(s, 1290, 700, 1.9, '#7a4a2a', '#f4c060', '#2a5a9a', -1));
+  // sail painting (eye + stripe) and rigging
+  s.add(stroke('M1290,480L1180,690M1290,480L1420,690M1290,480L1150,640', '#3a2a1a', 1.5, op(0.6)));
+  s.add(path('M1210,560h160v18h-160z', '#b8342a', op(0.85)));
+  // right quay corner + bollards
+  s.add(path('M1080,900L1180,760L1620,740V900Z', s.lg([[0, '#e8dcc4'], [1, '#c4b090']])), path('M1180,760L1620,740V752L1186,772Z', '#a8987a'));
+  // ---- foreground quay with a black-and-white mosaic (Piazzale delle Corporazioni)
+  s.add(path('M-20,900L60,790H1540L1620,900Z', s.lg([[0, '#f2ead8'], [1, '#d8ccb0']])));
+  s.add(rect(0, 780, W, 12, '#b8a888'), rect(0, 776, W, 5, '#fff8ea'));
+  {
+    // mosaic panel in perspective
+    const t = (x: number, y: number) => `${n(800 + (x - 800) * (0.86 + (y - 810) / 600))},${n(y)}`;
+    s.add(`<path d="M${t(560, 810)}L${t(1040, 810)}L${t(1060, 900)}L${t(540, 900)}Z" fill="#f8f4ea"/>`);
+    s.add(`<path d="M${t(560, 810)}L${t(1040, 810)}L${t(1060, 900)}L${t(540, 900)}Z" fill="none" stroke="#1e2430" stroke-width="5"/>`);
+    // ship
+    s.add(path('M690,862Q760,880 850,866L870,850H676Z', '#1e2430'), stroke('M770,850V818M744,820h52', '#1e2430', 3), path('M748,822h44q4,14 -2,24h-40q-6,-10 -2,-24z', '#1e2430'));
+    // dolphin
+    s.add(path('M900,872q24,-30 64,-22q-12,4 -10,10q14,-2 22,8q-20,-4 -32,6q-18,10 -44,-2z', '#1e2430'), path('M934,852l8,-12l4,14z', '#1e2430'));
+    s.add(stroke(`M600,826q20,-6 40,0q20,6 40,0M600,890q20,-6 40,0q20,6 40,0M920,826q20,-6 40,0q20,6 40,0`, '#1e2430', 2.5));
+  }
+  // bollards, rope coils, amphorae stacks
+  const bollard = (x: number, y: number, sc: number) => rect(x - 12 * sc, y - 34 * sc, 24 * sc, 34 * sc, s.lg([[0, '#b8b0a0'], [0.5, '#7a7468'], [1, '#4a4640']], 0, 0, 1, 0), `rx="${n(5 * sc)}"`) + ell(x, y - 34 * sc, 15 * sc, 6 * sc, '#c8c0b0');
+  s.add(bollard(420, 800, 1.3), bollard(1180, 800, 1.3));
+  const coil = (x: number, y: number, r: number) => {
+    let d = '';
+    for (let i = 0; i < 4; i++) d += `M${P(x - r + i * 3, y)}a${n(r - i * 3)},${n((r - i * 3) * 0.4)} 0 1,0 ${n(2 * (r - i * 3))},0a${n(r - i * 3)},${n((r - i * 3) * 0.4)} 0 1,0 ${n(-2 * (r - i * 3))},0`;
+    return stroke(d, '#c8a068', 4) + stroke(d, '#8a6038', 1.2, op(0.6));
+  };
+  s.add(coil(470, 852, 34), coil(1240, 860, 36));
+  const amph = (x: number, y: number, sc: number, c: string) =>
+    path(`M${P(x - 5 * sc, y - 76 * sc)}h${n(10 * sc)}v${n(8 * sc)}q${n(16 * sc)},${n(10 * sc)} ${n(14 * sc)},${n(34 * sc)}q${n(-2 * sc)},${n(22 * sc)} ${n(-12 * sc)},${n(34 * sc)}l${n(-2 * sc)},${n(10 * sc)}l${n(-2 * sc)},${n(-10 * sc)}q${n(-10 * sc)},${n(-12 * sc)} ${n(-12 * sc)},${n(-34 * sc)}q${n(-2 * sc)},${n(-24 * sc)} ${n(14 * sc)},${n(-34 * sc)}z`, s.lg([[0, shade(c, 0.3)], [0.45, c], [1, shade(c, -0.45)]], 0, 0, 1, 0));
+  let am = '';
+  for (let i = 0; i < 6; i++) am += amph(70 + i * 34, 890 - (i % 2) * 6, 1.3, i % 2 ? '#d07848' : '#c4683c');
+  for (let i = 0; i < 4; i++) am += amph(1380 + i * 36, 900 - (i % 2) * 6, 1.4, i % 2 ? '#d07848' : '#b85a30');
+  s.add(am);
+  // crates
+  s.add(rect(250, 830, 80, 60, s.lg([[0, '#c8955c'], [1, '#8a5a30']])), stroke('M250,830l80,60M330,830l-80,60', '#6a4020', 3), rect(1300, 820, 70, 70, s.lg([[0, '#c8955c'], [1, '#8a5a30']])));
+  // umbrella pines framing the left, a palm at right
+  s.add(umbrellaPine(s, 20, 790, 560, 360, '#5a3e2a', '#3f6a4a', '#6a9a62'));
+  s.add(palm(s, 1560, 790, 420, -0.35, '#8a6a4a', '#3f7a4a', '#7ab060'));
+  vignette(s, '#1f4a6a', 0.22);
+}
+
+/** 7 · The Aqueduct Heights — a towering three-tier aqueduct striding across a green valley. */
+function aqueductHeights(s: S): void {
+  s.lit = 1;
+  const HY = 420;
+  const { pj } = cam(800, HY, 900);
+  sky(s, [[0, '#4d8fd0'], [0.28, '#9ccbe8'], [0.42, '#f4e6c8'], [0.47, '#ffdca8']]);
+  sun(s, 240, 230, 38, '#fffaf0', '#ffe2a8', 520, 0.8);
+  shafts(s, 240, 230, -Math.PI * 0.4, Math.PI * 0.35, 10, 1200, '#fff6dc', 0.13);
+  cloud(s, 620, 90, 380, 80, '#ffffff', '#d0c8d8');
+  cloud(s, 1180, 200, 300, 56, '#fff8f0', '#e0c8c8', 0.9);
+  cloud(s, 140, 80, 260, 50, '#ffffff', '#d8d0e0', 0.85);
+  birds(s, 900, 130, 6, 70, '#4a5a7a', 9);
+  // lavender mountains + hill towns
+  mountains(s, HY, [[60, 120, 240], [380, 90, 220], [1100, 150, 260], [1420, 110, 230]], '#a8a4c8', '#c8c0dc');
+  haze(s, 280, HY, '#f8e8d4', 0, 0.6);
+  s.add(hills(s, HY + 10, 40, 5, '#9cbc8a'));
+  const town = (x0: number, base: number, count: number, sc: number) => {
+    let walls = '';
+    let roofs = '';
+    for (let i = 0; i < count; i++) {
+      const x = x0 + i * 22 * sc + s.rnd(-4, 4) * sc;
+      const h = s.rnd(14, 30) * sc;
+      const y = base - Math.sin((i / count) * Math.PI) * 26 * sc;
+      walls += `M${P(x, y)}v${n(-h)}h${n(18 * sc)}v${n(h)}z`;
+      roofs += `M${P(x - 2 * sc, y - h)}l${n(11 * sc)},${n(-7 * sc)}l${n(11 * sc)},${n(7 * sc)}z`;
+    }
+    return path(walls, '#f2e2c4') + path(roofs, '#c86a48');
+  };
+  s.add(town(140, 432, 12, 1), town(1180, 426, 10, 1.1));
+  s.add(path('M1268,370h46v-6l-23,-10l-23,10z', '#f6ead0'), cypress(s, 1250, 400, 40, 10, '#4a6a4a', '#6a8a5a'), cypress(s, 1336, 398, 36, 10, '#4a6a4a', '#6a8a5a'));
+  // valley: patchwork fields in perspective
+  s.add(rect(0, HY + 10, W, H - HY - 10, s.lg([[0, '#a8c87a'], [0.4, '#7aa85a'], [1, '#4f8a3e']])));
+  let f1 = '';
+  let f2 = '';
+  for (let i = -10; i < 10; i++)
+    for (let k = 0; k < 5; k++) {
+      const Z0 = 9000 / (1 + k * 0.45);
+      const Z1 = 9000 / (1 + (k + 1) * 0.45);
+      const X0 = i * 700 + k * 230;
+      const q = `M${P(...pj(X0, 600, Z0))}L${P(...pj(X0 + 700, 600, Z0))}L${P(...pj(X0 + 700, 600, Z1))}L${P(...pj(X0, 600, Z1))}Z`;
+      if ((i + k) % 3 === 0) f1 += q;
+      else if ((i * 7 + k) % 4 === 1) f2 += q;
+    }
+  s.add(path(f1, '#e0d080', op(0.4)), path(f2, '#5f9a4a', op(0.35)));
+  // the river winding through the valley
+  s.add(path('M700,436C760,470 640,500 700,540C780,600 1000,620 1060,700C1100,760 1000,820 1040,900H1200C1150,820 1240,760 1180,690C1100,600 860,590 780,530C740,500 820,470 744,436Z', s.lg([[0, '#fff0d0'], [0.4, '#9ad0e0'], [1, '#5aa0c0']])));
+  s.add(glints(s, 760, 1160, 520, 880, 30, '#ffffff', 0.6, 22));
+  // rows of cypresses and pines in the valley
+  let tr = '';
+  for (const [x, y, h] of [[480, 470, 50], [510, 476, 56], [540, 480, 52], [570, 486, 58], [1020, 480, 54], [1050, 486, 60], [1080, 492, 56]] as [number, number, number][]) tr += cypress(s, x, y, h, 12, '#3a6a3a', '#6a9a52');
+  tr += umbrellaPine(s, 380, 500, 70, 80, '#6a5040', '#4f7a4a', '#7aa862') + umbrellaPine(s, 1240, 510, 80, 90, '#6a5040', '#4f7a4a', '#7aa862');
+  s.add(tr);
+  // a villa on the valley floor
+  s.add(rect(1300, 520, 120, 40, '#f6ead0'), path('M1294,522l66,-22l66,22z', '#c86a48'), path(archHoles(1306, 532, 108, 28, 5, 0.5, 0.6), '#a88a6a'));
+  haze(s, HY, 600, '#fff2dc', 0.35, 0);
+
+  // ---- the aqueduct: three tiers of arches in a vertical plane running from far-left to near-right
+  const A: [number, number] = [-3400, 9000];
+  const B: [number, number] = [1900, 1200];
+  const GY = 360; // ground level under the aqueduct
+  const HT = 1180; // total height
+  const L = Math.hypot(B[0] - A[0], B[1] - A[1]);
+  const at = (t: number, Y: number, off = 0): Pt => {
+    const X = A[0] + (B[0] - A[0]) * t + off * 0.85;
+    const Z = A[1] + (B[1] - A[1]) * t - off * 0.55;
+    return pj(X, Y, Z);
+  };
+  const tiers: [number, number, number, number][] = [
+    // [y bottom, y top, bays, arch ratio]
+    [GY, GY - HT * 0.48, 13, 0.62],
+    [GY - HT * 0.48, GY - HT * 0.84, 13, 0.66],
+    [GY - HT * 0.84, GY - HT, 39, 0.6],
+  ];
+  const face = (off: number) => {
+    let d = '';
+    for (const [y0, y1, bays, ratio] of tiers) {
+      // outer band
+      const p0 = at(0, y0, off);
+      const p1 = at(1, y0, off);
+      const p2 = at(1, y1, off);
+      const p3 = at(0, y1, off);
+      d += `M${P(p0[0], p0[1])}L${P(p1[0], p1[1])}L${P(p2[0], p2[1])}L${P(p3[0], p3[1])}Z`;
+      const bay = 1 / bays;
+      const hBand = y0 - y1;
+      const wWorld = (L * bay * ratio) / 2; // arch radius in world units
+      const wT = bay * ratio;
+      for (let k = 0; k < bays; k++) {
+        const t0 = k * bay + (bay - wT) / 2;
+        const t1 = t0 + wT;
+        const tc = (t0 + t1) / 2;
+        const spring = y0 - (hBand - Math.min(wWorld, hBand * 0.45)) * 0.86;
+        const r = Math.min(wWorld, hBand * 0.45);
+        let a = `M${P(...at(t0, y0 - 2, off))}L${P(...at(t0, spring, off))}`;
+        for (let j = 1; j <= 8; j++) {
+          const ang = Math.PI - (j / 8) * Math.PI;
+          a += `L${P(...at(tc + (Math.cos(ang) * (t1 - t0)) / 2, spring - Math.sin(ang) * r, off))}`;
+        }
+        a += `L${P(...at(t1, y0 - 2, off))}Z`;
+        d += a;
+      }
+    }
+    return d;
+  };
+  s.add(path(face(260), '#a8805a', 'fill-rule="evenodd"'));
+  s.add(path(face(0), s.lgu([[0, '#e8cfa0'], [0.6, '#f6e2b8'], [1, '#fff2d4']], 400, 0, 1600, 0), 'fill-rule="evenodd"'));
+  s.add(path(face(0), patStone(s, 36, 15, '#9a7448', '#fff6e0', 0.3, 0.25), 'fill-rule="evenodd"'));
+  // cornices between tiers and the water channel cap
+  let corn = '';
+  for (const y of [GY - HT * 0.48, GY - HT * 0.84, GY - HT]) {
+    const a = at(0, y);
+    const b = at(1, y);
+    const b2 = at(1, y - 22);
+    const a2 = at(0, y - 22);
+    corn += `M${P(a[0], a[1])}L${P(b[0], b[1])}L${P(b2[0], b2[1])}L${P(a2[0], a2[1])}Z`;
+  }
+  s.add(path(corn, '#fff8e6'));
+  // shadow underside line under each cornice
+  let csh = '';
+  for (const y of [GY - HT * 0.48, GY - HT * 0.84]) {
+    const a = at(0, y);
+    const b = at(1, y);
+    csh += `M${P(a[0], a[1])}L${P(b[0], b[1])}`;
+  }
+  s.add(stroke(csh, '#8a6a48', 4, op(0.5)));
+  // grassy embankment anchoring the near piers
+  {
+    const a = at(0.35, GY);
+    const b = at(1, GY);
+    s.add(path(`M${P(a[0] - 40, a[1] + 6)}L${P(b[0] + 40, b[1] - 10)}L${P(1620, b[1] + 60)}L${P(a[0] + 200, a[1] + 60)}Z`, s.lg([[0, '#8ab862'], [1, '#6a9a48']])));
+    let sh = '';
+    for (let i = 0; i < 9; i++) {
+      const t = 0.4 + i * 0.07;
+      const p = at(t, GY);
+      sh += roundTree(s, p[0] + 20, p[1] + 14, 26 + i * 6, 26 + i * 6, '#6a5040', '#4f7a42', '#86b062');
+    }
+    s.add(sh);
+  }
+  // travellers on the top channel walkway
+  {
+    const a = at(0.7, GY - HT - 22);
+    s.add(person(a[0], a[1], 30, '#b8342a', '#a87050', { hair: '#2a1a10' }));
+  }
+  // ---- foreground: meadow hill with poppies, the road, sheep
+  s.add(path('M-20,900V640Q200,600 460,660Q700,720 820,760Q1000,800 1300,740Q1480,700 1620,720V900Z', s.lg([[0, '#8abc5a'], [0.5, '#6a9a44'], [1, '#4a7a30']])));
+  s.add(path('M-20,900V700Q160,680 320,720Q480,760 560,900Z', s.lg([[0, '#9ac862'], [1, '#5a8a38']])));
+  // the paved road curving in from the lower right
+  s.add(path('M1620,770Q1300,780 1100,840Q980,880 940,900H1240Q1330,840 1620,830Z', s.lg([[0, '#d8c8a8'], [1, '#b8a888']])));
+  let cobble = '';
+  for (let i = 0; i < 26; i++) cobble += circ(s.rnd(1000, 1600), s.rnd(790, 895), s.rnd(4, 9));
+  s.add(path(cobble, '#a89878', op(0.5)));
+  // milestone
+  s.add(rect(1450, 700, 40, 90, s.lg([[0, '#f6ecd8'], [1, '#c8b898']], 0, 0, 1, 0), 'rx="12"'), stroke('M1458,724h24M1458,736h24M1462,748h16', '#8a7a5a', 2));
+  // sheep flock in the lower centre (visible below the board on phones)
+  const sheep = (x: number, y: number, sc: number, dir: number) => {
+    let o = ell(x, y + 2 * sc, 22 * sc, 5 * sc, '#2a4a1a', op(0.25));
+    o += stroke(`M${P(x - 10 * sc, y - 6 * sc)}v${n(10 * sc)}M${P(x - 4 * sc, y - 6 * sc)}v${n(10 * sc)}M${P(x + 6 * sc, y - 6 * sc)}v${n(10 * sc)}M${P(x + 12 * sc, y - 6 * sc)}v${n(10 * sc)}`, '#3a2a20', 2.5 * sc);
+    let wool = '';
+    for (let i = 0; i < 6; i++) wool += circ(x - 12 * sc + i * 5 * sc, y - 14 * sc - Math.sin(i) * 3 * sc, 8 * sc);
+    o += path(wool, '#fffaf0') + path(wool, s.lg([[0, '#ffffff', 0], [1, '#c8c0b0', 0.8]]));
+    o += ell(x + dir * 20 * sc, y - 14 * sc, 6 * sc, 5 * sc, '#3a2a20');
+    return o;
+  };
+  let fl = '';
+  for (const [x, y, sc, d] of [[640, 830, 1.3, 1], [720, 850, 1.4, -1], [800, 820, 1.2, 1], [880, 846, 1.45, 1], [960, 828, 1.2, -1], [700, 790, 1, 1], [860, 796, 1, -1], [560, 860, 1.5, 1]] as [number, number, number, number][]) fl += sheep(x, y, sc, d);
+  s.add(fl);
+  s.add(person(1010, 820, 80, '#c8a060', '#a87050', { hair: '#3a2010', arm: 4, dir: -1 }), stroke('M996,750l-12,76', '#6a4a2a', 3));
+  // poppies and flowers
+  let pop = '';
+  let wht = '';
+  for (let i = 0; i < 120; i++) {
+    const y = s.rnd(680, 900);
+    const x = s.rnd(0, W);
+    if (x > 1000 && y > 790) continue;
+    const r = 2 + ((y - 680) / 220) * 4.5;
+    if (i % 3) pop += circ(x, y, r);
+    else wht += circ(x, y, r * 0.8);
+  }
+  s.add(path(pop, '#e0402a'), path(wht, '#fff4c0'));
+  s.add(tufts(s, 0, 600, 820, 900, 10, '#4a7a2a', '#9ac862', 60), tufts(s, 1200, 1600, 860, 900, 5, '#4a7a2a', '#9ac862', 50));
+  // framing: olive tree left, cypress right
+  s.add(umbrellaPine(s, 90, 760, 520, 380, '#5a4030', '#4f7a42', '#86b062'));
+  s.add(cypress(s, 1560, 820, 460, 90, '#2f5a3a', '#5a8a4a'));
+  vignette(s, '#4a5a3a', 0.22);
+}
+
+/** 9 · The Imperial Baths — vaulted thermae hall, teal pool, coloured marbles, mosaic floor, steam and light. */
+function imperialBaths(s: S): void {
+  s.lit = 1;
+  const { pj, quad, flat, side } = cam(800, 360, 800);
+  const FY = 380;
+  const SY = -520; // vault spring line
+  const WX = 1100;
+  const ZN = 420;
+  const ZB = 3600;
+  const vault = (a: number, Z: number): Pt => pj(Math.cos(a) * WX, SY - Math.sin(a) * WX * 0.9, Z);
+  s.add(rect(0, 0, W, H, '#e8d8c0'));
+  // ---- coffered barrel vault
+  const NA = 14;
+  const zs: number[] = [ZN];
+  while (zs[zs.length - 1] < ZB) zs.push(Math.min(ZB, zs[zs.length - 1] * 1.28));
+  let vlit = '';
+  let vdark = '';
+  let cof = '';
+  let ros = '';
+  for (let i = 0; i < NA; i++) {
+    const a0 = (i / NA) * Math.PI;
+    const a1 = ((i + 1) / NA) * Math.PI;
+    for (let k = 0; k < zs.length - 1; k++) {
+      const q = quad(vault(a0, zs[k]), vault(a1, zs[k]), vault(a1, zs[k + 1]), vault(a0, zs[k + 1]));
+      if (i < NA / 2) vdark += q;
+      else vlit += q;
+      // inner coffer
+      const ia0 = a0 + (a1 - a0) * 0.16;
+      const ia1 = a1 - (a1 - a0) * 0.16;
+      const z0 = zs[k] + (zs[k + 1] - zs[k]) * 0.14;
+      const z1 = zs[k + 1] - (zs[k + 1] - zs[k]) * 0.14;
+      cof += quad(vault(ia0, z0), vault(ia1, z0), vault(ia1, z1), vault(ia0, z1));
+      const c = vault((a0 + a1) / 2, (zs[k] + zs[k + 1]) / 2);
+      ros += circ(c[0], c[1], Math.max(1.5, (16 * 800) / ((zs[k] + zs[k + 1]) / 2)));
+    }
+  }
+  s.add(path(vdark, '#e2c8a4'), path(vlit, '#f2dcb8'));
+  s.add(path(cof, s.lg([[0, '#3a7a84'], [1, '#5a9aa0']]), op(0.85)), path(ros, '#e8b84a'));
+  // ---- back wall with the great thermal window
+  {
+    const l = pj(-WX, FY, ZB);
+    const sp = pj(-WX, SY, ZB);
+    const r = pj(WX, SY, ZB);
+    const rx = (r[0] - sp[0]) / 2;
+    s.add(path(`M${P(l[0], l[1])}V${n(sp[1])}A${n(rx)},${n(rx * 0.9)} 0 0,1 ${P(r[0], r[1])}V${n(l[1])}Z`, '#f0dcc0'));
+  }
+  const lc = pj(0, SY, ZB);
+  const lr = (WX * 0.8 * 800) / ZB;
+  const lunette = `M${P(lc[0] - lr, lc[1])}A${n(lr)},${n(lr * 0.9)} 0 0,1 ${P(lc[0] + lr, lc[1])}Z`;
+  s.add(path(lunette, s.lg([[0, '#ffffff'], [0.6, '#fff4d0'], [1, '#ffe0a0']])));
+  s.add(`<circle cx="${n(lc[0])}" cy="${n(lc[1])}" r="${n(lr * 2.4)}" fill="${s.rgu([[0, '#fff2c8', 0.6], [1, '#fff2c8', 0]], lc[0], lc[1], lr * 2.4)}"/>`);
+  s.add(stroke(`M${P(lc[0] - lr * 0.36, lc[1])}V${n(lc[1] - lr * 0.84)}M${P(lc[0] + lr * 0.36, lc[1])}V${n(lc[1] - lr * 0.84)}`, '#c8a878', 10), stroke(lunette.replace('Z', ''), '#c8a878', 12));
+  // grilles in the window
+  let gr = '';
+  for (let i = 1; i < 4; i++) {
+    const hw = lr * Math.sqrt(1 - (i / 4) ** 2);
+    gr += `M${P(lc[0] - hw, lc[1] - (lr * 0.9 * i) / 4)}H${n(lc[0] + hw)}`;
+  }
+  s.add(stroke(gr, '#c8a878', 2.5, op(0.6)));
+  // arch to the next hall (frigidarium glimpsed beyond)
+  const d0 = pj(-360, -120, ZB);
+  const d1 = pj(360, FY, ZB);
+  const dr = (d1[0] - d0[0]) / 2;
+  s.add(path(`M${P(d0[0], d1[1])}V${n(d0[1] + dr)}A${n(dr)},${n(dr)} 0 0,1 ${P(d1[0], d0[1] + dr)}V${n(d1[1])}Z`, s.lg([[0, '#bfe6e4'], [1, '#6ab4b8']])));
+  s.add(stroke(`M${P(d0[0], d1[1])}V${n(d0[1] + dr)}A${n(dr)},${n(dr)} 0 0,1 ${P(d1[0], d0[1] + dr)}V${n(d1[1])}`, '#d88a6a', 8));
+  {
+    // a far statue in the next hall
+    const st = pj(0, FY, ZB + 600);
+    s.add(person(st[0], st[1] - 4, 70, '#ffffff', '#f6f0e4', { arm: 3 }));
+  }
+  // ---- side walls: coloured marble revetment and arcades into side halls
+  for (const k of [-1, 1]) {
+    const X = k * WX;
+    s.add(path(side(X, SY, FY, ZN, ZB), s.lg(k < 0 ? [[0, '#e8cfa8'], [1, '#f4e2c4']] : [[0, '#f6e6c8'], [1, '#e0c49c']], 0, 0, 1, 0)));
+    // dado of red/green marble panels
+    let pan = '';
+    let pan2 = '';
+    for (let Z = ZN + 100, j = 0; Z < ZB; Z += 360, j++) {
+      const q = side(X, 120, FY - 20, Z, Z + 260);
+      if (j % 2) pan += q;
+      else pan2 += q;
+    }
+    s.add(path(pan, '#b85a4a'), path(pan2, '#4f8a7a'));
+    // arched openings with light from the side halls
+    let ar = '';
+    for (let Z = ZN + 500; Z < ZB - 200; Z += 720) {
+      const a = pj(X, -400, Z);
+      const b = pj(X, 100, Z + 360);
+      const c = pj(X, 100, Z);
+      const d = pj(X, -400, Z + 360);
+      ar += `M${P(c[0], c[1])}L${P(a[0], a[1])}Q${P((a[0] + d[0]) / 2, (a[1] + d[1]) / 2 - Math.abs(a[1] - d[1]) * 0.2 - 60 * (800 / Z))} ${P(d[0], d[1])}L${P(b[0], b[1])}Z`;
+    }
+    s.add(path(ar, s.lg([[0, '#fff2d4'], [1, '#e8c89a']])));
+  }
+  // vault cornice line
+  let cor = '';
+  for (const k of [-1, 1]) cor += `M${P(...pj(k * WX, SY, ZN))}L${P(...pj(k * WX, SY, ZB))}`;
+  s.add(stroke(cor, '#fff6e4', 10), stroke(cor, '#c8a070', 3, op(0.7)));
+  // ---- floor: opus sectile around the pool
+  s.add(path(flat(-WX, WX, FY, ZN, ZB), '#f4e8d4'));
+  let tiles = '';
+  const tz = [ZN];
+  while (tz[tz.length - 1] < ZB) tz.push(Math.min(ZB, tz[tz.length - 1] * 1.12));
+  for (let i = -10; i < 10; i++)
+    for (let k = 0; k < tz.length - 1; k++) {
+      if ((i + k) % 2 === 0) continue;
+      tiles += flat(i * 110, (i + 1) * 110, FY, tz[k], tz[k + 1]);
+    }
+  s.add(path(tiles, '#e0b48a', op(0.6)));
+  // ---- the pool
+  const PX = 620;
+  const PZ0 = 640;
+  const PZ1 = 3000;
+  s.add(path(flat(-PX - 50, PX + 50, FY, PZ0 - 40, PZ1 + 40), '#fffaf0'));
+  s.add(path(flat(-PX, PX, FY, PZ0, PZ1), s.lg([[0, '#7ad0cc'], [0.5, '#2fa0a8'], [1, '#1f7a8a']])));
+  // inner pool wall (near side in shade)
+  s.add(path(`${quad(pj(-PX, FY, PZ1), pj(PX, FY, PZ1), pj(PX, FY + 90, PZ1), pj(-PX, FY + 90, PZ1))}`, '#1a6a74', op(0.5)));
+  // reflections of the window and columns
+  const rw = pj(0, FY, PZ1);
+  s.add(ell(rw[0], rw[1] + 60, 70, 130, s.rgu([[0, '#ffffff', 0.55], [1, '#ffffff', 0]], rw[0], rw[1] + 60, 130)));
+  s.add(glints(s, 340, 1260, 470, 780, 60, '#e6fffa', 0.6, 26));
+  // ---- columns of giallo antico along both sides
+  const cId = defColumn(s, '#fff2c8', '#e8c878', '#a8803a', 'corinth', '#ffe8a8');
+  const cols: string[] = [];
+  for (const k of [-1, 1])
+    for (let Z = ZB - 180; Z >= ZN + 60; Z -= 720) {
+      const [x, y] = pj(k * 880, FY, Z);
+      const top = pj(k * 880, SY, Z)[1];
+      cols.push(rect(x - (36 * 800) / Z, y - (80 * 800) / Z, (72 * 800) / Z, (80 * 800) / Z, '#d88a6a'));
+      cols.push(col(cId, x, y - (80 * 800) / Z, y - (80 * 800) / Z - top, 1.25));
+    }
+  // ---- light shafts from the thermal window
+  let sh = '';
+  for (const [x0, x1, fx0, fx1] of [[-0.8, -0.45, -500, -150], [-0.3, 0.1, -60, 360], [0.25, 0.6, 300, 700]] as [number, number, number, number][]) {
+    const a = pj(x0 * WX * 0.8, SY - WX * 0.5, ZB);
+    const b = pj(x1 * WX * 0.8, SY - WX * 0.5, ZB);
+    const c = pj(fx1, FY, 1200);
+    const d = pj(fx0, FY, 1200);
+    sh += `M${P(a[0], a[1])}L${P(b[0], b[1])}L${P(c[0], c[1])}L${P(d[0], d[1])}Z`;
+  }
+  s.add(path(sh, s.lg([[0, '#fff8dc', 0.45], [1, '#fff8dc', 0.04]])));
+  s.add(cols.join(''));
+  // statues in niches between columns (white marble)
+  for (const k of [-1, 1])
+    for (const Z of [1500, 2600]) {
+      const [x, y] = pj(k * 1040, FY - 80, Z);
+      const sc = 800 / Z;
+      s.add(rect(x - 34 * sc, y, 68 * sc, 80 * sc, '#f6efe2'), person(x, y, 220 * sc, '#ffffff', '#f2ece0', { arm: 4, dir: -k }));
+    }
+  // ---- steam rising off the pool
+  for (const [x, y, w2] of [[560, 640, 200], [980, 600, 240], [780, 520, 160], [1160, 700, 180], [420, 720, 160]] as [number, number, number][]) s.add(smoke(s, x, y, 260, w2 * 0.35, '#ffffff', 0.12, 0.2));
+  // bathers
+  {
+    const a = pj(-300, FY + 30, 1800);
+    const b = pj(260, FY + 30, 2200);
+    const c = pj(80, FY + 30, 1300);
+    s.add(person(a[0], a[1], 60, '#2fa0a8', '#c88a62', { hair: '#3a2416' }), person(b[0], b[1], 50, '#2fa0a8', '#d8a078', { hair: '#2a1a10' }), person(c[0], c[1], 80, '#2fa0a8', '#b87850', { hair: '#5a3a20', arm: 4 }));
+    const w1 = pj(-800, FY, 1700);
+    s.add(person(w1[0], w1[1], 110, '#ffffff', '#c88a62', { sash: '#d88a6a', hair: '#3a2416' }));
+    const w2 = pj(820, FY, 1400);
+    s.add(person(w2[0], w2[1], 120, '#f6ead8', '#d8a078', { hair: '#2a1a10', sash: '#3a7a84' }));
+  }
+  // ---- foreground: near pool edge (marble), mosaic floor with a dolphin border
+  s.add(rect(0, 800, W, 100, s.lg([[0, '#f8f0e2'], [1, '#e2d2b8']])));
+  s.add(rect(0, 796, W, 8, '#ffffff'), rect(0, 804, W, 6, '#c8b494', op(0.6)));
+  s.add(rect(0, 826, W, 74, '#fbf6ec'));
+  s.add(stroke(waveBand(-20, 1640, 830, 18), '#1e3a4a', 4, 'stroke-linecap="round"'));
+  s.add(rect(0, 858, W, 4, '#1e3a4a'));
+  // dolphins in the mosaic (left and right of centre, and one under the board's lower edge)
+  const dolphin = (x: number, y: number, sc: number, dir: number) =>
+    `<g transform="translate(${n(x)} ${n(y)}) scale(${n(dir * sc)} ${n(sc)})"><path d="M-40,6q20,-26 58,-20q-10,4 -8,9q12,-1 20,8q-18,-3 -30,6q-20,10 -40,-3z" fill="#2a6a84"/><path d="M-6,-10l6,-10l4,12z" fill="#2a6a84"/><path d="M-40,6l-10,-8l2,12z" fill="#2a6a84"/></g>`;
+  s.add(dolphin(800, 884, 0.62, 1), dolphin(420, 884, 0.58, -1), dolphin(1180, 884, 0.58, 1));
+  // bench with towels, oil flask and strigil; potted palms framing
+  s.add(rect(1260, 740, 260, 26, '#f2ead8'), rect(1280, 766, 24, 40, '#d8c8a8'), rect(1476, 766, 24, 40, '#d8c8a8'));
+  s.add(rect(1300, 722, 120, 20, '#d88a6a', 'rx="6"'), rect(1310, 706, 100, 18, '#f6f0e4', 'rx="6"'), `<circle cx="1460" cy="722" r="14" fill="${s.lg([[0, '#f6d27a'], [1, '#a8762a']])}"/>`, stroke('M1440,706q30,-10 40,10', '#c8902e', 4));
+  s.add(rect(80, 690, 90, 110, s.lg([[0, '#d88a6a'], [1, '#9a4a3a']]), 'rx="10"'), palm(s, 125, 700, 300, 0.25, '#8a6a4a', '#3f7a5a', '#7ab070'));
+  s.add(rect(1500, 700, 80, 100, s.lg([[0, '#d88a6a'], [1, '#9a4a3a']]), 'rx="10"'), palm(s, 1540, 708, 260, -0.3, '#8a6a4a', '#3f7a5a', '#7ab070'));
+  // hanging lamps on chains from the vault
+  let lamps = '';
+  for (const [x, y] of [[520, 150], [1080, 150]] as [number, number][]) {
+    lamps += stroke(`M${P(x, 0)}V${n(y)}`, '#8a6a3a', 2) + path(`M${P(x - 26, y)}h52l-10,16h-32z`, '#c8902e') + `<circle cx="${x}" cy="${y + 4}" r="60" fill="${s.rgu([[0, '#ffd27a', 0.5], [1, '#ffd27a', 0]], x, y + 4, 60)}"/>` + path(`M${P(x - 4, y)}q4,-14 8,0z`, '#ffe8a0');
+  }
+  s.add(lamps);
+  vignette(s, '#3a4a4a', 0.28);
+}
+
+/** 11 · The Circus Maximus — the long chariot track, spina with obelisk, roaring stands, golden dust. */
+function circusMaximus(s: S): void {
+  s.lit = -1;
+  const { pj, quad, flat } = cam(800, 330, 800);
+  const FY = 300;
+  const ZN = 640;
+  const ZF = 9000;
+  const TX = 700; // track half-width
+  const SX = 1900; // stands outer edge
+  const SYT = -760; // stands top
+  sky(s, [[0, '#2f6fb8'], [0.18, '#6aa8d8'], [0.32, '#f0d4a8'], [0.4, '#ffc880']]);
+  sun(s, 1080, 80, 30, '#fffaf0', '#ffd890', 420, 0.8);
+  cloud(s, 640, 120, 260, 46, '#fff6ec', '#e8b8a0', 0.85);
+  cloud(s, 900, 170, 200, 36, '#fff6ec', '#e8b8a0', 0.75);
+  birds(s, 720, 200, 5, 50, '#5a3a3a', 8);
+  // Palatine palace on its hill at the far end (left)
+  s.add(path('M380,330Q470,240 640,232L760,250L780,330Z', '#c8a07a'));
+  let pal = '';
+  for (let i = 0; i < 8; i++) pal += `M${P(470 + i * 34, 300 - i * 4)}v${n(-36 - (i % 3) * 10)}h28v${n(36 + (i % 3) * 10)}z`;
+  s.add(path(pal, '#f2e0c0'), path('M560,236h120v-8l-60,-20l-60,20z', '#e8c070'));
+  let pc = '';
+  for (let i = 0; i < 9; i++) pc += `M${P(566 + i * 13, 268)}v-30`;
+  s.add(stroke(pc, '#c8a888', 3));
+  haze(s, 200, 340, '#ffe0b0', 0, 0.45);
+  // ---- stands (both sides) in perspective
+  const crowdL = patCrowd(s, 1.7, '#8a5a3a', ['#c0392b', '#f6f0e4', '#2f8a4a', '#2f6db3', '#e8b04b', '#9a3a8a'], ['#c88a62', '#a86a48', '#e0b08a']);
+  for (const k of [-1, 1]) {
+    const inner = (Z: number) => pj(k * TX, 200, Z);
+    const outer = (Z: number) => pj(k * SX, SYT, Z);
+    const surf = quad(inner(ZN), inner(ZF), outer(ZF), outer(ZN));
+    s.add(path(surf, crowdL));
+    s.add(path(surf, s.lgu([[0, '#ffe8c0', k < 0 ? 0.05 : 0.25], [1, '#2a1a10', k < 0 ? 0.35 : 0.1]], 0, 0, W, 0)));
+    // tier walkways (praecinctiones)
+    let tiers = '';
+    for (const t of [0.33, 0.66]) {
+      const X = k * (TX + (SX - TX) * t);
+      const Y = 200 + (SYT - 200) * t;
+      tiers += `M${P(...pj(X, Y, ZN))}L${P(...pj(X, Y, ZF))}`;
+    }
+    s.add(stroke(tiers, '#fff4e0', 5), stroke(tiers, '#a8784a', 1.5, op(0.6)));
+    // podium wall along the track
+    s.add(path(quad(pj(k * TX, 200, ZN), pj(k * TX, 200, ZF), pj(k * TX, FY, ZF), pj(k * TX, FY, ZN)), k < 0 ? '#e8d4b0' : '#c8a87a'));
+    let pod = '';
+    for (let Z = ZN + 200; Z < ZF; Z *= 1.25) pod += `M${P(...pj(k * TX, 200, Z))}L${P(...pj(k * TX, FY, Z))}`;
+    s.add(stroke(pod, '#8a6a4a', 1.5, op(0.5)), stroke(`M${P(...pj(k * TX, 205, ZN))}L${P(...pj(k * TX, 205, ZF))}`, '#b8342a', 3));
+    // outer arcade wall on top of the stands
+    const ow = quad(pj(k * SX, SYT, ZN), pj(k * SX, SYT, ZF), pj(k * SX, SYT - 260, ZF), pj(k * SX, SYT - 260, ZN));
+    s.add(path(ow, k < 0 ? '#f2dcb4' : '#d8b888'));
+    let arc = '';
+    for (let Z = ZN + 300; Z < ZF; Z *= 1.18) {
+      const a = pj(k * SX, SYT - 40, Z);
+      const b = pj(k * SX, SYT - 200, Z * 1.08);
+      arc += `M${P(a[0], a[1])}L${P(b[0], b[1])}`;
+    }
+    s.add(stroke(arc, '#a8784a', 3, op(0.5)));
+    // striped awnings shading the upper tiers
+    let aw = '';
+    let aw2 = '';
+    for (let j = 0, Z = ZN; Z < ZF; Z *= 1.16, j++) {
+      const Z1 = Z * 1.16;
+      const q = quad(pj(k * SX, SYT - 260, Z), pj(k * SX, SYT - 260, Z1), pj(k * (SX - 520), SYT - 120, Z1), pj(k * (SX - 520), SYT - 120, Z));
+      if (j % 2) aw += q;
+      else aw2 += q;
+    }
+    s.add(path(aw, '#c0392b'), path(aw2, '#fff4e4'));
+    let ropes = '';
+    for (let Z = ZN; Z < ZF; Z *= 1.16) ropes += `M${P(...pj(k * (SX - 520), SYT - 120, Z))}L${P(...pj(k * (SX - 700), SYT + 60, Z))}`;
+    s.add(stroke(ropes, '#6a4a2a', 1.5, op(0.6)));
+    // tinted crowd sections (sun and shade) for depth
+    let sec = '';
+    for (let j = 0, Z = ZN; Z < ZF; Z *= 1.5, j++) {
+      if (j % 2) continue;
+      sec += quad(pj(k * TX, 200, Z), pj(k * TX, 200, Z * 1.5), pj(k * SX, SYT, Z * 1.5), pj(k * SX, SYT, Z));
+    }
+    s.add(path(sec, '#2a1408', op(0.12)));
+    // faction banners on poles along the top
+    let poles = '';
+    const cols = ['#c0392b', '#f6f0e4', '#2f8a4a', '#2f6db3'];
+    for (let j = 0, Z = ZN + 500; Z < 4200; Z *= 1.45, j++) {
+      const [x, y] = pj(k * SX, SYT - 260, Z);
+      const sc = 800 / Z;
+      poles += flag(s, x, y - 200 * sc, 160 * sc * -k, 70 * sc, cols[j % 4], '#5a3a20', -k, j);
+    }
+    s.add(poles);
+  }
+  // imperial box (pulvinar) on the left stands — temple front with purple awning
+  {
+    const [x, y] = pj(-TX - 300, 60, 2400);
+    const sc = 800 / 2400;
+    const cId = defColumn(s, '#ffffff', '#f0e6d4', '#b8a888', 'corinth', '#f6e6b8');
+    let cs = '';
+    for (let i = 0; i < 4; i++) cs += col(cId, x - 200 * sc + i * 130 * sc, y, 360 * sc);
+    s.add(rect(x - 250 * sc, y - 10 * sc, 480 * sc, 60 * sc, '#f6ecd8'), cs, path(`M${P(x - 260 * sc, y - 360 * sc)}h${n(500 * sc)}l${n(-250 * sc)},${n(-110 * sc)}z`, '#f6ecd8'), path(`M${P(x - 230 * sc, y - 330 * sc)}h${n(440 * sc)}v${n(70 * sc)}q${n(-220 * sc)},${n(40 * sc)} ${n(-440 * sc)},0z`, '#6a2a7a'));
+  }
+  // ---- the track
+  s.add(path(flat(-TX, TX, FY, ZN - 300, ZF), s.lg([[0, '#f2c888'], [0.45, '#e2a868'], [1, '#c88a4a']])));
+  let ruts = '';
+  for (const X of [-560, -420, -300, 300, 420, 560]) ruts += `M${P(...pj(X, FY, ZN - 200))}L${P(...pj(X, FY, ZF))}`;
+  s.add(stroke(ruts, '#a8683a', 2, op(0.35)), stroke(ruts.replace(/,(\d+\.?\d*)/g, (_m, a) => ',' + n(+a + 2)), '#fff0c8', 1.5, op(0.4)));
+  s.add(speckles(s, 200, 420, 1400, 900, 160, '#a8683a', 0.3, 3));
+  // far curved end with the gate arch
+  {
+    const [x, y] = pj(0, FY, ZF);
+    s.add(rect(x - 70, y - 70, 140, 70, '#f2dcb4'), path(`M${P(x - 18, y)}v-30a18,18 0 0,1 36,0v30z`, '#8a5a3a'), rect(x - 74, y - 80, 148, 10, '#fff4e0'), path(`M${P(x - 24, y - 80)}h48l-6,-12h-36z`, '#e8b84a'));
+  }
+  // ---- the spina: long central barrier with obelisk, statues, lap-counters
+  const spTop = 200;
+  s.add(path(quad(pj(-110, spTop, 900), pj(110, spTop, 900), pj(110, spTop, ZF - 600), pj(-110, spTop, ZF - 600)), '#fff4e0'));
+  s.add(path(quad(pj(-110, spTop, 900), pj(-110, spTop, ZF - 600), pj(-110, FY, ZF - 600), pj(-110, FY, 900)), '#d8bc90'));
+  s.add(path(quad(pj(110, spTop, 900), pj(110, spTop, ZF - 600), pj(110, FY, ZF - 600), pj(110, FY, 900)), '#b08a5a'));
+  s.add(path(quad(pj(-26, spTop, 1000), pj(26, spTop, 1000), pj(26, spTop, ZF - 700), pj(-26, spTop, ZF - 700)), '#4f9ab0', op(0.85)));
+  {
+    const a = pj(-110, spTop, 900);
+    const b = pj(110, FY, 900);
+    s.add(rect(a[0], a[1], b[0] - a[0], b[1] - a[1], '#f2e2c4'), rect(a[0], a[1] + (b[1] - a[1]) * 0.45, b[0] - a[0], 4, '#b8342a'), rect(a[0] - 4, a[1] - 5, b[0] - a[0] + 8, 6, '#ffffff'));
+  }
+  // statues and shrines along the spina
+  let sts = '';
+  for (const Z of [1600, 2300, 4200, 5600]) {
+    const [x, y] = pj(0, spTop, Z);
+    const sc = 800 / Z;
+    sts += rect(x - 30 * sc, y - 60 * sc, 60 * sc, 60 * sc, '#f6ecd8') + person(x, y - 60 * sc, 200 * sc, '#e8b84a', '#e8b84a', { arm: 4 });
+  }
+  s.add(sts);
+  // lap counter: seven golden dolphins on a frame
+  {
+    const [x, y] = pj(0, spTop, 1250);
+    const sc = 800 / 1250;
+    s.add(stroke(`M${P(x - 90 * sc, y)}V${n(y - 200 * sc)}M${P(x + 90 * sc, y)}V${n(y - 200 * sc)}M${P(x - 100 * sc, y - 200 * sc)}H${n(x + 100 * sc)}`, '#8a6a4a', 8 * sc));
+    let dl = '';
+    for (let i = 0; i < 7; i++) {
+      const dx = x - 78 * sc + i * 26 * sc;
+      dl += `M${P(dx, y - 196 * sc)}q${n(-10 * sc)},${n(18 * sc)} 0,${n(36 * sc)}q${n(12 * sc)},${n(-6 * sc)} ${n(8 * sc)},${n(-20 * sc)}z`;
+    }
+    s.add(path(dl, '#e8b84a'));
+  }
+  // the obelisk — rising into the sky strip
+  {
+    const Z = 3200;
+    const [x, y] = pj(0, spTop, Z);
+    const sc = 800 / Z;
+    const h = 900 * sc;
+    s.add(rect(x - 70 * sc, y - 120 * sc, 140 * sc, 120 * sc, '#f6ecd8'), rect(x - 80 * sc, y - 130 * sc, 160 * sc, 14 * sc, '#fffaf0'));
+    s.add(path(`M${P(x - 56 * sc, y - 130 * sc)}L${P(x - 36 * sc, y - 130 * sc - h)}L${P(x, y - 130 * sc - h - 60 * sc)}L${P(x + 36 * sc, y - 130 * sc - h)}L${P(x + 56 * sc, y - 130 * sc)}Z`, s.lg([[0, '#f2c8a0'], [0.5, '#d8a07a'], [1, '#a86a4a']], 0, 0, 1, 0)));
+    s.add(path(`M${P(x - 36 * sc, y - 130 * sc - h)}L${P(x, y - 130 * sc - h - 60 * sc)}L${P(x + 36 * sc, y - 130 * sc - h)}Z`, '#f2c64a'));
+    let gl = '';
+    for (let i = 0; i < 10; i++) {
+      const yy = y - 200 * sc - i * 80 * sc;
+      gl += `M${P(x - 12 * sc, yy)}h${n(8 * sc)}M${P(x + 4 * sc, yy - 30 * sc)}h${n(8 * sc)}M${P(x - 4 * sc, yy - 50 * sc)}v${n(10 * sc)}`;
+    }
+    s.add(stroke(gl, '#7a4a2a', 3 * sc, op(0.5)));
+    s.add(`<circle cx="${n(x)}" cy="${n(y - 130 * sc - h - 40 * sc)}" r="${n(60)}" fill="${s.rgu([[0, '#fff4c0', 0.6], [1, '#fff4c0', 0]], x, y - 130 * sc - h - 40 * sc, 60)}"/>`);
+  }
+  // near meta: three gilded cones on a half-round base (bottom centre, visible below the board)
+  {
+    const [x, y] = pj(0, FY, 540);
+    s.add(ell(x, y + 6, 190, 28, '#6a3a1a', op(0.25)));
+    s.add(path(`M${P(x - 170, y)}V${n(y - 60)}H${n(x + 170)}V${n(y)}Z`, s.lg([[0, '#fff4e0'], [1, '#d8c0a0']])), rect(x - 180, y - 70, 360, 14, '#ffffff'));
+    s.add(stroke(`M${P(x - 170, y - 30)}H${n(x + 170)}`, '#b8342a', 4));
+    for (const dx of [-110, 0, 110]) {
+      const h = dx === 0 ? 130 : 105;
+      s.add(path(`M${P(x + dx - 34, y - 70)}Q${P(x + dx - 20, y - 70 - h * 0.6)} ${P(x + dx, y - 70 - h)}Q${P(x + dx + 20, y - 70 - h * 0.6)} ${P(x + dx + 34, y - 70)}Z`, s.lg([[0, '#fff0a8'], [0.45, '#e8b034'], [1, '#8c5a0c']], 0, 0, 1, 0)));
+      s.add(`<circle cx="${n(x + dx)}" cy="${n(y - 74 - h)}" r="9" fill="#fff0a8"/>`);
+    }
+  }
+  // ---- racing chariots throwing up dust
+  const coatsA = ['#f6f0e4', '#e8dcc8', '#f6f0e4', '#d8ccb8'];
+  const coatsB = ['#5a3420', '#7a4a2a', '#3a2214', '#6a3a1e'];
+  const coatsC = ['#a86a3a', '#c88a4a', '#8a5030', '#b87a40'];
+  s.add(raceChariot(s, 760, 520, 0.9, -1, '#2f8a4a', coatsC), raceChariot(s, 900, 540, 1, 1, '#f6f0e4', coatsB));
+  s.add(raceChariot(s, 300, 760, 2.2, 1, '#c0392b', coatsB), raceChariot(s, 1290, 780, 2.3, -1, '#2f6db3', coatsA));
+  // golden dust haze low over the track
+  s.add(rect(0, 640, W, 260, s.lg([[0, '#ffd8a0', 0], [1, '#f0b878', 0.35]])));
+  let mo = '';
+  for (let i = 0; i < 60; i++) mo += circ(s.rnd(0, W), s.rnd(420, 880), s.rnd(1.5, 3.5));
+  s.add(path(mo, '#fff0c8', op(0.55)));
+  vignette(s, '#5a2e1a', 0.3);
+}
+
+/** 13 · The Great Library — Alexandria: scroll shelves, lotus columns, a terrace onto the Nile at golden hour. */
+function greatLibrary(s: S): void {
+  s.lit = 1;
+  const { pj, quad, flat, side } = cam(800, 380, 800);
+  const FY = 360;
+  const CY = -940;
+  const WX = 1050;
+  const ZN = 420;
+  const ZB = 3200;
+  s.add(rect(0, 0, W, H, '#e8cfa0'));
+  // ---- view through the great opening: Nile at sunset
+  {
+    const a = pj(-620, CY, ZB);
+    const b = pj(620, FY, ZB);
+    s.add(rect(a[0], a[1], b[0] - a[0], b[1] - a[1], s.lg([[0, '#4a7ab8'], [0.35, '#e8a0a0'], [0.62, '#ffc878'], [0.78, '#ffe0a0']])));
+    const hz = a[1] + (b[1] - a[1]) * 0.78;
+    s.add(`<circle cx="${n(800)}" cy="${n(hz - 20)}" r="22" fill="#fff6dc"/>`, `<circle cx="800" cy="${n(hz - 20)}" r="120" fill="${s.rgu([[0, '#fff0c0', 0.7], [1, '#fff0c0', 0]], 800, hz - 20, 120)}"/>`);
+    // far bank: pyramids and a temple pylon
+    s.add(path(`M${P(a[0], hz)}L${P(640, hz)}L${P(668, hz - 34)}L${P(696, hz)}L${P(712, hz)}L${P(730, hz - 22)}L${P(748, hz)}H${n(b[0])}V${n(hz + 6)}H${n(a[0])}Z`, '#c88a78'));
+    s.add(rect(890, hz - 26, 40, 26, '#c88a78'), rect(940, hz - 26, 40, 26, '#c88a78'), rect(930, hz - 16, 10, 16, '#c88a78'));
+    s.add(rect(a[0], hz + 4, b[0] - a[0], b[1] - hz - 4, s.lg([[0, '#ffd8a0'], [1, '#c8806a']])));
+    s.add(glints(s, a[0], b[0], hz + 8, b[1] - 4, 26, '#fff4d0', 0.8, 14));
+    // feluccas
+    for (const [x, y, sc] of [[700, hz + 18, 0.8], [900, hz + 26, 1]] as [number, number, number][])
+      s.add(path(`M${P(x - 18 * sc, y)}h${n(36 * sc)}l${n(-6 * sc)},${n(6 * sc)}h${n(-24 * sc)}z`, '#5a3a3a'), path(`M${P(x, y - 2)}L${P(x - 2 * sc, y - 40 * sc)}L${P(x + 22 * sc, y - 4)}Z`, '#fff4e0'));
+    // palms on the terrace edge
+    let pm = '';
+    for (const [x, h, l] of [[560, 150, 0.3], [620, 120, -0.2], [990, 140, -0.3], [1050, 170, 0.25]] as [number, number, number][]) pm += palm(s, x, b[1], h, l, '#6a4a3a', '#3a5a3a', '#5a7a4a');
+    s.add(pm);
+    // terrace balustrade
+    let bal = '';
+    for (let x = a[0] + 6; x < b[0]; x += 12) bal += `M${n(x)},${n(b[1])}v-22`;
+    s.add(stroke(bal, '#f6e6c8', 5), rect(a[0], b[1] - 28, b[0] - a[0], 7, '#fff4e0'));
+  }
+  // ---- ceiling: painted beams, lapis with gold stars
+  s.add(path(quad(pj(-WX, CY, ZN), pj(WX, CY, ZN), pj(WX, CY, ZB), pj(-WX, CY, ZB)), s.lg([[0, '#1e3a6a'], [1, '#2f5a90']])));
+  let beams = '';
+  for (let Z = ZN + 120; Z < ZB; Z *= 1.22) beams += quad(pj(-WX, CY, Z), pj(WX, CY, Z), pj(WX, CY, Z + 50), pj(-WX, CY, Z + 50));
+  s.add(path(beams, '#c8902e'));
+  let stars = '';
+  for (let i = 0; i < 70; i++) {
+    const X = s.rnd(-WX, WX);
+    const Z = s.rnd(ZN, ZB);
+    const [x, y] = pj(X, CY, Z);
+    stars += starPath5(x, y, (14 * 800) / Z);
+  }
+  s.add(path(stars, '#f2c64a'));
+  // back wall around the opening (pylon form)
+  {
+    const l = pj(-WX, CY, ZB);
+    const r = pj(WX, FY, ZB);
+    const a = pj(-620, CY, ZB);
+    const b = pj(620, FY, ZB);
+    s.add(path(`M${P(l[0], l[1])}H${n(r[0])}V${n(r[1])}H${n(l[0])}ZM${P(a[0], a[1])}V${n(b[1])}H${n(b[0])}V${n(a[1])}Z`, s.lg([[0, '#e8c890'], [1, '#d8b070']]), 'fill-rule="evenodd"'));
+    // winged sun disc over the opening
+    const cx = 800;
+    const cy = a[1] + 10;
+    s.add(`<circle cx="${cx}" cy="${n(cy)}" r="12" fill="#e83a2a"/>`, path(`M${P(cx - 14, cy)}q-30,-14 -70,-6q30,4 40,14q-26,0 -34,6q30,4 64,-8zM${P(cx + 14, cy)}q30,-14 70,-6q-30,4 -40,14q26,0 34,6q-30,4 -64,-8z`, '#f2c64a'));
+  }
+  // ---- side walls: floor-to-ceiling scroll shelves (armaria)
+  // scroll ends stacked in the pigeonholes (screen-space pattern keeps the markup small)
+  const scrollPat = s.uid();
+  {
+    let inner = rect(0, 0, 24, 30, '#2a1608');
+    const cc = ['#e8d0a0', '#d8b47a', '#f2dcb0', '#c89a62'];
+    [[5, 8], [13, 7], [20, 9], [8, 21], [17, 22]].forEach(([x, y], i) => {
+      inner += `<ellipse cx="${x}" cy="${y}" rx="3.6" ry="5.4" fill="${cc[i % 4]}"/><circle cx="${x}" cy="${y}" r="1.1" fill="#8a5a2a"/>`;
+    });
+    inner += rect(12, 12, 1.4, 8, '#b8342a');
+    s.def(`<pattern id="${scrollPat}" patternUnits="userSpaceOnUse" width="24" height="30" patternTransform="scale(1.6)">${inner}</pattern>`);
+  }
+  const scrollFill = `url(#${scrollPat})`;
+  for (const k of [-1, 1]) {
+    const X = k * WX;
+    s.add(path(side(X, CY, FY, ZN, ZB), k < 0 ? '#7a4a2a' : '#5a341e'));
+    let cells = '';
+    for (let Z = ZN; Z < ZB; Z *= 1.12) {
+      const Z1 = Z * 1.12;
+      for (let Y = -820; Y < 300; Y += 120) cells += side(X, Y + 10, Y + 110, Z + (Z1 - Z) * 0.08, Z1 - (Z1 - Z) * 0.08);
+    }
+    s.add(path(cells, '#2a1608'), path(cells, scrollFill));
+    // ladders
+    for (const Z of [1100, 2000]) {
+      const sc = 800 / Z;
+      const a = pj(X - k * 60, FY, Z);
+      const b = pj(X - k * 10, -600, Z + 100);
+      let rungs = '';
+      for (let i = 1; i < 12; i++) {
+        const t = i / 12;
+        rungs += `M${P(a[0] + (b[0] - a[0]) * t - 14 * sc, a[1] + (b[1] - a[1]) * t)}h${n(28 * sc)}`;
+      }
+      s.add(stroke(`M${P(a[0] - 14 * sc, a[1])}L${P(b[0] - 14 * sc, b[1])}M${P(a[0] + 14 * sc, a[1])}L${P(b[0] + 14 * sc, b[1])}${rungs}`, '#c8955c', 5 * sc));
+    }
+  }
+  // ---- floor
+  s.add(path(flat(-WX, WX, FY, ZN, ZB), s.lg([[0, '#f2dcb0'], [1, '#d8b47a']])));
+  let fl = '';
+  const tz = [ZN];
+  while (tz[tz.length - 1] < ZB) tz.push(Math.min(ZB, tz[tz.length - 1] * 1.15));
+  for (let i = -8; i < 8; i++)
+    for (let k = 0; k < tz.length - 1; k++) if ((i + k) % 2) fl += flat(i * 140, (i + 1) * 140, FY, tz[k], tz[k + 1]);
+  s.add(path(fl, '#c89a5a', op(0.45)));
+  // warm sunset light spilling across the floor from the opening
+  s.add(path(quad(pj(-620, FY, ZB), pj(620, FY, ZB), pj(900, FY, ZN + 200), pj(-900, FY, ZN + 200)), s.lg([[0, '#fff0c0', 0.55], [1, '#fff0c0', 0]])));
+  // lapis runner down the middle with a gold border
+  s.add(path(flat(-220, 220, FY, ZN, ZB - 40), '#2f5a90', op(0.85)), stroke(`M${P(...pj(-200, FY, ZN))}L${P(...pj(-200, FY, ZB - 40))}M${P(...pj(200, FY, ZN))}L${P(...pj(200, FY, ZB - 40))}`, '#f2c64a', 3));
+  // ---- lotus columns in front of the shelves
+  const cid = s.uid();
+  s.def(
+    `<g id="${cid}">` +
+      rect(-7, -4, 14, 4, '#e8c890') +
+      path('M-5,-4L-4.4,-80H4.4L5,-4Z', s.lg([[0, '#5aa0a0'], [0.35, '#8ad0c8'], [0.7, '#3a7a80'], [1, '#2a5a60']], 0, 0, 1, 0)) +
+      stroke('M-4.6,-20H4.6M-4.5,-40H4.5M-4.4,-60H4.4', '#f2c64a', 1.6) +
+      path('M-4.4,-80Q-9,-88 -9,-97H9Q9,-88 4.4,-80Z', s.lg([[0, '#f6d27a'], [1, '#b8862a']], 0, 0, 1, 0)) +
+      stroke('M-6,-90L-2,-81M0,-97V-81M6,-90L2,-81', '#2a5a60', 0.8) +
+      rect(-10, -101, 20, 4, '#e8c890') +
+      `</g>`,
+  );
+  const cols: string[] = [];
+  for (const k of [-1, 1])
+    for (let Z = ZB - 200; Z >= ZN + 80; Z -= 700) {
+      const [x, y] = pj(k * 880, FY, Z);
+      const top = pj(k * 880, CY, Z)[1];
+      cols.push(col(cid, x, y, y - top, 1.3));
+    }
+  s.add(cols.join(''));
+  // hanging oil lamps
+  let lamps = '';
+  for (const [X, Z] of [[-500, 1000], [500, 1000], [-500, 1900], [500, 1900]] as [number, number][]) {
+    const [x, y] = pj(X, -300, Z);
+    const top = pj(X, CY, Z)[1];
+    const sc = 800 / Z;
+    lamps += stroke(`M${P(x, top)}V${n(y)}`, '#8a6a3a', 1.5) + `<circle cx="${n(x)}" cy="${n(y + 10 * sc)}" r="${n(90 * sc)}" fill="${s.rgu([[0, '#ffd27a', 0.55], [1, '#ffd27a', 0]], x, y + 10 * sc, 90 * sc)}"/>` + path(`M${P(x - 24 * sc, y)}h${n(48 * sc)}l${n(-8 * sc)},${n(14 * sc)}h${n(-32 * sc)}z`, '#c8902e') + path(`M${P(x - 3 * sc, y)}q${n(3 * sc)},${n(-16 * sc)} ${n(6 * sc)},0z`, '#fff0a0');
+  }
+  s.add(lamps);
+  // scholars
+  {
+    const p1 = pj(-420, FY, 1500);
+    const p2 = pj(380, FY, 1800);
+    const p3 = pj(-120, FY, 2500);
+    s.add(person(p1[0], p1[1], 150, '#f6f0e4', '#a86a48', { sash: '#2f5a90', hair: '#2a1a10', arm: 1.2 }), person(p2[0], p2[1], 130, '#e8c070', '#8a5a3a', { hair: '#1a1008', dir: -1, arm: 1 }), person(p3[0], p3[1], 90, '#ffffff', '#a86a48', { sash: '#b8342a', hair: '#2a1a10' }));
+  }
+  // ---- foreground: reading table with unrolled scrolls, inkpot, armillary sphere
+  s.add(path('M120,900L220,770H1380L1480,900Z', s.lg([[0, '#9a5a30'], [1, '#5a3018']])), rect(200, 762, 1200, 14, '#c8804a'));
+  s.add(path('M300,800L330,780H740L720,820Z', '#fbf0d6'), stroke('M340,792H720M336,800H716M332,808H712', '#7a5a3a', 1.2, op(0.6)));
+  s.add(ell(300, 806, 14, 20, '#e8d4a8'), ell(740, 796, 14, 20, '#e8d4a8'));
+  s.add(path('M860,812L880,786H1060L1050,816Z', '#fbf0d6'), ell(1060, 800, 12, 18, '#e8d4a8'));
+  s.add(ell(820, 806, 22, 9, '#2a1a10'), stroke('M820,800l30,-46', '#c8a060', 3));
+  // armillary sphere
+  {
+    const x = 1240;
+    const y = 690;
+    s.add(path(`M${P(x - 30, 776)}h60l-10,-20h-40z`, '#c8902e'), stroke(`M${P(x, 756)}V${n(y + 60)}`, '#a87a2a', 6));
+    s.add(`<ellipse cx="${x}" cy="${y}" rx="66" ry="66" fill="none" stroke="#e8b84a" stroke-width="5"/>`, `<ellipse cx="${x}" cy="${y}" rx="66" ry="20" fill="none" stroke="#e8b84a" stroke-width="4"/>`, `<ellipse cx="${x}" cy="${y}" rx="22" ry="66" fill="none" stroke="#c8902e" stroke-width="4" transform="rotate(30 ${x} ${y})"/>`, `<ellipse cx="${x}" cy="${y}" rx="66" ry="14" fill="none" stroke="#f6d27a" stroke-width="5" transform="rotate(-24 ${x} ${y})"/>`, `<circle cx="${x}" cy="${y}" r="12" fill="#2f5a90"/>`);
+  }
+  // potted papyrus framing
+  const papyrus = (x: number, base: number, sc: number) => {
+    let st = '';
+    let heads = '';
+    for (let i = 0; i < 9; i++) {
+      const a = -Math.PI / 2 + (i - 4) * 0.13;
+      const L = (220 + (i % 3) * 30) * sc;
+      const ex = x + Math.cos(a) * L;
+      const ey = base - 60 * sc + Math.sin(a) * L;
+      st += `M${P(x, base - 60 * sc)}L${P(ex, ey)}`;
+      for (let j = -3; j <= 3; j++) heads += `M${P(ex, ey)}l${n(Math.sin(a + Math.PI / 2 + j * 0.32) * 38 * sc)},${n(-Math.abs(Math.cos(j * 0.32)) * 30 * sc - 4 * sc)}`;
+    }
+    return rect(x - 46 * sc, base - 80 * sc, 92 * sc, 80 * sc, s.lg([[0, '#3a7ab8'], [1, '#1e3a6a']]), `rx="${n(10 * sc)}"`) + rect(x - 50 * sc, base - 84 * sc, 100 * sc, 10 * sc, '#f2c64a') + stroke(st, '#4a7a3a', 3 * sc) + stroke(heads, '#7aa84a', 2.4 * sc, 'stroke-linecap="round"');
+  };
+  s.add(papyrus(70, 900, 1.4), papyrus(1530, 900, 1.4));
+  vignette(s, '#3a2410', 0.3);
+}
+
+/** 15 · The Capitoline Temple — Jupiter's gilded temple atop the great stair, sacrificial fires, high summer sky. */
+function capitolineTemple(s: S): void {
+  s.lit = -1;
+  sky(s, [[0, '#1a4f9a'], [0.3, '#4f8fd0'], [0.55, '#a8d0ec'], [0.7, '#ffe6b8']]);
+  sun(s, 1380, 150, 40, '#ffffff', '#fff2c0', 520, 0.8);
+  shafts(s, 1380, 150, Math.PI * 0.55, Math.PI * 1.05, 10, 1300, '#fff8dc', 0.12);
+  cloud(s, 220, 120, 400, 110, '#fff6e6', '#c8a8a0');
+  cloud(s, 1300, 300, 420, 70, '#fff4e0', '#d8b0a0', 0.9);
+  cloud(s, 560, 330, 300, 50, '#fff8ec', '#e0c0b0', 0.8, 6);
+  s.add(soaringEagle(560, 70, 0.9, '#3a2a1a'), soaringEagle(1180, 44, 0.6, '#4a3a2a'));
+  // the city far below to the sides (rooftops and umbrella pines)
+  s.add(hills(s, 560, 30, 4, '#b8c8b0'));
+  let roofs = '';
+  for (let i = 0; i < 26; i++) {
+    const x = i < 13 ? 10 + i * 18 : 1340 + (i - 13) * 20;
+    const y = 560 - s.rnd(0, 16);
+    roofs += `M${P(x, y)}l10,-8l10,8v12h-20z`;
+  }
+  s.add(path(roofs, '#d88a6a', op(0.8)));
+  haze(s, 420, 600, '#fff2dc', 0, 0.5);
+  // ---- the temple (hexastyle front, gilded roof, polychrome terracotta)
+  const cId = defColumn(s, '#ffffff', '#f2ece0', '#a8b0c4', 'corinth', '#f2c64a');
+  const T = { stone: '#f4efe4', light: '#ffffff', dark: '#8a96b0', roof: '#e8b034', gold: '#f2c64a', colId: cId, inner: '#8a6a58' };
+  s.add(temple(s, 800, 500, 1080, 250, 8, T, { steps: 2, pedH: 110 }));
+  // polychrome frieze band and antefixes along the pediment
+  s.add(rect(268, 190, 1064, 9, '#b8342a'), rect(268, 199, 1064, 4, '#2f5a9a'));
+  let ante = '';
+  for (let x = 266; x < 1330; x += 30) ante += `M${P(x, 178)}l7,-12l7,12z`;
+  s.add(path(ante, '#e8b034'));
+  // golden Jupiter glimpsed through the doors
+  s.add(`<circle cx="800" cy="380" r="90" fill="${s.rgu([[0, '#ffe08a', 0.55], [1, '#ffe08a', 0]], 800, 360, 90)}"/>`, person(800, 488, 120, '#e8b034', '#f2c64a', { arm: 4 }));
+  // gilded quadriga and eagles on the roof
+  s.add(quadriga(800, 72, 0.85, '#e8b034'));
+  
+  // garlands and red banners between the columns
+  const xs: number[] = [];
+  for (let i = 0; i < 8; i++) xs.push(260 + 13.6 + ((1080 - 27.2) * i) / 7);
+  s.add(garlands(xs, 240, 14, '#4f8a3e', '#b8e07a', 6));
+  for (const bx of [xs[1] + 32, xs[5] + 32]) s.add(hangingBanner(s, bx, 248, 40, 110, '#b8342a', '#f2c64a', `<circle cx="${n(bx + 20)}" cy="${n(296)}" r="9" fill="none" stroke="#f2c64a" stroke-width="3"/>`));
+  // ---- the great stair, widening toward the viewer
+  s.add(path('M240,496H1360L1600,900H0Z', s.lg([[0, '#f6f1e6'], [1, '#e0d6c2']])));
+  let st = '';
+  let hi = '';
+  for (let i = 0; i < 26; i++) {
+    const t = i / 26;
+    const y = 496 + 404 * Math.pow(t, 1.25);
+    const x0 = 240 - 240 * ((y - 496) / 404);
+    const x1 = 1360 + 240 * ((y - 496) / 404);
+    st += `M${P(x0, y)}H${n(x1)}`;
+    hi += `M${P(x0, y + 1.5 + t * 3)}H${n(x1)}`;
+  }
+  s.add(stroke(st, '#a8a090', 1.6, op(0.55)), stroke(hi, '#ffffff', 1.4, op(0.8)));
+  // cheek walls of the stair with bronze Dioscuri statues at the foot
+  s.add(path('M180,480H250L40,900H-40Z', s.lg([[0, '#e8e0d0'], [1, '#c8bca4']])), path('M1420,480H1350L1560,900H1640Z', s.lg([[0, '#e8e0d0'], [1, '#c8bca4']])));
+  s.add(rect(30, 660, 170, 70, '#efe8da'), rect(1400, 660, 170, 70, '#efe8da'));
+  s.add(`<path d="${HORSE}" fill="#8a6a3a" transform="translate(70 590) scale(1.8)"/>`, `<path d="${HORSE}" fill="#8a6a3a" transform="translate(1530 590) scale(-1.8 1.8)"/>`);
+  s.add(person(80, 662, 90, '#7a5a2a', '#7a5a2a', { arm: 5 }), person(1520, 662, 90, '#7a5a2a', '#7a5a2a', { arm: 5, dir: -1 }));
+  // procession: white-robed priests and a garlanded white bull ascending
+  let proc = '';
+  for (const [x, y, h] of [[420, 600, 70], [470, 580, 64], [520, 562, 60], [1180, 590, 68], [1230, 572, 62]] as [number, number, number][]) proc += person(x, y, h, '#ffffff', '#c88a62', { sash: '#b8342a', hair: '#3a2416' });
+  s.add(proc);
+  {
+    const x = 1060;
+    const y = 630;
+    s.add(path(`M${P(x - 70, y - 30)}q10,-34 60,-36q40,-2 70,6q20,4 30,20l6,22q-8,6 -16,0l-6,-10q-10,10 -20,6v40h-10l-4,-30h-60l-6,30h-10l-2,-36q-14,-4 -20,-12z`, '#fbf7ee'), path(`M${P(x + 70, y - 52)}l10,-14l4,12z`, '#e8d8b8'), stroke(`M${P(x + 54, y - 40)}q-10,22 -2,40`, '#6aa84a', 6), path(`M${P(x - 10, y - 66)}h40v14h-40z`, '#b8342a', op(0.8)));
+  }
+  // ---- braziers burning on both sides of the stair
+  s.add(brazier(s, 330, 720, 1.5, '#c8902e'), brazier(s, 1270, 720, 1.5, '#c8902e'));
+  s.add(brazier(s, 300, 520, 0.7, '#c8902e'), brazier(s, 1300, 520, 0.7, '#c8902e'));
+  s.add(smoke(s, 300, 440, 160, 30, '#ffffff', 0.12, -0.6), smoke(s, 1300, 440, 160, 30, '#ffffff', 0.12, 0.6));
+  // ---- sacrificial altar at the foot of the stair (bottom centre)
+  {
+    const x = 800;
+    const y = 900;
+    s.add(ell(x, y - 2, 260, 26, '#6a5a4a', op(0.2)));
+    s.add(rect(x - 220, y - 110, 440, 110, s.lg([[0, '#ffffff'], [1, '#e2d8c4']])), rect(x - 236, y - 124, 472, 18, '#fffaf0'), rect(x - 226, y - 20, 452, 20, '#e8e0d0'));
+    s.add(garlands([x - 200, x - 100, x, x + 100, x + 200], y - 96, 14, '#4f8a3e', '#b8e07a', 7));
+    s.add(path(`M${P(x - 14, y - 70)}l14,-14l14,14l-14,14z`, '#b8342a'), `<circle cx="${n(x - 120)}" cy="${n(y - 54)}" r="12" fill="none" stroke="#c8902e" stroke-width="4"/>`, `<circle cx="${n(x + 120)}" cy="${n(y - 54)}" r="12" fill="none" stroke="#c8902e" stroke-width="4"/>`);
+    // sacred fire
+    s.add(`<circle cx="${x}" cy="${y - 150}" r="160" fill="${s.rgu([[0, '#ffb347', 0.5], [1, '#ffb347', 0]], x, y - 150, 160)}"/>`);
+    s.add(path(`M${P(x - 120, y - 124)}C${P(x - 130, y - 170)} ${P(x - 60, y - 180)} ${P(x - 40, y - 230)}C${P(x - 20, y - 190)} ${P(x + 10, y - 200)} ${P(x + 20, y - 260)}C${P(x + 50, y - 200)} ${P(x + 90, y - 190)} ${P(x + 80, y - 160)}C${P(x + 120, y - 160)} ${P(x + 130, y - 140)} ${P(x + 120, y - 124)}Z`, '#ff7a1a'));
+    s.add(path(`M${P(x - 80, y - 124)}C${P(x - 80, y - 150)} ${P(x - 30, y - 160)} ${P(x - 20, y - 190)}C${P(x, y - 160)} ${P(x + 20, y - 170)} ${P(x + 30, y - 200)}C${P(x + 50, y - 160)} ${P(x + 80, y - 150)} ${P(x + 80, y - 124)}Z`, '#ffd25a'));
+    s.add(path(`M${P(x - 36, y - 124)}C${P(x - 30, y - 140)} ${P(x - 6, y - 148)} ${P(x, y - 166)}C${P(x + 10, y - 146)} ${P(x + 30, y - 140)} ${P(x + 36, y - 124)}Z`, '#fff6c8'));
+  }
+  // laurel and rose petals strewn on the steps
+  let pet = '';
+  for (let i = 0; i < 40; i++) {
+    const x = s.rnd(250, 1350);
+    const y = s.rnd(600, 880);
+    const r = 2 + ((y - 600) / 280) * 4;
+    pet += `M${P(x - r, y)}q${n(r)},${n(-r)} ${n(2 * r)},0q${n(-r)},${n(r * 0.8)} ${n(-2 * r)},0z`;
+  }
+  s.add(path(pet, '#d8404a', op(0.75)));
+  // cypresses framing
+  s.add(cypress(s, 120, 500, 300, 60, '#2f5a3a', '#5e8a52'), cypress(s, 1480, 500, 320, 64, '#2f5a3a', '#5e8a52'));
+  vignette(s, '#2a3a6a', 0.24);
+}
+
+/** 17 · The Pantheon — the coffered dome, the oculus and its moving beam of light, marble floor of circles and squares. */
+function pantheon(s: S): void {
+  s.lit = 1;
+  // rings of the dome: [centre y, rx, ry]; ring 0 is the oculus, the last ring is the cornice
+  const R: [number, number, number][] = [
+    [74, 86, 46],
+    [44, 230, 132],
+    [8, 410, 238],
+    [-54, 630, 352],
+    [-136, 900, 488],
+    [-250, 1240, 650],
+  ];
+  const pt = (k: number, t: number): Pt => [800 + R[k][1] * Math.sin(t), R[k][0] + R[k][2] * Math.cos(t)];
+  const lerpRing = (k: number, f: number, t: number): Pt => {
+    const a = pt(k, t);
+    const b = pt(k + 1, t);
+    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+  };
+  // dome surface
+  s.add(rect(0, 0, W, H, s.lg([[0, '#cfc2ac'], [0.45, '#e2d6c0'], [1, '#d6c8ae']])));
+  // coffers: 28 meridians, rings between consecutive ellipses
+  const M = 28;
+  let cofOuter = '';
+  let cofInner = '';
+  let cofDeep = '';
+  let ros = '';
+  for (let k = 0; k < R.length - 1; k++) {
+    for (let j = 0; j < M; j++) {
+      const t0 = -Math.PI + (j / M) * Math.PI * 2;
+      const t1 = t0 + (Math.PI * 2) / M;
+      const tm = (t0 + t1) / 2;
+      const c = pt(k, tm);
+      if (c[1] < -400 && pt(k + 1, tm)[1] < -50) continue;
+      const q = (f0: number, f1: number, a: number, b: number) => {
+        const A = lerpRing(k, f0, t0 + (t1 - t0) * a);
+        const B = lerpRing(k, f0, t1 - (t1 - t0) * b);
+        const C = lerpRing(k, f1, t1 - (t1 - t0) * b);
+        const D = lerpRing(k, f1, t0 + (t1 - t0) * a);
+        return `M${P(A[0], A[1])}L${P(B[0], B[1])}L${P(C[0], C[1])}L${P(D[0], D[1])}Z`;
+      };
+      cofOuter += q(0.12, 0.88, 0.1, 0.1);
+      cofInner += q(0.24, 0.8, 0.2, 0.2);
+      cofDeep += q(0.36, 0.72, 0.3, 0.3);
+      const m = lerpRing(k, 0.54, tm);
+      const sc = (R[k + 1][2] - R[k][2]) / 130;
+      ros += starPath5(m[0], m[1], Math.max(2, 9 * sc));
+    }
+  }
+  s.add(path(cofOuter, '#b8a88e'), path(cofInner, '#a8967a'), path(cofDeep, s.lg([[0, '#8a7a62'], [1, '#c8b89c']])), path(ros, '#d8a83a'));
+  // light falls on the lower-right dome: soft warm wash
+  s.add(rect(0, 0, W, H, s.rgu([[0, '#fff6e0', 0.35], [1, '#fff6e0', 0]], 1100, 260, 700)));
+  // the oculus — open sky
+  {
+    const [cy, rx, ry] = R[0];
+    s.add(`<ellipse cx="800" cy="${cy}" rx="${rx + 8}" ry="${ry + 6}" fill="#c8a868"/>`, `<ellipse cx="800" cy="${cy}" rx="${rx}" ry="${ry}" fill="${s.lg([[0, '#3a8ad8'], [1, '#bfe6fa']])}"/>`);
+    s.add(path(`M${P(740, cy + 10)}q20,-22 46,-12q14,-16 34,-4q22,-6 30,12z`, '#ffffff', op(0.9)));
+    s.add(`<ellipse cx="800" cy="${cy}" rx="${rx * 3}" ry="${ry * 3}" fill="${s.rgu([[0, '#fffbe8', 0.55], [1, '#fffbe8', 0]], 800, cy, rx * 3)}"/>`);
+  }
+  // ---- the drum (wall) between the cornice (U) and the floor junction (∩)
+  const corn = (x: number) => {
+    const [cy, rx, ry] = R[R.length - 1];
+    const u = Math.max(-1, Math.min(1, (x - 800) / rx));
+    return cy + ry * Math.sqrt(1 - u * u);
+  };
+  const FLC = 1110;
+  const FRX = 1500;
+  const FRY = 440;
+  const floorJ = (x: number) => {
+    const u = Math.max(-1, Math.min(1, (x - 800) / FRX));
+    return FLC - FRY * Math.sqrt(1 - u * u);
+  };
+  // floor first (marble circles & squares in perspective), the wall then covers the far part
+  {
+    const VY = 560;
+    const f = 800;
+    const fy = 300;
+    const pj = (X: number, Z: number): Pt => [800 + (X * f) / Z, VY + (fy * f) / Z];
+    s.add(rect(0, 600, W, 300, '#e8e0d0'));
+    let sq = '';
+    let ci = '';
+    let ci2 = '';
+    const zs = [420];
+    while (zs[zs.length - 1] < 2600) zs.push(zs[zs.length - 1] * 1.22);
+    for (let i = -12; i < 12; i++)
+      for (let k = 0; k < zs.length - 1; k++) {
+        const X0 = i * 300;
+        const X1 = X0 + 300;
+        const a = pj(X0, zs[k]);
+        const b = pj(X1, zs[k]);
+        const c = pj(X1, zs[k + 1]);
+        const d = pj(X0, zs[k + 1]);
+        if ((i + k) % 2 === 0) sq += `M${P(a[0], a[1])}L${P(b[0], b[1])}L${P(c[0], c[1])}L${P(d[0], d[1])}Z`;
+        else {
+          const cx = (a[0] + b[0] + c[0] + d[0]) / 4;
+          const cy = (a[1] + c[1]) / 2;
+          const rx = (Math.abs(b[0] - a[0] + c[0] - d[0]) / 4) * 0.66;
+          const ry = (Math.abs(a[1] - c[1]) / 2) * 0.66;
+          if (k % 2) ci += `M${P(cx - rx, cy)}a${n(rx)},${n(ry)} 0 1,0 ${n(2 * rx)},0a${n(rx)},${n(ry)} 0 1,0 ${n(-2 * rx)},0Z`;
+          else ci2 += `M${P(cx - rx, cy)}a${n(rx)},${n(ry)} 0 1,0 ${n(2 * rx)},0a${n(rx)},${n(ry)} 0 1,0 ${n(-2 * rx)},0Z`;
+        }
+      }
+    s.add(path(sq, '#c8c0b2', op(0.6)), path(ci, '#a8504a', op(0.85)), path(ci2, '#5f8a7a', op(0.85)));
+  }
+  // drum band
+  {
+    let top = `M-20,${n(corn(-20))}`;
+    let bot = '';
+    for (let x = -20; x <= 1620; x += 40) top += `L${P(x, corn(x))}`;
+    for (let x = 1620; x >= -20; x -= 40) bot += `L${P(x, floorJ(x))}`;
+    s.add(path(top + bot + 'Z', s.lg([[0, '#efe4d0'], [0.5, '#f6ecdc'], [1, '#e2d4bc']], 0, 0, 1, 0)));
+    // attic band just below the cornice and the main entablature
+    let att = `M-20,${n(corn(-20) + 10)}`;
+    for (let x = -20; x <= 1620; x += 40) att += `L${P(x, corn(x) + 10)}`;
+    s.add(stroke(att, '#c8b494', 14), stroke(att.replace(/,(-?\d+\.?\d*)/g, (_m, a) => ',' + n(+a + 70)), '#fff8ec', 10), stroke(att.replace(/,(-?\d+\.?\d*)/g, (_m, a) => ',' + n(+a + 78)), '#b8a07a', 3));
+    // attic panels (porphyry / serpentine) between cornices
+    let ap = '';
+    let ap2 = '';
+    for (let x = -60, i = 0; x < 1660; x += 120, i++) {
+      const y0 = corn(x) + 26;
+      const y1 = corn(x + 70) + 26;
+      const q = `M${P(x, y0)}L${P(x + 70, y1)}V${n(y1 + 36)}L${P(x, y0 + 36)}Z`;
+      if (i % 2) ap += q;
+      else ap2 += q;
+    }
+    s.add(path(ap, '#9a4a3a', op(0.8)), path(ap2, '#4f7a6a', op(0.8)));
+    // shading toward the sides of the drum
+    s.add(path(top + bot + 'Z', s.lg([[0, '#5a4a3a', 0.35], [0.22, '#5a4a3a', 0], [0.78, '#5a4a3a', 0], [1, '#5a4a3a', 0.25]], 0, 0, 1, 0)));
+  }
+  // ---- aediculae and the great apse around the drum
+  const cId = defColumn(s, '#fff4d0', '#e8cc88', '#a8803a', 'corinth', '#f6e6c0');
+  const cId2 = defColumn(s, '#f6e8ec', '#d8c0c8', '#8a6a7a', 'corinth', '#f6e6c0');
+  const aed = (x: number, kind: number) => {
+    const t = corn(x) + 90;
+    const b = floorJ(x);
+    const h = b - t;
+    const w = h * 0.62 * (1 - Math.min(0.6, Math.abs(x - 800) / 1400));
+    let o = rect(x - w / 2, t + h * 0.18, w, h * 0.82, s.lg([[0, '#e8dcc6'], [1, '#d4c4a8']]));
+    o += path(`M${P(x - w * 0.28, b)}V${n(t + h * 0.42)}a${n(w * 0.28)},${n(w * 0.28)} 0 0,1 ${n(w * 0.56)},0V${n(b)}Z`, s.lg([[0, '#8a7a62'], [1, '#c8b89c']]));
+    o += person(x, b - h * 0.04, h * 0.5, '#ffffff', '#f6f0e4', { sash: '#e8e0d4' });
+    o += col(kind ? cId : cId2, x - w * 0.42, b, h * 0.78, 0.9) + col(kind ? cId : cId2, x + w * 0.42, b, h * 0.78, 0.9);
+    const py = b - h * 0.78 - 4;
+    o += rect(x - w * 0.52, py - h * 0.06, w * 1.04, h * 0.06, '#fff8ec');
+    o += kind ? path(`M${P(x - w * 0.54, py - h * 0.06)}L${P(x, py - h * 0.2)}L${P(x + w * 0.54, py - h * 0.06)}Z`, '#f6ecd8') : path(`M${P(x - w * 0.54, py - h * 0.06)}Q${P(x, py - h * 0.26)} ${P(x + w * 0.54, py - h * 0.06)}Z`, '#f6ecd8');
+    return o;
+  };
+  s.add(aed(150, 1), aed(470, 0), aed(1130, 0), aed(1450, 1));
+  // the great apse at the far side (centre)
+  {
+    const t = corn(800) + 20;
+    const b = floorJ(800);
+    s.add(path(`M640,${n(b)}V${n(t + 120)}A160,160 0 0,1 960,${n(t + 120)}V${n(b)}Z`, s.lg([[0, '#c89a4a'], [1, '#8a6a3a']])));
+    s.add(path(`M664,${n(b)}V${n(t + 124)}A136,136 0 0,1 936,${n(t + 124)}V${n(b)}Z`, s.lg([[0, '#f6d27a'], [0.6, '#d8a83a'], [1, '#a87a2a']])));
+    s.add(col(cId, 650, b, b - t - 60, 1.3), col(cId, 950, b, b - t - 60, 1.3));
+  }
+  // ---- the beam of light from the oculus, landing on the floor at lower left
+  s.add(path(`M720,${R[0][0] + 30}L860,${R[0][0] + 40}L560,880L250,830Z`, s.lg([[0, '#fff8dc', 0.55], [1, '#fff8dc', 0.15]], 0.5, 0, 0.3, 1)));
+  s.add(ell(410, 840, 200, 52, s.rgu([[0, '#fffbe8', 0.9], [0.6, '#fff4d0', 0.5], [1, '#fff4d0', 0]], 410, 840, 200, 0.26)));
+  let motes = '';
+  for (let i = 0; i < 50; i++) {
+    const t = s.r.next();
+    const x = 790 - t * 400 + s.rnd(-60, 60);
+    const y = 100 + t * 740;
+    motes += circ(x, y, s.rnd(1, 2.4));
+  }
+  s.add(path(motes, '#fffbe8', op(0.7)));
+  // visitors in the light and around
+  s.add(person(380, 846, 90, '#ffffff', '#c88a62', { sash: '#9a3a3a', hair: '#3a2416', arm: 4 }), person(450, 852, 84, '#e8c070', '#a86a48', { hair: '#2a1a10' }));
+  s.add(person(1180, 820, 76, '#3f6a8a', '#c88a62', { hair: '#2a1a10' }), person(1240, 826, 70, '#f6f0e4', '#a86a48', { sash: '#d8a83a', hair: '#5a3a20' }));
+  // bronze candelabra framing the lower edge
+  for (const x of [80, 1520]) s.add(brazier(s, x, 900, 1.6, '#b8862a'), rect(x - 6, 790, 12, 110, '#8a6a2a'));
+  vignette(s, '#3a3020', 0.3);
+}
+
+/** 19 · The Villa of Tibur — Hadrian's Canopus at dusk: long mirror pool, caryatids, curved colonnade, cypress gardens. */
+function villaTibur(s: S): void {
+  s.lit = -1;
+  const { pj, quad, flat } = cam(800, 400, 800);
+  const GY = 200; // ground
+  const WY = 214; // water surface
+  const PX = 420;
+  const ZN = 430;
+  const ZB = 2900;
+  sky(s, [[0, '#4a4a90'], [0.22, '#8a76b4'], [0.42, '#e8a8a8'], [0.5, '#ffd0a0']]);
+  // evening star + crescent
+  s.add(`<circle cx="560" cy="90" r="3.4" fill="#fffbe8"/>`, `<circle cx="560" cy="90" r="40" fill="${s.rgu([[0, '#fffbe8', 0.4], [1, '#fffbe8', 0]], 560, 90, 40)}"/>`);
+  s.add(`<path d="M1032,86a30,30 0 1,0 26,46a24,24 0 1,1 -26,-46z" fill="#fff4dc"/>`);
+  let st = '';
+  for (let i = 0; i < 40; i++) st += circ(s.rnd(0, W), s.rnd(0, 170), s.rnd(0.6, 1.5));
+  s.add(path(st, '#fff4e0', op(0.7)));
+  cloud(s, 300, 230, 460, 50, '#ffd8c8', '#9a7ab0', 0.85, 8);
+  cloud(s, 1300, 250, 520, 46, '#ffd8c8', '#9a7ab0', 0.8, 8);
+  birds(s, 820, 170, 4, 40, '#3a2a4a', 8);
+  // distant Tiburtine hills
+  s.add(hills(s, 380, 40, 4, '#8a7aa0'), hills(s, 404, 24, 6, '#6a7a7a'));
+  haze(s, 300, 420, '#ffd8b8', 0, 0.5);
+  // ---- garden ground and cypress avenues
+  s.add(path(flat(-3000, 3000, GY, ZN - 100, 9000), s.lg([[0, '#8aa070'], [1, '#5a7a48']])));
+  s.add(path(flat(-PX - 140, PX + 140, GY, ZN, ZB + 200), s.lg([[0, '#ece0cc'], [1, '#d8c8b0']])));
+  // the Serapeum: half-dome grotto behind the far end
+  {
+    const [cx, cy] = pj(0, GY, ZB + 700);
+    const sc = 800 / (ZB + 700);
+    const r = 900 * sc;
+    s.add(path(`M${P(cx - r, cy)}V${n(cy - r * 0.9)}A${n(r)},${n(r)} 0 0,1 ${P(cx + r, cy - r * 0.9)}V${n(cy)}Z`, s.lg([[0, '#f2e2cc'], [1, '#d8c0a4']])));
+    s.add(path(`M${P(cx - r * 0.72, cy)}V${n(cy - r * 0.8)}A${n(r * 0.72)},${n(r * 0.72)} 0 0,1 ${P(cx + r * 0.72, cy - r * 0.8)}V${n(cy)}Z`, s.lg([[0, '#6a5a6a'], [1, '#9a7a7a']])));
+    let ribs = '';
+    for (let i = 1; i < 8; i++) {
+      const a = Math.PI + (i / 8) * Math.PI;
+      ribs += `M${P(cx, cy - r * 0.8)}L${P(cx + Math.cos(a) * r * 0.72, cy - r * 0.8 + Math.sin(a) * r * 0.72)}`;
+    }
+    s.add(stroke(ribs, '#c8a8a0', 3, op(0.6)));
+    s.add(`<circle cx="${n(cx)}" cy="${n(cy - r * 0.4)}" r="${n(r * 0.6)}" fill="${s.rgu([[0, '#ffd890', 0.5], [1, '#ffd890', 0]], cx, cy - r * 0.4, r * 0.6)}"/>`);
+    // cascade
+    s.add(rect(cx - 10 * sc * 10, cy - r * 0.5, 20 * sc * 10, r * 0.5, s.lg([[0, '#e8f6f8'], [1, '#9ad0d8']]), op(0.8)));
+  }
+  // cypress avenues on both sides (tall, into the top strip)
+  let cy2 = '';
+  for (const k of [-1, 1])
+    for (let Z = ZB + 400; Z >= 1000; Z -= 300) {
+      const [x, y] = pj(k * (PX + 330), GY, Z);
+      const sc = 800 / Z;
+      cy2 += cypress(s, x, y, 1100 * sc, 170 * sc, '#2f4a3a', '#5a7a5a');
+    }
+  s.add(cy2);
+  haze(s, 260, 460, '#ffd8c0', 0, 0.25);
+  // ---- curved colonnade at the far end: alternating arches and flat lintels
+  const cId = defColumn(s, '#ffffff', '#f0e6da', '#b8a8b0', 'corinth', '#f6eee0');
+  const reflect: string[] = [];
+  {
+    const RZ = ZB + 50;
+    let entab = '';
+    let cs = '';
+    const pts2: Pt[] = [];
+    for (let i = 0; i <= 10; i++) {
+      const th = (i / 10) * Math.PI;
+      const X = -Math.cos(th) * PX;
+      const Z = RZ + Math.sin(th) * 360;
+      const [x, y] = pj(X, GY, Z);
+      const top = pj(X, GY - 560, Z)[1];
+      cs += col(cId, x, y, y - top, 1.1);
+      pts2.push([x, top]);
+    }
+    for (let i = 0; i < pts2.length - 1; i++) {
+      const [x0, y0] = pts2[i];
+      const [x1, y1] = pts2[i + 1];
+      if (i % 2) entab += `M${P(x0, y0)}Q${P((x0 + x1) / 2, Math.min(y0, y1) - 26)} ${P(x1, y1)}`;
+      else entab += `M${P(x0, y0)}L${P(x1, y1)}`;
+    }
+    const g0 = cs + stroke(entab, '#fff8ec', 8, 'stroke-linecap="round"') + stroke(entab, '#c8b0a8', 2, op(0.6));
+    s.add(g0);
+    reflect.push(g0);
+    // statues on top of the colonnade
+    let tops = '';
+    for (let i = 1; i < pts2.length - 1; i += 2) tops += person(pts2[i][0], pts2[i][1] - 10, 30, '#ffffff', '#f6f0e4');
+    s.add(tops);
+  }
+  // ---- the pool (mirror) — clip region for reflections
+  const poolD = quad(pj(-PX, WY, ZN), pj(PX, WY, ZN), pj(PX, WY, ZB), pj(-PX, WY, ZB));
+  const clipId = s.uid();
+  s.def(`<clipPath id="${clipId}"><path d="${poolD}"/></clipPath>`);
+  s.add(path(poolD, s.lg([[0, '#f2c0a8'], [0.3, '#b898c0'], [1, '#4a5a8a']])));
+  // ---- caryatids (left) and columns with statues (right) along the pool edge
+  let left = '';
+  let right = '';
+  const entL: Pt[] = [];
+  for (let Z = ZB - 150; Z >= 700; Z -= 300) {
+    const [x, y] = pj(-PX - 50, GY, Z);
+    const sc = 800 / Z;
+    left += caryatid(x, y, 470 * sc, '#fffaf0', '#b8a8b0');
+    entL.push([x, y - 470 * sc]);
+    const [rx, ry] = pj(PX + 50, GY, Z);
+    right += col(cId, rx, ry, 470 * sc, 1);
+  }
+  const ent = (side: number) => {
+    const a = pj(side * (PX + 50), GY - 470, ZB - 150);
+    const b = pj(side * (PX + 50), GY - 470, 700);
+    const a2 = pj(side * (PX + 50), GY - 505, ZB - 150);
+    const b2 = pj(side * (PX + 50), GY - 505, 700);
+    return path(`M${P(a[0], a[1])}L${P(b[0], b[1])}L${P(b2[0], b2[1])}L${P(a2[0], a2[1])}Z`, '#fbf4e8');
+  };
+  const LG = left + ent(-1);
+  const RG = right + ent(1);
+  s.add(LG, RG);
+  reflect.push(LG, RG);
+  // reflections inside the pool
+  s.add(`<g clip-path="url(#${clipId})" opacity=".35">${reflect.map((r) => `<g transform="translate(0 ${n(2 * pj(0, WY, 1600)[1])}) scale(1 -1)">${r}</g>`).join('')}</g>`);
+  s.add(path(poolD, s.lg([[0, '#ffffff', 0.25], [0.5, '#ffffff', 0]])));
+  s.add(glints(s, 560, 1040, 470, 760, 40, '#fff4e8', 0.6, 22));
+  // ---- foreground: marble coping, the crocodile statue, lemon trees and roses
+  s.add(path(`M${P(...pj(-PX - 140, GY, ZN))}L${P(...pj(PX + 140, GY, ZN))}L1700,900H-100Z`, s.lg([[0, '#f6ecdc'], [1, '#d8c8b0']])));
+  s.add(stroke(`M${P(...pj(-PX, GY, ZN))}L${P(...pj(PX, GY, ZN))}`, '#ffffff', 6));
+  // crocodile (green-grey marble) lying on the coping — bottom centre
+  {
+    const x = 800;
+    const y = 862;
+    s.add(ell(x, y + 8, 230, 16, '#6a5a4a', op(0.2)));
+    s.add(rect(x - 160, y - 20, 320, 26, s.lg([[0, '#f6ecdc'], [1, '#c8b8a0']])));
+    s.add(path(`M${P(x - 210, y - 22)}Q${P(x - 160, y - 34)} ${P(x - 110, y - 40)}L${P(x + 60, y - 44)}Q${P(x + 120, y - 40)} ${P(x + 150, y - 30)}L${P(x + 220, y - 26)}Q${P(x + 230, y - 22)} ${P(x + 220, y - 18)}L${P(x + 140, y - 18)}L${P(x - 110, y - 18)}Q${P(x - 170, y - 18)} ${P(x - 210, y - 22)}Z`, s.lg([[0, '#9ab0a0'], [1, '#5a7a6a']])));
+    let sc2 = '';
+    for (let i = 0; i < 12; i++) sc2 += `M${P(x - 90 + i * 16, y - 42)}l6,-6l6,6`;
+    s.add(stroke(sc2, '#4a6a5a', 2.5), stroke(`M${P(x + 150, y - 24)}h66`, '#3a5a4a', 1.5), `<circle cx="${n(x + 160)}" cy="${n(y - 34)}" r="3" fill="#2a3a30"/>`);
+    s.add(stroke(`M${P(x - 70, y - 20)}l-14,14M${P(x + 70, y - 22)}l-12,14M${P(x - 20, y - 20)}l10,12M${P(x + 110, y - 22)}l10,12`, '#5a7a6a', 7, 'stroke-linecap="round"'));
+  }
+  const lemon = (x: number, base: number, sc: number) => {
+    let o = path(`M${P(x - 50 * sc, base)}l${n(-10 * sc)},${n(-80 * sc)}h${n(120 * sc)}l${n(-10 * sc)},${n(80 * sc)}z`, s.lg([[0, '#e0906a'], [1, '#9a4a32']], 0, 0, 1, 0));
+    o += rect(x - 64 * sc, base - 90 * sc, 128 * sc, 14 * sc, '#c8704a');
+    o += path(`M${P(x - 8 * sc, base - 86 * sc)}L${P(x - 6 * sc, base - 200 * sc)}h${n(12 * sc)}L${P(x + 8 * sc, base - 86 * sc)}z`, '#6a4a32');
+    let dk = '';
+    let lt = '';
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const bx = x + Math.cos(a) * 70 * sc;
+      const by = base - 250 * sc + Math.sin(a) * 50 * sc;
+      dk += circ(bx, by, 48 * sc);
+      lt += circ(bx + 10 * sc, by - 14 * sc, 30 * sc);
+    }
+    dk += circ(x, base - 250 * sc, 70 * sc);
+    o += path(dk, '#3f6a3a') + path(lt, '#6a9a52', op(0.85));
+    let fr = '';
+    for (let i = 0; i < 14; i++) fr += circ(x + s.rnd(-80, 80) * sc, base - s.rnd(180, 300) * sc, 7 * sc);
+    return o + path(fr, '#f6d040');
+  };
+  s.add(lemon(150, 900, 1.4), lemon(1450, 900, 1.4));
+  let roses = '';
+  for (let i = 0; i < 40; i++) {
+    const x = i < 20 ? s.rnd(260, 520) : s.rnd(1080, 1340);
+    roses += circ(x, s.rnd(800, 900), s.rnd(4, 8));
+  }
+  s.add(path('M240,900Q300,780 540,800L560,900ZM1360,900Q1300,780 1060,800L1040,900Z', '#4f7a42'), path(roses, '#f08aa0'));
+  vignette(s, '#2a2040', 0.3);
+}
+
+/** 21 · The Golden House — Nero's octagonal hall: gilded frescoed walls, cascade nymphaeum, starry rotating vault. */
+function goldenHouse(s: S): void {
+  s.lit = 1;
+  const { pj, quad } = cam(800, 560, 800);
+  const FY = 300;
+  const TY = -620;
+  const RO = 1300;
+  const Z0 = 1500;
+  // octagon vertices (angles in the XZ plane)
+  const V: Pt[] = [];
+  for (let k = 0; k < 8; k++) {
+    const a = Math.PI / 8 + (k * Math.PI) / 4;
+    V.push([Math.cos(a) * RO, Z0 + Math.sin(a) * RO]);
+  }
+  s.add(rect(0, 0, W, H, '#1a1e4a'));
+  // ---- vault: deep blue sectors with gold stars and ribs converging on the sun
+  const apex = pj(0, -1500, Z0);
+  let ribs = '';
+  for (let k = 0; k < 8; k++) {
+    const [X, Z] = V[k];
+    if (Z < 260) continue;
+    const t = pj(X, TY, Z);
+    ribs += `M${P(t[0], t[1])}L${P(apex[0], apex[1])}`;
+  }
+  s.add(rect(0, 0, W, 520, s.lg([[0, '#141a50'], [1, '#2a3a8a']])));
+  let st = '';
+  for (let i = 0; i < 90; i++) st += starPath5(s.rnd(0, W), s.rnd(0, 470), s.rnd(3, 7));
+  s.add(path(st, '#f2c64a', op(0.85)));
+  // zodiac ring and the radiant sun at the crown
+  s.add(`<ellipse cx="${n(apex[0])}" cy="${n(apex[1])}" rx="760" ry="420" fill="none" stroke="#e8b034" stroke-width="22"/>`, `<ellipse cx="${n(apex[0])}" cy="${n(apex[1])}" rx="760" ry="420" fill="none" stroke="#fff0a8" stroke-width="3"/>`);
+  let med = '';
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + 0.2;
+    const x = apex[0] + Math.cos(a) * 760;
+    const y = apex[1] + Math.sin(a) * 420;
+    if (y < -20) continue;
+    med += `<circle cx="${n(x)}" cy="${n(y)}" r="26" fill="#1e2a6a" stroke="#f2c64a" stroke-width="5"/>` + `<path d="${starPath5(x, y, 13)}" fill="#f2c64a"/>`;
+  }
+  s.add(med);
+  let rays = '';
+  for (let i = 0; i < 24; i++) {
+    const a = Math.PI * 0.05 + (i / 23) * Math.PI * 0.9;
+    rays += `M${P(apex[0] + Math.cos(a - 0.02) * 300, apex[1] + Math.sin(a - 0.02) * 300)}L${P(apex[0] + Math.cos(a) * 560, apex[1] + Math.sin(a) * 560)}L${P(apex[0] + Math.cos(a + 0.02) * 300, apex[1] + Math.sin(a + 0.02) * 300)}Z`;
+  }
+  s.add(path(rays, '#f2c64a', op(0.55)));
+  s.add(`<circle cx="${n(apex[0])}" cy="${n(apex[1])}" r="330" fill="${s.rgu([[0, '#fff0a8', 0.95], [0.4, '#f2c64a', 0.8], [0.62, '#e8b034', 0.4], [1, '#e8b034', 0]], apex[0], apex[1], 330)}"/>`);
+  s.add(stroke(ribs, '#e8b034', 10), stroke(ribs, '#fff0a8', 2.5));
+  // ---- floor: polished marble with a central golden star
+  {
+    s.add(rect(0, 560, W, 340, s.lg([[0, '#f2e6cc'], [1, '#d8c4a0']])));
+    let rings = '';
+    for (let r = 300; r <= 1300; r += 250) {
+      const c = pj(0, FY, Z0);
+      const near = pj(0, FY, Z0 - r * 0.9);
+      const far = pj(0, FY, Z0 + r);
+      const rx = (r * 800) / Z0;
+      rings += `M${P(c[0] - rx, (near[1] + far[1]) / 2)}a${n(rx)},${n((near[1] - far[1]) / 2)} 0 1,0 ${n(2 * rx)},0a${n(rx)},${n((near[1] - far[1]) / 2)} 0 1,0 ${n(-2 * rx)},0Z`;
+    }
+    s.add(path(rings, 'none', 'stroke="#c8902e" stroke-width="5" opacity=".6"'));
+    const c = pj(0, FY, Z0);
+    s.add(`<g transform="translate(${n(c[0])} ${n(c[1])}) scale(1 0.3)"><path d="${starPath8(0, 0, 300, 120)}" fill="#a8282a" opacity=".85"/><path d="${starPath8(0, 0, 210, 84)}" fill="#e8b034"/><circle r="40" fill="#1e2a6a"/></g>`);
+  }
+  // ---- walls: the far five faces of the octagon
+  const faceOrder = [0, 7, 1, 6, 2, 5, 3, 4]
+    .map((k) => [k, (k + 1) % 8] as [number, number])
+    .filter(([a, b]) => V[a][1] + V[b][1] > 900)
+    .sort((p, q) => V[q[0]][1] + V[q[1]][1] - (V[p[0]][1] + V[p[1]][1]));
+  const nymph = s.uid();
+  for (const [a, b] of faceOrder) {
+    const [Xa, Za] = V[a];
+    const [Xb, Zb] = V[b];
+    const zClip = (z: number) => Math.max(z, 240);
+    const A = pj(Xa, TY, zClip(Za));
+    const B = pj(Xb, TY, zClip(Zb));
+    const C = pj(Xb, FY, zClip(Zb));
+    const D = pj(Xa, FY, zClip(Za));
+    const midX = (Xa + Xb) / 2;
+    const back = Math.abs(midX) < 10;
+    const lum = back ? 0 : Math.abs(midX) / RO;
+    s.add(path(quad(A, B, C, D), s.lgu([[0, '#f2c64a'], [0.5, '#e8b034'], [1, '#b8862a']], A[0], A[1], C[0], C[1])));
+    // fresco panels: red field, gold frame, painted candelabrum
+    const lerp = (p: Pt, q: Pt, t: number): Pt => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+    const at = (u: number, v: number) => {
+      // u along the face 0..1, v height 0 (top) .. 1 (floor)
+      const top = lerp(A, B, u);
+      const bot = lerp(D, C, u);
+      return lerp(top, bot, v);
+    };
+    const panel = (u0: number, u1: number, v0: number, v1: number) => quad(at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1));
+    if (back) {
+      // the nymphaeum opening: an arch onto a glowing cascade
+      const q0 = at(0.2, 0.18);
+      const q1 = at(0.8, 1);
+      const p0: Pt = [Math.min(q0[0], q1[0]), q0[1]];
+      const p1: Pt = [Math.max(q0[0], q1[0]), q1[1]];
+      const r = (p1[0] - p0[0]) / 2;
+      const arch = `M${P(p0[0], p1[1])}V${n(p0[1] + r)}A${n(r)},${n(r)} 0 0,1 ${P(p1[0], p0[1] + r)}V${n(p1[1])}Z`;
+      s.def(`<clipPath id="${nymph}"><path d="${arch}"/></clipPath>`);
+      let casc = rect(p0[0], p0[1], p1[0] - p0[0], p1[1] - p0[1], s.lg([[0, '#bff0e8'], [1, '#2a9aa0']]));
+      for (let i = 0; i < 7; i++) {
+        const y = p0[1] + r * 0.6 + i * ((p1[1] - p0[1] - r * 0.6) / 7);
+        casc += rect(p0[0], y, p1[0] - p0[0], 6, '#ffffff', op(0.7)) + rect(p0[0] + (i % 2) * 10, y + 8, p1[0] - p0[0], 3, '#e8fffa', op(0.5));
+      }
+      casc += rect((p0[0] + p1[0]) / 2 - 20, p0[1], 40, p1[1] - p0[1], s.lg([[0, '#ffffff', 0.9], [1, '#ffffff', 0.3]]));
+      s.add(`<g clip-path="url(#${nymph})">${casc}</g>`, stroke(arch.replace('Z', ''), '#fff0a8', 6));
+      s.add(`<circle cx="${n((p0[0] + p1[0]) / 2)}" cy="${n((p0[1] + p1[1]) / 2)}" r="${n(r * 1.8)}" fill="${s.rgu([[0, '#bff0e8', 0.4], [1, '#bff0e8', 0]], (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, r * 1.8)}"/>`);
+      s.add(path(panel(0.03, 0.15, 0.1, 0.9), '#a8282a'), path(panel(0.85, 0.97, 0.1, 0.9), '#a8282a'));
+    } else {
+      s.add(path(panel(0.08, 0.92, 0.08, 0.62), '#a8282a'), path(panel(0.08, 0.92, 0.68, 0.94), '#1e2a6a'));
+      s.add(path(panel(0.12, 0.88, 0.12, 0.58), 'none', `stroke="#f2c64a" stroke-width="${n(3 - lum)}"`));
+      // painted architecture: thin candelabra and a garland medallion
+      const c0 = at(0.5, 0.14);
+      const c1 = at(0.5, 0.56);
+      const mid = at(0.5, 0.3);
+      const fw = Math.abs(at(0.9, 0.3)[0] - at(0.1, 0.3)[0]);
+      s.add(stroke(`M${P(c0[0], c0[1])}L${P(c1[0], c1[1])}M${P(mid[0] - fw * 0.16, mid[1])}h${n(fw * 0.32)}`, '#f6d27a', 2.2), `<circle cx="${n(mid[0])}" cy="${n(mid[1] - fw * 0.08)}" r="${n(fw * 0.07)}" fill="none" stroke="#7ab060" stroke-width="2.5"/>`);
+      const sw = at(0.3, 0.42);
+      s.add(person(sw[0], sw[1] + fw * 0.12, fw * 0.24, '#f6e6c0', '#e8c8a0', { arm: 3 }), person(at(0.7, 0.42)[0], sw[1] + fw * 0.12, fw * 0.24, '#7ab0c0', '#e8c8a0', { arm: 2, dir: -1 }));
+      // shade the oblique faces toward the sides
+      s.add(path(quad(A, B, C, D), '#3a1a0a', op(0.12 + lum * 0.2)));
+    }
+    // gilded pilasters on the corners
+    s.add(path(quad(pj(Xa, TY, zClip(Za)), pj(Xa * 0.97, TY, zClip(Za) - 20), pj(Xa * 0.97, FY, zClip(Za) - 20), pj(Xa, FY, zClip(Za))), '#fff0a8'));
+  }
+  // cornice at the springing of the vault
+  let cn = '';
+  for (let k = 0; k < 8; k++) {
+    const [Xa, Za] = V[k];
+    const [Xb, Zb] = V[(k + 1) % 8];
+    if (Za + Zb < 700) continue;
+    cn += `M${P(...pj(Xa, TY, Math.max(Za, 240)))}L${P(...pj(Xb, TY, Math.max(Zb, 240)))}`;
+  }
+  s.add(stroke(cn, '#fff0a8', 12), stroke(cn, '#a8762a', 3));
+  // ---- foreground luxury: gilded tripods, silk cushions, fruit, a peacock
+  s.add(brazier(s, 160, 900, 2, '#e8b034'), brazier(s, 1440, 900, 2, '#e8b034'));
+  s.add(rect(-20, 870, W + 40, 30, s.lg([[0, '#000', 0], [1, '#3a1a0a', 0.3]])));
+  // low table with fruit at bottom centre
+  {
+    const x = 800;
+    const y = 880;
+    s.add(ell(x, y + 14, 220, 18, '#3a1a0a', op(0.3)), path(`M${P(x - 200, y - 30)}h400l-20,18h-360z`, s.lg([[0, '#fff0a8'], [1, '#b8862a']])), stroke(`M${P(x - 160, y - 12)}l-10,40M${P(x + 160, y - 12)}l10,40`, '#b8862a', 8));
+    s.add(ell(x, y - 44, 90, 22, s.lg([[0, '#fff0a8'], [1, '#a8762a']])));
+    let gr = '';
+    for (let i = 0; i < 12; i++) gr += circ(x - 50 + (i % 6) * 14, y - 56 - Math.floor(i / 6) * 12, 8);
+    s.add(path(gr, '#6a2a7a'), ell(x + 40, y - 60, 16, 16, '#e8702a'), ell(x + 66, y - 54, 14, 14, '#d8402a'), ell(x - 74, y - 54, 13, 13, '#9ac04a'));
+  }
+  s.add(peacock(s, 1220, 880, 120, -1));
+  // rose petals falling from the vault (Nero's famous ceiling)
+  let pet = '';
+  for (let i = 0; i < 60; i++) {
+    const x = s.rnd(0, W);
+    const y = s.rnd(80, 880);
+    const r = s.rnd(3, 6);
+    pet += `M${P(x - r, y)}q${n(r)},${n(-r)} ${n(2 * r)},0q${n(-r)},${n(r * 0.8)} ${n(-2 * r)},0z`;
+  }
+  s.add(path(pet, '#f08aa0', op(0.85)));
+  vignette(s, '#2a1408', 0.32);
+}
+
+/** 22 · The Sanctum of Victory — Victoria's white-and-gold apse, winged statue, laurel, high celestial light. */
+function sanctumVictory(s: S): void {
+  s.lit = 1;
+  sky(s, [[0, '#cfe2f6'], [0.35, '#eef2f8'], [0.6, '#fff6e2'], [1, '#f6ead2']]);
+  // celestial clouds beyond the open clerestory
+  cloud(s, 200, 180, 420, 70, '#ffffff', '#d8e0f0', 0.9, 7);
+  cloud(s, 1400, 150, 420, 70, '#ffffff', '#d8e0f0', 0.9, 7);
+  // ---- the apse with its gold-mosaic half-dome
+  const AX = 800;
+  const AR = 430;
+  const SPRING = 340;
+  const BASE = 640;
+  s.add(path(`M${AX - AR - 60},${BASE}V${SPRING}A${AR + 60},${AR + 60} 0 0,1 ${AX + AR + 60},${SPRING}V${BASE}Z`, s.lg([[0, '#ffffff'], [1, '#efe6d4']])));
+  const tess = s.uid();
+  s.def(`<pattern id="${tess}" patternUnits="userSpaceOnUse" width="12" height="12">${rect(0, 0, 12, 12, '#e8b034')}${rect(1, 1, 5, 5, '#f6d27a')}${rect(7, 7, 4, 4, '#d8a02a')}${rect(7, 1, 4, 5, '#f2c64a')}</pattern>`);
+  const dome = `M${AX - AR},${SPRING}A${AR},${AR} 0 0,1 ${AX + AR},${SPRING}Z`;
+  s.add(path(dome, `url(#${tess})`), path(dome, s.rgu([[0, '#fff8d8', 0.75], [0.55, '#fff0b0', 0.2], [1, '#8a5a10', 0.45]], AX, SPRING + 60, AR + 40)));
+  // radiating ribs and stars in the mosaic
+  let rib = '';
+  for (let i = 1; i < 12; i++) {
+    const a = Math.PI + (i / 12) * Math.PI;
+    rib += `M${P(AX + Math.cos(a) * 140, SPRING + Math.sin(a) * 140)}L${P(AX + Math.cos(a) * AR, SPRING + Math.sin(a) * AR)}`;
+  }
+  s.add(stroke(rib, '#fff8e0', 3, op(0.7)));
+  let st = '';
+  for (let i = 0; i < 26; i++) {
+    const a = Math.PI + s.rnd(0.08, 0.92) * Math.PI;
+    const r = s.rnd(170, AR - 30);
+    st += starPath5(AX + Math.cos(a) * r, SPRING + Math.sin(a) * r, s.rnd(5, 10));
+  }
+  s.add(path(st, '#ffffff', op(0.85)));
+  s.add(stroke(`M${AX - AR},${SPRING}A${AR},${AR} 0 0,1 ${AX + AR},${SPRING}`, '#ffffff', 16), stroke(`M${AX - AR - 10},${SPRING}A${AR + 10},${AR + 10} 0 0,1 ${AX + AR + 10},${SPRING}`, '#c8902e', 3));
+  // laurel garland along the arch
+  {
+    let d = '';
+    for (let i = 0; i < 34; i++) {
+      const a = Math.PI + ((i + 0.5) / 34) * Math.PI;
+      const x = AX + Math.cos(a) * (AR + 30);
+      const y = SPRING + Math.sin(a) * (AR + 30);
+      const ang = a + Math.PI / 2;
+      const c = Math.cos(ang);
+      const sn = Math.sin(ang);
+      const Q = (u: number, v: number) => P(x + u * c - v * sn, y + u * sn + v * c);
+      d += `M${Q(-12, 0)}Q${Q(0, -7)} ${Q(12, 0)}Q${Q(0, 7)} ${Q(-12, 0)}Z`;
+    }
+    s.add(path(d, '#5a9a4a'));
+  }
+  // apse wall: colonnade of white columns with gilded capitals
+  const cId = defColumn(s, '#ffffff', '#f2ece2', '#c0b8b0', 'corinth', '#f2c64a');
+  let ac = '';
+  for (let i = 0; i < 7; i++) {
+    const x = AX - AR + 40 + (i * (2 * AR - 80)) / 6;
+    ac += col(cId, x, BASE, BASE - SPRING - 6, 1.2);
+  }
+  s.add(rect(AX - AR - 60, SPRING - 6, 2 * AR + 120, 16, '#ffffff'), rect(AX - AR - 60, SPRING + 10, 2 * AR + 120, 4, '#e8b034'));
+  s.add(rect(AX - AR, SPRING + 14, 2 * AR, BASE - SPRING - 14, s.lg([[0, '#e8dccc'], [1, '#f6efe2']])), ac);
+  // ---- celestial light from above
+  s.add(`<circle cx="${AX}" cy="200" r="520" fill="${s.rgu([[0, '#ffffff', 0.9], [0.3, '#fff6d0', 0.5], [1, '#fff6d0', 0]], AX, 200, 520)}"/>`);
+  let sh = '';
+  for (const [x0, x1, x2, x3] of [[620, 700, 760, 560], [760, 840, 900, 700], [900, 980, 1060, 860]] as [number, number, number, number][]) sh += `M${x0},0L${x1},0L${x2},${BASE + 120}L${x3},${BASE + 120}Z`;
+  s.add(path(sh, s.lg([[0, '#ffffff', 0.5], [1, '#fff8e0', 0.05]])));
+  // ---- Victoria on her globe and pedestal
+  s.add(rect(AX - 70, 420, 140, 220, s.lg([[0, '#ffffff'], [0.5, '#f2ece2'], [1, '#c8beb0']], 0, 0, 1, 0)), rect(AX - 84, 408, 168, 18, '#ffffff'), rect(AX - 84, 620, 168, 20, '#ffffff'));
+  s.add(rect(AX - 50, 470, 100, 100, 'none', 'stroke="#e8b034" stroke-width="3"'), `<circle cx="${AX}" cy="520" r="26" fill="none" stroke="#5a9a4a" stroke-width="6"/>`);
+  s.add(`<circle cx="${AX}" cy="372" r="40" fill="${s.lg([[0, '#fff0a8'], [0.5, '#e8b034'], [1, '#8a5a10']], 0, 0, 1, 1)}"/>`, stroke(`M${AX - 40},372a40,12 0 0,0 80,0`, '#fff0a8', 2));
+  s.add(victoryStatue(s, AX, 334, 200, '#f2c64a', '#9a6a14'));
+  // ---- great foreground columns with garlands and crimson laurel banners
+  const bigC = defColumn(s, '#ffffff', '#f0eae0', '#b8b0a8', 'corinth', '#f2c64a');
+  s.add(col(bigC, 130, 900, 1000, 1.9), col(bigC, 1470, 900, 1000, 1.9));
+  s.add(rect(0, 0, W, 34, '#ffffff'), rect(0, 34, W, 8, '#e8b034'), rect(0, 42, W, 4, '#c8b8a0'));
+  s.add(garlands([0, 260, 520, 800, 1080, 1340, 1600], 44, 30, '#4f8a3e', '#b8e07a', 8));
+  const laurelB = (x: number) => hangingBanner(s, x, 60, 90, 300, '#a8242a', '#f2c64a', `<g transform="translate(${n(x + 45)} 180)">${path(laurelRing(0, 0, 26, 12, 7), '#f2c64a')}</g>`);
+  s.add(laurelB(260), laurelB(1250));
+  // ---- floor: steps up to the apse, white marble with a laurel inlay
+  s.add(rect(0, BASE, W, H - BASE, s.lg([[0, '#f6f0e6'], [1, '#e2d6c2']])));
+  for (let i = 0; i < 4; i++) s.add(rect(AX - AR - 120 - i * 60, BASE + i * 18, 2 * AR + 240 + i * 120, 18, i % 2 ? '#f2ebe0' : '#fbf7f0'), rect(AX - AR - 120 - i * 60, BASE + i * 18, 2 * AR + 240 + i * 120, 3, '#ffffff'));
+  let pv = '';
+  for (let i = -12; i <= 12; i++) pv += `M${n(800 + i * 60)},712L${n(800 + i * 150)},900`;
+  for (let j = 0; j < 6; j++) pv += `M0,${n(730 + j * j * 6 + j * 14)}H1600`;
+  s.add(stroke(pv, '#c8bca8', 1.2, op(0.45)));
+  s.add(`<g transform="translate(800 832) scale(1 0.34)">${path(laurelRing(0, 0, 170, 30, 16), '#5a9a4a')}<circle r="148" fill="none" stroke="#e8b034" stroke-width="10"/><path d="${starPath8(0, 0, 90, 36)}" fill="#e8b034"/></g>`);
+  // golden braziers
+  s.add(brazier(s, 420, 860, 1.4, '#e8b034'), brazier(s, 1180, 860, 1.4, '#e8b034'));
+  // drifting golden laurel leaves and crimson petals
+  let lv = '';
+  let pt = '';
+  for (let i = 0; i < 60; i++) {
+    const x = s.rnd(0, W);
+    const y = s.rnd(60, 880);
+    const a = s.rnd(0, Math.PI);
+    const L = s.rnd(8, 16);
+    const c = Math.cos(a);
+    const sn = Math.sin(a);
+    const Q = (u: number, v: number) => P(x + u * c - v * sn, y + u * sn + v * c);
+    if (i % 3) lv += `M${Q(-L, 0)}Q${Q(0, -L * 0.45)} ${Q(L, 0)}Q${Q(0, L * 0.45)} ${Q(-L, 0)}Z`;
+    else pt += `M${Q(-L * 0.6, 0)}q${n(L * 0.6)},${n(-L * 0.6)} ${n(L * 1.2)},0q${n(-L * 0.6)},${n(L * 0.5)} ${n(-L * 1.2)},0z`;
+  }
+  s.add(path(lv, '#e8b034', op(0.85)), path(pt, '#c8323a', op(0.7)));
+  birds(s, 520, 250, 3, 40, '#ffffff', 12);
+  birds(s, 1080, 230, 3, 40, '#ffffff', 12);
+  vignette(s, '#8a6a3a', 0.22);
+}
+
+// ==== NEW-SCENES-END
+
+/**
+ * Canonical order of the 24 arenas (prestige rises with index). Legacy scene i
+ * of the original twelve sits at 2i (the Eternal Throne at 23); each entry
+ * carries the RNG slot it is drawn with so legacy artwork stays byte-stable.
+ */
+const SCENES: [(s: S) => void, number][] = [
+  [dustPits, 0], [ludusYard, 101], [legionCamp, 1], [rhineFrontier, 103],
+  [ironCitadel, 2], [harbourOstia, 105], [gladiatorsCourt, 3], [aqueductHeights, 107],
+  [forumOfTriumph, 4], [imperialBaths, 109], [praetorianBastion, 5], [circusMaximus, 111],
+  [senateHall, 6], [greatLibrary, 113], [consularPalace, 7], [capitolineTemple, 115],
+  [grandColosseum, 8], [pantheon, 117], [imperialPalace, 9], [villaTibur, 119],
+  [hallOfCaesars, 10], [goldenHouse, 121], [sanctumVictory, 122], [eternalThrone, 11],
 ];
 
-/** Full-bleed arena backdrop SVG for arena 0..11. */
+/** Number of arenas with a backdrop. */
+export const ARENA_ART_COUNT = SCENES.length;
+
+/** Full-bleed arena backdrop SVG for arena 0..23 (input clamped). */
 export function arenaBackdropSvg(arenaIndex: number): string {
-  const i = Math.max(0, Math.min(11, Math.floor(Number.isFinite(arenaIndex) ? arenaIndex : 0)));
-  const s = new S(i);
-  (SCENES[i] ?? SCENES[0])(s);
+  const i = Math.max(0, Math.min(SCENES.length - 1, Math.floor(Number.isFinite(arenaIndex) ? arenaIndex : 0)));
+  const [scene, seed] = SCENES[i];
+  const s = new S(i, seed);
+  scene(s);
   return s.svg();
 }

@@ -1,12 +1,16 @@
 /**
- * Rank emblems (36, viewBox 0 0 128 128) and arena trophies (12, viewBox 0 0 160 160).
+ * Rank emblems (viewBox 0 0 128 128) and legacy arena trophies (12, viewBox 0 0 160 160).
+ *
+ * v0.3 — rankEmblemSvg covers the 72 ranks of the 24-arena empire (see the
+ * section at the end of this file). The v0.2 set of 36 is kept as
+ * legacyRankEmblemSvg; its notes follow.
  *
  * Progression: each arena has its own heraldic motif and material, moving
  * wood → bronze → iron → gold → purple/celestial. Within an arena the tier
  * (0..2) adds pips on the ribbon (1–3 stars) and extra ornament: tier 1 gains
  * an outer ring, tier 2 gains laurel sprigs and a radiant glow.
  */
-import { ARENAS, RANKS } from '../world/arenas';
+import { ARENAS } from '../world/arenas';
 import { idPrefix, laurelArc, linGrad, mix, n, radGrad, shade, starPath } from './svgUtil';
 
 type MatName = 'wood' | 'bronze' | 'iron' | 'gold' | 'silver' | 'purple' | 'celest' | 'marble' | 'red' | 'leaf';
@@ -450,11 +454,19 @@ function sideSprigs(M: Mats, mat: MatName): string {
 
 const ARENA_TRIM: MatName[] = ['iron', 'bronze', 'iron', 'bronze', 'gold', 'gold', 'gold', 'gold', 'gold', 'gold', 'gold', 'celest'];
 
-export function rankEmblemSvg(rankIndex: number, size = 128): string {
-  const idx = Math.max(0, Math.min(RANKS.length - 1, Math.floor(rankIndex) || 0));
-  const rank = RANKS[idx];
-  const arena = ARENAS[rank.arena];
-  const pal = arena.palette;
+/** v0.2 palette of a legacy (12-arena) index, looked up through ArenaDef.legacyIndex. */
+function legacyPalette(oldArena: number) {
+  return (ARENAS.find((a) => a.legacyIndex === oldArena) ?? ARENAS[Math.min(oldArena, ARENAS.length - 1)]).palette;
+}
+
+/**
+ * The v0.2 emblem set: 36 ranks = 12 legacy arenas x 3 tiers (kept for old
+ * saves, previews and comparisons). New code uses rankEmblemSvg (72 ranks).
+ */
+export function legacyRankEmblemSvg(rankIndex: number, size = 128): string {
+  const idx = Math.max(0, Math.min(35, Math.floor(rankIndex) || 0));
+  const rank = { arena: Math.floor(idx / 3), tier: idx % 3 };
+  const pal = legacyPalette(rank.arena);
   const tier = rank.tier;
   const id = idPrefix('emblem', idx);
   const M = new Mats(id);
@@ -550,10 +562,10 @@ function standardPole(M: Mats, top: number): string {
   return `<rect x="77" y="${top}" width="6" height="${120 - top}" fill="${M.u('wood')}" ${st(OUT, 1.6)}/>`;
 }
 
+/** Trophy for a legacy (v0.2) arena index 0..11 (the baked trophy portraits supersede it). */
 export function arenaTrophySvg(arenaIndex: number): string {
   const ai = ((Math.floor(arenaIndex) || 0) % 12 + 12) % 12;
-  const arena = ARENAS[ai];
-  const pal = arena.palette;
+  const pal = legacyPalette(ai);
   const id = idPrefix('trophy', ai);
   const M = new Mats(id);
   M.extra += radGrad(`${id}hl`, [
@@ -645,4 +657,218 @@ export function arenaTrophySvg(arenaIndex: number): string {
   s += obj;
   s += plinth(M, pal.accent);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160"><defs>${M.defs()}</defs>${s}</svg>`;
+}
+
+// ================================================================ v0.3: 72 ranks
+
+/**
+ * Rank emblems for the 24-arena empire: rank = arena * 3 + grade (0 = III,
+ * the entry grade … 2 = I, the top grade of the arena).
+ *
+ * Families set the base form (arena / 6):
+ *  - gladiatorial (0–5): round bronze phalera with a riveted rim;
+ *  - legion officers (6–11): silver tabula plaque over crossed gladii;
+ *  - civic magistracies (12–17): gold-edged senatorial shield over crossed fasces;
+ *  - imperial (18–23): gold laurel crown around a purple medallion.
+ * Within a family the arena steps up the metal and ornament and carries its
+ * own bold central charge. The grade is shown as 1–3 large pips on a dark
+ * band under the emblem, sized to read at 20–28 px.
+ */
+type Fam = 0 | 1 | 2 | 3;
+
+/** Per-arena field colour (the medallion / plaque / shield ground). */
+const RANK_FIELD = [
+  '#5a3418', '#6a3a1e', '#7a1a14', '#2a4a30', '#3b4048', '#1d3a60',
+  '#16494a', '#5a2a14', '#1d3a60', '#0f4a54', '#3a0d1c', '#6a2a10',
+  '#1f5f4a', '#1f3a6a', '#7a1414', '#16285a', '#5a1a3a', '#3a362e',
+  '#3a1a5a', '#2a1a4a', '#2a1240', '#4a0a3a', '#2a2070', '#140c50',
+];
+
+function phaleraBase(M: Mats, a: number): string {
+  const rim: MatName = a < 2 ? 'wood' : 'bronze';
+  let s = `<circle cx="64" cy="54" r="44" fill="${M.u(rim)}" ${st(OUT, 3)}/>`;
+  s += `<circle cx="64" cy="54" r="34" fill="${RANK_FIELD[a]}" ${st(OUT, 2)}/>`;
+  s += rivets(64, 54, 39, 8 + a * 2, a < 2 ? '#c7ced6' : '#ffe0a0', 2);
+  if (a >= 4) s += `<circle cx="64" cy="54" r="30" fill="none" stroke="${M.u('gold')}" stroke-width="2.4"/>`;
+  return s;
+}
+
+function plaqueBase(M: Mats, a: number): string {
+  // crossed gladii behind a silver tabula with an arched top
+  const blade = (ang: number) =>
+    `<g transform="translate(64,54) rotate(${ang})"><path d="M0,-62L7,-50V28H-7V-50Z" fill="${M.u('silver')}" ${st(OUT, 2)}/><rect x="-12" y="28" width="24" height="7" rx="2" fill="${M.u('gold')}" ${st(OUT, 1.8)}/><rect x="-4" y="35" width="8" height="10" fill="${M.u('red')}" ${st(OUT, 1.6)}/><circle cx="0" cy="48" r="4.5" fill="${M.u('gold')}" ${st(OUT, 1.6)}/></g>`;
+  let s = blade(-118) + blade(118);
+  const trim: MatName = a >= 10 ? 'gold' : 'silver';
+  s += `<path d="M32,92V36Q32,14 64,12Q96,14 96,36V92Z" fill="${M.u(trim)}" ${st(OUT, 3)}/>`;
+  s += `<path d="M39,86V38Q39,20 64,19Q89,20 89,38V86Z" fill="${RANK_FIELD[a]}" ${st(OUT, 1.6)}/>`;
+  if (a >= 8) s += `<path d="M34,88h60" stroke="${M.u('gold')}" stroke-width="3"/>`;
+  return s;
+}
+
+function senateBase(M: Mats, a: number): string {
+  // crossed fasces behind a gold-edged heater shield
+  const fx = (ang: number) => `<g transform="translate(64,54) rotate(${ang}) translate(-64,-54)">${fasces(M, 64, 6, 92, 'silver')}</g>`;
+  let s = fx(-38) + fx(38);
+  const edge = a >= 15 ? 7 : 5;
+  s += `<path d="M28,16H100V54Q100,86 64,100Q28,86 28,54Z" fill="${M.u('gold')}" ${st(OUT, 3)}/>`;
+  s += `<path d="M${28 + edge},${16 + edge}H${100 - edge}V54Q${100 - edge},${84 - edge / 2} 64,${100 - edge * 1.6}Q${28 + edge},${84 - edge / 2} ${28 + edge},54Z" fill="${RANK_FIELD[a]}" ${st(OUT, 1.4)}/>`;
+  s += `<path d="M36,24H92" stroke="#fff" stroke-opacity=".35" stroke-width="3"/>`;
+  return s;
+}
+
+function crownBase(M: Mats, a: number): string {
+  let s = '';
+  if (a >= 22) {
+    let rays = '';
+    for (let i = 0; i < 20; i++) {
+      const t = (i / 20) * Math.PI * 2;
+      rays += `M64,54L${n(64 + Math.cos(t - 0.07) * 62)},${n(54 + Math.sin(t - 0.07) * 62)}L${n(64 + Math.cos(t + 0.07) * 62)},${n(54 + Math.sin(t + 0.07) * 62)}Z`;
+    }
+    s += `<path d="${rays}" fill="${M.u('celest')}" opacity=".7"/>`;
+  }
+  s += `<circle cx="64" cy="54" r="34" fill="${RANK_FIELD[a]}" ${st(OUT, 2.5)}/>`;
+  s += `<circle cx="64" cy="54" r="30" fill="none" stroke="${M.u('gold')}" stroke-width="${a >= 20 ? 3 : 1.8}"/>`;
+  s += wreath(M, 64, 54, 41, 'gold', a >= 20 ? 9 : 8, a >= 20 ? 15 : 13, 0.8);
+  if (a >= 21) {
+    for (const deg of [205, 245, 295, 335]) {
+      const r = (deg * Math.PI) / 180;
+      s += `<circle cx="${n(64 + Math.cos(r) * 41)}" cy="${n(54 + Math.sin(r) * 41)}" r="3.2" fill="${deg === 245 || deg === 295 ? '#c0281e' : '#2f8f9a'}" ${st(OUT, 1)}/>`;
+    }
+  }
+  return s;
+}
+
+/** Central charge per arena (drawn around (64,54)). */
+function rankCharge(M: Mats, a: number): string {
+  const L = (mat: MatName) => M.u(mat);
+  switch (a) {
+    // ---- gladiatorial
+    case 0:
+      return rudis(M, 64, 54, -35, 'wood', 56) + rudis(M, 64, 54, 35, 'wood', 56);
+    case 1:
+      // palus post with a rope band and a rudis across it
+      return `<rect x="57" y="22" width="14" height="64" rx="3" fill="${L('wood')}" ${st(OUT, 2.4)}/><path d="M57,36H71M57,41H71M57,70H71" stroke="${OUT}" stroke-width="2" opacity=".55"/>` + rudis(M, 64, 56, 50, 'wood', 54);
+    case 2:
+      // legionary galea (side view) with red crest
+      return `<path d="M40,60Q40,30 64,28Q88,30 88,60L82,62V72L74,72V62H54V72H46V62Z" fill="${L('bronze')}" ${st(OUT, 2.4)}/><path d="M44,30Q64,6 86,28Q66,22 44,30Z" fill="${L('red')}" ${st(OUT, 2)}/><path d="M40,60H92" stroke="${OUT}" stroke-width="3"/><circle cx="76" cy="46" r="3" fill="${OUT}"/>`;
+    case 3:
+      // crossed pila over a small shield boss
+      return `<path d="M36,84L90,26M92,84L38,26" stroke="${OUT}" stroke-width="7" stroke-linecap="round"/><path d="M36,84L90,26M92,84L38,26" stroke="${L('wood')}" stroke-width="4" stroke-linecap="round"/><path d="M86,24l10,-6l-4,10zM42,24l-10,-6l4,10z" fill="${L('iron')}" ${st(OUT, 1.6)}/><circle cx="64" cy="55" r="11" fill="${L('bronze')}" ${st(OUT, 2.4)}/>`;
+    case 4:
+      // crossed hammer and dolabra (the specialist's tools)
+      return `<path d="M42,84L84,30M86,84L44,30" stroke="${OUT}" stroke-width="7" stroke-linecap="round"/><path d="M42,84L84,30M86,84L44,30" stroke="${L('wood')}" stroke-width="4" stroke-linecap="round"/><path d="M76,22h18v12h-18z" fill="${L('iron')}" ${st(OUT, 2)} transform="rotate(38 85 28)"/><path d="M34,24q12,-4 20,6l-6,6q-6,-6 -14,-4z" fill="${L('iron')}" ${st(OUT, 2)}/>`;
+    case 5:
+      // thunderbolt on the shield boss
+      return `<circle cx="64" cy="55" r="14" fill="${L('gold')}" ${st(OUT, 2.4)}/>` + [1, -1].map((d) => `<path d="${boltPath(64, 55, d)}" fill="${L('gold')}" ${st(OUT, 1.6)}/><path d="${boltPath(64, 55, d)}" fill="${L('gold')}" ${st(OUT, 1.6)} transform="matrix(1 0 0 -1 0 110)"/>`).join('');
+    // ---- legion officers
+    case 6:
+      // signum: pole with stacked discs
+      return `<path d="M64,20V86" stroke="${OUT}" stroke-width="6"/><path d="M64,20V86" stroke="${L('wood')}" stroke-width="3"/>` + [36, 50, 64].map((y) => `<circle cx="64" cy="${y}" r="7.5" fill="${L('silver')}" ${st(OUT, 2)}/>`).join('') + `<path d="M58,22l6,-10l6,10z" fill="${L('silver')}" ${st(OUT, 1.6)}/><path d="M52,76H76" stroke="${OUT}" stroke-width="5" stroke-linecap="round"/>`;
+    case 7:
+      // optio's knobbed staff and a small pennant
+      return `<path d="M50,86L78,24" stroke="${OUT}" stroke-width="7" stroke-linecap="round"/><path d="M50,86L78,24" stroke="${L('wood')}" stroke-width="4" stroke-linecap="round"/><circle cx="79" cy="22" r="7" fill="${L('silver')}" ${st(OUT, 2)}/><path d="M70,40L90,46L82,52L88,60L66,52Z" fill="${L('red')}" ${st(OUT, 1.8)}/>`;
+    case 8:
+      return `<g transform="translate(64,52) scale(.62) translate(-64,-58)">${eagle(M, 'silver')}</g>`;
+    case 9:
+      // centurion's helmet with transverse crest
+      return `<path d="M42,66Q42,40 64,38Q86,40 86,66H80V76H72V66H56V76H48V66Z" fill="${L('silver')}" ${st(OUT, 2.4)}/><path d="M30,40Q64,18 98,40V46Q64,28 30,46Z" fill="${L('red')}" ${st(OUT, 2)}/><path d="M42,66H86" stroke="${OUT}" stroke-width="3"/>`;
+    case 10:
+      // pilum through a corona
+      return `<circle cx="64" cy="56" r="17" fill="none" stroke="${OUT}" stroke-width="8"/><circle cx="64" cy="56" r="17" fill="none" stroke="${L('gold')}" stroke-width="5"/><path d="M64,90V24" stroke="${OUT}" stroke-width="7"/><path d="M64,90V26" stroke="${L('wood')}" stroke-width="3.6"/><path d="M58,28l6,-14l6,14z" fill="${L('silver')}" ${st(OUT, 1.8)}/>`;
+    case 11:
+      // vexillum with fringe
+      return `<path d="M64,18V88M46,26H82" stroke="${OUT}" stroke-width="5" stroke-linecap="round"/><path d="M64,18V88M46,26H82" stroke="${L('gold')}" stroke-width="2.6" stroke-linecap="round"/><path d="M47,28H81V62Q64,66 47,62Z" fill="${L('red')}" ${st(OUT, 2.2)}/><path d="M50,66v6M57,67v6M64,68v6M71,67v6M78,66v6" stroke="${L('gold')}" stroke-width="2.4"/><circle cx="64" cy="44" r="7" fill="none" stroke="${L('gold')}" stroke-width="3"/>`;
+    // ---- civic magistracies
+    case 12:
+      // quaestor: a gold coin with a wreathed head
+      return `<circle cx="64" cy="52" r="22" fill="${L('gold')}" ${st(OUT, 2.4)}/><circle cx="64" cy="52" r="17" fill="none" stroke="${OUT}" stroke-width="1.2" opacity=".5"/><g transform="translate(64,52) scale(.55) translate(-64,-56)">${laureateProfile(M, 'gold')}</g>`;
+    case 13:
+      // aedile: theatre mask of the games
+      return `<path d="M44,34Q64,26 84,34Q86,62 64,78Q42,62 44,34Z" fill="${L('marble')}" ${st(OUT, 2.4)}/><path d="M50,46q6,-5 12,0q-6,4 -12,0zM66,46q6,-5 12,0q-6,4 -12,0z" fill="${OUT}"/><path d="M54,62Q64,70 74,62Q64,66 54,62Z" fill="${OUT}"/><path d="M44,34Q38,24 32,30M84,34Q90,24 96,30" fill="none" stroke="${L('gold')}" stroke-width="3"/>`;
+    case 14:
+      // tribune: oak-leaf corona civica
+      return wreath(M, 64, 52, 20, 'leaf', 6, 11, 0.9) + `<circle cx="64" cy="52" r="6" fill="${L('gold')}" ${st(OUT, 1.6)}/>`;
+    case 15:
+      // praetor: scales of justice
+      return `<path d="M64,26V80M42,36H86M52,82H76" stroke="${OUT}" stroke-width="6" stroke-linecap="round"/><path d="M64,26V80M42,36H86M52,82H76" stroke="${L('gold')}" stroke-width="3" stroke-linecap="round"/><path d="M34,56Q42,66 50,56ZM78,56Q86,66 94,56Z" fill="${L('gold')}" ${st(OUT, 2)}/><path d="M42,36L34,56M42,36L50,56M86,36L78,56M86,36L94,56" stroke="${OUT}" stroke-width="1.4"/>`;
+    case 16:
+      // consul: the curule chair
+      return `<path d="M44,80L84,42M84,80L44,42" stroke="${OUT}" stroke-width="9" stroke-linecap="round"/><path d="M44,80L84,42M84,80L44,42" stroke="${L('gold')}" stroke-width="5" stroke-linecap="round"/><rect x="38" y="34" width="52" height="9" rx="3" fill="${L('gold')}" ${st(OUT, 2)}/><path d="M40,82H52M76,82H88" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/>`;
+    case 17:
+      // censor: the citizen register (scroll) and stylus
+      return `<rect x="42" y="34" width="44" height="40" fill="${L('marble')}" ${st(OUT, 2)}/><path d="M48,44H80M48,52H80M48,60H72" stroke="${OUT}" stroke-width="2" opacity=".6"/><rect x="36" y="30" width="10" height="48" rx="5" fill="${L('gold')}" ${st(OUT, 2)}/><rect x="82" y="30" width="10" height="48" rx="5" fill="${L('gold')}" ${st(OUT, 2)}/>`;
+    // ---- imperial
+    case 18:
+      // legate: gladius upright with an eagle-pommel
+      return `<path d="M64,18L70,28V70H58V28Z" fill="${L('silver')}" ${st(OUT, 2.2)}/><rect x="50" y="70" width="28" height="7" rx="3" fill="${L('gold')}" ${st(OUT, 2)}/><rect x="60" y="77" width="8" height="10" fill="${L('red')}" ${st(OUT, 1.6)}/><circle cx="64" cy="89" r="5" fill="${L('gold')}" ${st(OUT, 1.8)}/>`;
+    case 19:
+      // proconsul: the orb of the provinces with a cross-band
+      return `<circle cx="64" cy="56" r="20" fill="${L('gold')}" ${st(OUT, 2.4)}/><path d="M44,56H84M64,36V76" stroke="${OUT}" stroke-width="2" opacity=".6"/><path d="M50,42Q64,56 50,70M78,42Q64,56 78,70" fill="none" stroke="${OUT}" stroke-width="1.4" opacity=".5"/><path d="${starPath(64, 28, 7, 0.42)}" fill="${L('gold')}" ${st(OUT, 1.4)}/>`;
+    case 20:
+      return `<g transform="translate(64,54) scale(.6) translate(-64,-58)">${eagle(M, 'gold')}</g>`;
+    case 21:
+      // princeps: laureate profile
+      return `<g transform="translate(64,52) scale(1.05) translate(-64,-56)">${laureateProfile(M, 'gold')}</g>`;
+    case 22:
+      // augustus: eagle beneath a radiate crown
+      return `<g transform="translate(64,60) scale(.5) translate(-64,-58)">${eagle(M, 'gold')}</g><path d="M46,34L50,22L55,32L60,18L64,30L68,18L73,32L78,22L82,34Z" fill="${L('celest')}" ${st(OUT, 1.8)}/>`;
+    default: {
+      // caesar aeternus: radiate crown with a star
+      let spikes = 'M38,70';
+      for (let i = 0; i < 7; i++) {
+        const x0 = 38 + i * 7.43;
+        spikes += `L${n(x0 + 3.7)},${n(54 - (26 - Math.abs(i - 3) * 4))}L${n(x0 + 7.43)},54`;
+      }
+      spikes += 'L90,70Z';
+      return `<path d="${spikes}" fill="${L('celest')}" ${st('#5a3a10', 2)}/><rect x="36" y="62" width="56" height="12" rx="3" fill="${L('gold')}" ${st('#5a3a10', 2)}/><circle cx="64" cy="68" r="3.6" fill="#e0605a"/><path d="${starPath(64, 24, 8, 0.4, 4, 0)}" fill="#fff"/>`;
+    }
+  }
+}
+
+/** Grade pips: 1–3 bold marks on a dark band (studs / bars / gold dots / stars by family). */
+function gradePips(M: Mats, fam: Fam, count: number, band: string): string {
+  const w = 28 + count * 24;
+  const x0 = 64 - w / 2;
+  let s = `<path d="M${n(x0 - 9)},104L${n(x0)},99V125L${n(x0 - 9)},120L${n(x0 - 4)},112Z M${n(64 + w / 2 + 9)},104L${n(64 + w / 2)},99V125L${n(64 + w / 2 + 9)},120L${n(64 + w / 2 + 4)},112Z" fill="${shade(band, -0.35)}" ${st(OUT, 1.6)}/>`;
+  s += `<rect x="${n(x0)}" y="98" width="${n(w)}" height="28" rx="6" fill="${band}" ${st(OUT, 2)}/>`;
+  const mat: MatName = fam === 0 ? 'bronze' : fam === 1 ? 'silver' : fam === 2 ? 'gold' : 'celest';
+  let d = '';
+  for (let i = 0; i < count; i++) {
+    const x = 64 + (i - (count - 1) / 2) * 24;
+    if (fam === 0) d += `M${n(x + 8.5)},112a8.5,8.5 0 1,0 -17,0a8.5,8.5 0 1,0 17,0Z`;
+    else if (fam === 1) d += `M${n(x - 5.5)},102h11v20h-11z`;
+    else if (fam === 2) d += `M${n(x)},102L${n(x + 10)},112L${n(x)},122L${n(x - 10)},112Z`;
+    else d += starPath(x, 113, 11.5, 0.46);
+  }
+  s += `<path d="${d}" fill="${M.u(mat)}" stroke="${OUT}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  return s;
+}
+
+/** Number of rank emblems (24 arenas x 3 grades). */
+export const RANK_EMBLEM_COUNT = 72;
+
+/** Rank emblem for rank 0..71 (rank = arena*3 + grade, grade 0 = III … 2 = I). viewBox 0 0 128 128. */
+export function rankEmblemSvg(rankIndex: number, size = 128): string {
+  const idx = Math.max(0, Math.min(RANK_EMBLEM_COUNT - 1, Math.floor(Number.isFinite(rankIndex) ? rankIndex : 0)));
+  const a = Math.floor(idx / 3);
+  const grade = idx % 3;
+  const fam = Math.floor(a / 6) as Fam;
+  const id = idPrefix('rank-emblem', idx);
+  const M = new Mats(id);
+  let body = '';
+  // top grade of an arena: a soft glow behind the emblem
+  if (grade === 2) {
+    M.extra += radGrad(`${id}gl`, [
+      [0, '#fff3c0', 0.9],
+      [0.6, fam >= 2 ? '#f2c64a' : fam === 1 ? '#d8e2ee' : '#f0b070', 0.35],
+      [1, '#f2c64a', 0],
+    ]);
+    body += `<circle cx="64" cy="56" r="62" fill="url(#${id}gl)"/>`;
+  }
+  body += fam === 0 ? phaleraBase(M, a) : fam === 1 ? plaqueBase(M, a) : fam === 2 ? senateBase(M, a) : crownBase(M, a);
+  body += rankCharge(M, a);
+  const band = ['#5a2a14', '#24324a', '#7a1414', '#3a1a5a'][fam];
+  body += gradePips(M, fam, grade + 1, band);
+  const sz = n(size);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="${sz}" height="${sz}"><defs>${M.defs()}</defs>${body}</svg>`;
 }

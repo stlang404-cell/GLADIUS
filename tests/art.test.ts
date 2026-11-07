@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 // @vitest-environment jsdom
-import { arenaBackdropSvg, arenaCrestSvg, rankEmblemSvg, arenaTrophySvg, portraitSvg, pieceSvg, svgDataUri } from '../src/art';
+import {
+  arenaBackdropSvg, arenaCrestSvg, rankEmblemSvg, legacyRankEmblemSvg, arenaTrophySvg, portraitSvg, pieceSvg, svgDataUri,
+  legacyArenaIndex, ARENA_ART_COUNT, ARENA_CREST_COUNT, RANK_EMBLEM_COUNT,
+} from '../src/art';
 
 const parser = new DOMParser();
 
@@ -19,26 +22,42 @@ function checkSvg(svg: string) {
 
 const PORTRAIT_OPTS = (i: number) => ({ female: i % 2 === 1, age: 18 + ((i * 13) % 60), arenaIndex: i % 12 });
 
-describe('art: backdrops', () => {
-  const all = Array.from({ length: 12 }, (_, i) => arenaBackdropSvg(i));
+const idsOf = (svg: string) => [...svg.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
+
+describe('art: backdrops (24 arenas)', () => {
+  const all = Array.from({ length: 24 }, (_, i) => arenaBackdropSvg(i));
+  it('covers the 24-arena empire', () => {
+    expect(ARENA_ART_COUNT).toBe(24);
+    expect(ARENA_CREST_COUNT).toBe(24);
+  });
   it('well-formed, viewBox, size budget', () => {
     for (const s of all) {
       checkSvg(s);
       expect(s).toContain('viewBox="0 0 1600 900"');
       expect(s).toContain('preserveAspectRatio="xMidYMid slice"');
+      expect(s.length).toBeGreaterThan(18 * 1024); // illustrated, not a placeholder
       expect(s.length).toBeLessThan(90 * 1024);
       // self-contained: no external references, fonts or raster filters
       expect(s).not.toMatch(/<text|<image|https?:\/\/(?!www\.w3\.org)|<filter/);
     }
   });
-  it('deterministic and distinct', () => {
+  it('deterministic, distinct and clamped', () => {
     expect(arenaBackdropSvg(5)).toBe(all[5]);
-    expect(new Set(all).size).toBe(12);
+    expect(arenaBackdropSvg(17)).toBe(all[17]);
+    expect(new Set(all).size).toBe(24);
+    expect(arenaBackdropSvg(-3)).toBe(all[0]);
+    expect(arenaBackdropSvg(99)).toBe(all[23]);
+    expect(arenaBackdropSvg(NaN)).toBe(all[0]);
+  });
+  it('legacy arenas keep their place in the new order', () => {
+    expect([0, 1, 5, 10, 11].map(legacyArenaIndex)).toEqual([0, 2, 10, 20, 23]);
+    expect(legacyArenaIndex(-4)).toBe(0);
+    expect(legacyArenaIndex(40)).toBe(23);
   });
 });
 
-describe('art: arena crests', () => {
-  const all = Array.from({ length: 12 }, (_, i) => arenaCrestSvg(i));
+describe('art: arena crests (24)', () => {
+  const all = Array.from({ length: 24 }, (_, i) => arenaCrestSvg(i));
   it('well-formed, viewBox, small, no text nodes', () => {
     for (const s of all) {
       checkSvg(s);
@@ -49,26 +68,60 @@ describe('art: arena crests', () => {
   });
   it('deterministic, distinct, tolerant of odd input', () => {
     expect(arenaCrestSvg(7)).toBe(all[7]);
-    expect(new Set(all).size).toBe(12);
+    expect(new Set(all).size).toBe(24);
     checkSvg(arenaCrestSvg(NaN));
-    checkSvg(arenaCrestSvg(99));
+    expect(arenaCrestSvg(99)).toBe(all[23]);
+    expect(arenaCrestSvg(-1)).toBe(all[0]);
   });
-  it('ids do not collide across backdrops and crests on one page', () => {
+  it('metal tiers: bronze 0–7, silver 8–15, gold 16–23; radiant back for 20–23', () => {
+    for (let i = 0; i < 24; i++) {
+      const rimTop = ['#f2c08a', '#ffffff', '#fff2b0'][Math.floor(i / 8)];
+      expect(all[i]).toContain(rimTop);
+      expect(all[i].includes('opacity=".45"')).toBe(i >= 20);
+    }
+  });
+  it('ids do not collide across all 48 backdrops and crests on one page', () => {
     const seen = new Set<string>();
-    for (let i = 0; i < 12; i++)
+    for (let i = 0; i < 24; i++)
       for (const svg of [arenaBackdropSvg(i), arenaCrestSvg(i)])
-        for (const m of svg.matchAll(/\bid="([^"]+)"/g)) {
-          expect(seen.has(m[1])).toBe(false);
-          seen.add(m[1]);
+        for (const id of new Set(idsOf(svg))) {
+          expect(seen.has(id)).toBe(false);
+          seen.add(id);
         }
   });
 });
 
-describe('art: emblems & trophies', () => {
-  const emblems = Array.from({ length: 36 }, (_, i) => rankEmblemSvg(i));
-  const trophies = Array.from({ length: 12 }, (_, i) => arenaTrophySvg(i));
-  it('well-formed', () => {
+describe('art: rank emblems (72) & trophies', () => {
+  const emblems = Array.from({ length: 72 }, (_, i) => rankEmblemSvg(i));
+  it('well-formed and small', () => {
+    expect(RANK_EMBLEM_COUNT).toBe(72);
     for (const s of emblems) {
+      checkSvg(s);
+      expect(s).toContain('viewBox="0 0 128 128"');
+      expect(s.length).toBeLessThan(10 * 1024);
+      expect(s).not.toMatch(/<text|<image|<filter/);
+    }
+    expect(rankEmblemSvg(3, 48)).toContain('width="48"');
+  });
+  it('deterministic, distinct, clamped', () => {
+    expect(rankEmblemSvg(17)).toBe(emblems[17]);
+    expect(new Set(emblems).size).toBe(72);
+    expect(rankEmblemSvg(-5)).toBe(emblems[0]);
+    expect(rankEmblemSvg(500)).toBe(emblems[71]);
+    checkSvg(rankEmblemSvg(NaN));
+  });
+  it('ids do not collide between emblems on one page', () => {
+    const seen = new Set<string>();
+    for (const svg of emblems)
+      for (const id of new Set(idsOf(svg))) {
+        expect(seen.has(id)).toBe(false);
+        seen.add(id);
+      }
+  });
+  it('legacy 36-rank set and trophies still render', () => {
+    const legacy = Array.from({ length: 36 }, (_, i) => legacyRankEmblemSvg(i));
+    const trophies = Array.from({ length: 12 }, (_, i) => arenaTrophySvg(i));
+    for (const s of legacy) {
       checkSvg(s);
       expect(s).toContain('viewBox="0 0 128 128"');
     }
@@ -76,13 +129,9 @@ describe('art: emblems & trophies', () => {
       checkSvg(s);
       expect(s).toContain('viewBox="0 0 160 160"');
     }
-    expect(rankEmblemSvg(3, 48)).toContain('width="48"');
-  });
-  it('deterministic and distinct', () => {
-    expect(rankEmblemSvg(17)).toBe(emblems[17]);
-    expect(arenaTrophySvg(9)).toBe(trophies[9]);
-    expect(new Set(emblems).size).toBe(36);
+    expect(new Set(legacy).size).toBe(36);
     expect(new Set(trophies).size).toBe(12);
+    expect(arenaTrophySvg(9)).toBe(trophies[9]);
   });
 });
 
