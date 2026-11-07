@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { createWorld } from '../../src/world/world';
 import {
   processTournamentAwards, awardsFor, awardsByDef, awardsByArena, rarityOf, currentOfSeries, isVictory, hasFinal,
-  ensureWorldV2, TROPHY_DEFS, trophyCabinet, invalidateAwardIndex,
+  ensureWorldV2, TROPHY_DEFS, trophyCabinet, invalidateAwardIndex, sigDefFor,
 } from '../../src/world/trophies';
 import { hallOfRecords, recordLeaders, archiveLegends, competitorHonours, competitorPrestige } from '../../src/world/records';
 import { createTournament, pendingPairings, recordResult } from '../../src/tournament/formats';
@@ -58,14 +58,18 @@ function finish(bw: WorldState, t: WorldTournament) {
 }
 
 describe('imperial trophy registry', () => {
-  it('defines signature trophies for all 12 arenas with stable ids', () => {
-    for (const a of ARENAS) expect(TROPHY_DEFS.find((d) => d.id === `sig-${a.index}`)!.name).toBe(a.trophy);
+  it('defines signature trophies for all 24 arenas with stable ids', () => {
+    // v0.2 arenas keep sig-<old index>; the 12 v0.3 arenas use sig-a<index>.
+    for (const a of ARENAS) expect(TROPHY_DEFS.find((d) => d.id === sigDefFor(a.index))!.name).toBe(a.trophy);
+    expect(sigDefFor(23)).toBe('sig-11');
+    expect(sigDefFor(6)).toBe('sig-3');
+    expect(sigDefFor(1)).toBe('sig-a1');
     expect(new Set(TROPHY_DEFS.map((d) => d.id)).size).toBe(TROPHY_DEFS.length);
   });
 
   it('awards exactly once per tournament even if processing runs twice', () => {
     const bw = bareWorld();
-    const t = champ(bw, 't1', 3, 'A', 'B', 'A');
+    const t = champ(bw, 't1', 6, 'A', 'B', 'A'); // the Gladiator's Court (v0.2 arena 3)
     const first = processTournamentAwards(bw, t, { nameOf: String, prevHolder: null });
     expect(first.length).toBeGreaterThan(0);
     const n = bw.awards!.length;
@@ -83,10 +87,10 @@ describe('imperial trophy registry', () => {
 
   it('repeat wins are separate awards; defences are honoured; losing the title flips current', () => {
     const bw = bareWorld();
-    finish(bw, champ(bw, 'c1', 11, 'A', 'B', 'A')); // A captures
-    finish(bw, champ(bw, 'c2', 11, 'A', 'B', 'A')); // A defends (1)
-    finish(bw, champ(bw, 'c3', 11, 'A', 'B', 'A')); // defends (2)
-    finish(bw, champ(bw, 'c4', 11, 'A', 'B', 'A')); // defends (3) → dynasty
+    finish(bw, champ(bw, 'c1', 23, 'A', 'B', 'A')); // A captures
+    finish(bw, champ(bw, 'c2', 23, 'A', 'B', 'A')); // A defends (1)
+    finish(bw, champ(bw, 'c3', 23, 'A', 'B', 'A')); // defends (2)
+    finish(bw, champ(bw, 'c4', 23, 'A', 'B', 'A')); // defends (3) → dynasty
     const sigA = awardsFor(bw, 'A').filter((a) => a.defId === 'sig-11');
     expect(sigA.length).toBe(4);
     expect(new Set(sigA.map((a) => a.awardId)).size).toBe(4);
@@ -94,15 +98,15 @@ describe('imperial trophy registry', () => {
     const def = awardsFor(bw, 'A').filter((a) => a.defId === 'defense-t3');
     expect(def.map((a) => a.defenseNumber)).toEqual([1, 2, 3]);
     expect(awardsFor(bw, 'A').some((a) => a.defId === 'hist-dynasty')).toBe(true);
-    expect(awardsFor(bw, 'A').filter((a) => a.series === 'title-11').every((a) => a.current)).toBe(true);
-    finish(bw, champ(bw, 'c5', 11, 'A', 'B', 'B')); // B dethrones A
-    expect(awardsFor(bw, 'A').filter((a) => a.series === 'title-11').every((a) => !a.current)).toBe(true);
+    expect(awardsFor(bw, 'A').filter((a) => a.series === 'title-23').every((a) => a.current)).toBe(true);
+    finish(bw, champ(bw, 'c5', 23, 'A', 'B', 'B')); // B dethrones A
+    expect(awardsFor(bw, 'A').filter((a) => a.series === 'title-23').every((a) => !a.current)).toBe(true);
     expect(awardsFor(bw, 'A').length).toBeGreaterThan(8); // nothing deleted
-    const cur = currentOfSeries(bw, 'title-11');
+    const cur = currentOfSeries(bw, 'title-23');
     expect(new Set(cur.map((a) => a.holder))).toEqual(new Set(['B']));
-    finish(bw, champ(bw, 'c6', 11, 'A', 'B', 'A')); // A regains → comeback feat
+    finish(bw, champ(bw, 'c6', 23, 'A', 'B', 'A')); // A regains → comeback feat
     expect(awardsFor(bw, 'A').some((a) => a.defId === 'hist-comeback')).toBe(true);
-    expect(new Set(currentOfSeries(bw, 'title-11').map((a) => a.holder))).toEqual(new Set(['A']));
+    expect(new Set(currentOfSeries(bw, 'title-23').map((a) => a.holder))).toEqual(new Set(['A']));
     // Finalist medals for the loser of each match.
     expect(awardsByDef(bw, 'medal-t3').length).toBe(6);
     expect(rarityOf(bw, 'sig-11')!.count).toBe(6);
@@ -124,7 +128,7 @@ describe('imperial trophy registry', () => {
         expect(winners[0].holder).toBe(h.winner);
         expect(winners[0].holderName).toBe(h.winnerName);
       } else expect(winners.length).toBe(0);
-      expect(mine.filter((a) => a.defId.startsWith('medal-')).length).toBe(h.winner && h.runnerUp && hasFinal(h.kind) ? 1 : 0);
+      expect(mine.filter((a) => a.defId.startsWith('medal-') || a.defId === 'rmedal').length).toBe(h.winner && h.runnerUp && hasFinal(h.kind, h.format) ? 1 : 0);
     }
     // Current title series agree with the title table.
     for (const t of w.titles) {
@@ -133,7 +137,7 @@ describe('imperial trophy registry', () => {
     }
     // Every edition series has at most one current award.
     const series = new Map<string, number>();
-    for (const a of w.awards!) if (a.current && a.series && !a.series.startsWith('title-')) series.set(a.series, (series.get(a.series) ?? 0) + 1);
+    for (const a of w.awards!) if (a.current && a.series && !a.series.startsWith('title-') && !a.series.startsWith('crown-')) series.set(a.series, (series.get(a.series) ?? 0) + 1);
     for (const n of series.values()) expect(n).toBe(1);
     // Competitor tournament wins == victories in the registry (world started at zero).
     for (const c of w.competitors) expect(awardsFor(w, c.id).filter(isVictory).length).toBe(c.tournamentsWon);
@@ -141,7 +145,7 @@ describe('imperial trophy registry', () => {
     const laurels = w.awards!.filter((a) => a.defId.startsWith('laurel-'));
     expect(laurels.length).toBeGreaterThan(12 * 3);
     expect(new Set(laurels.map((a) => a.tournamentId)).size).toBe(laurels.length);
-    expect(awardsByArena(w, 11).length).toBeGreaterThan(0);
+    expect(awardsByArena(w, 23).length).toBeGreaterThan(0);
   });
 
   it('profiles show real trophies; prestige derives from them', () => {
@@ -188,8 +192,10 @@ describe('imperial trophy registry', () => {
     expect(st.entrants).toEqual(['d', 'a', 'b', 'c']);
     // Holders in the simulated world are seeded first in the events they enter.
     for (const t of w.tournaments) {
-      if (!t.state || t.kind === 'championship') continue;
-      const holders = w.titles.filter((x) => x.holder && x.since < t.startDay && t.state!.entrants.includes(x.holder)).map((x) => x.holder!);
+      if (!t.state || t.format === 'match-series') continue;
+      // Arena title holders are seeded first everywhere; regional crown holders in their region's events.
+      const regional = t.kind === 'local-open' || t.kind === 'regional';
+      const holders = [...w.titles, ...(regional ? (w.regionTitles ?? []) : [])].filter((x) => x.holder && x.since < t.startDay && t.state!.entrants.includes(x.holder)).map((x) => x.holder!);
       if (holders.length) expect(holders).toContain(t.state.entrants[0]);
     }
   });

@@ -13,10 +13,12 @@
  *    arena) keep only the latest edition current; title series ("title-N")
  *    stay current for the holder until the title changes hands.
  */
-import { ARENAS } from './arenas';
+import { ARENAS, ARENAS_PER_TIER, TOP_ARENA, migrateArenaIndex } from './arenas';
 import { standings, gameScores, type TournamentState, type Pairing } from '../tournament/formats';
 import type { AwardRecord, TrophyCategory, TrophyTier, HallOfRecords } from './types';
 import type { WorldState, WorldTournament, TournamentKind } from '../game/state';
+import { REGIONS, IMPERIAL } from './regions';
+import type { Format } from '../tournament/formats';
 
 export const PLAYER = 'player';
 export const WORLD_VERSION = 2;
@@ -31,23 +33,37 @@ export type TrophyDef = {
   prestige: number;
   arena?: number;
   arenaTier?: number;
+  /** v0.3: regional trophies. */
+  region?: string;
 };
 
 export const ARENA_TIER_NAMES = ['Provincial', 'Legionary', 'Senatorial', 'Imperial'];
+/** Trophy tier of an arena (v0.3: six arenas per tier). */
 export function arenaTier(arena: number): number {
-  return Math.max(0, Math.min(3, Math.floor(arena / 3)));
+  return Math.max(0, Math.min(3, Math.floor(arena / ARENAS_PER_TIER)));
 }
+/**
+ * Signature trophy definition of an arena. The 12 v0.2 arenas keep their
+ * ids (`sig-<old index>`, e.g. the Eternal Throne = sig-11); the 12 arenas
+ * added in v0.3 use `sig-a<index>` (baked art: public/trophies/sig-a<index>.webp).
+ */
+export function sigDefFor(arena: number): string {
+  const a = ARENAS[arena];
+  return a?.legacyIndex !== undefined ? `sig-${a.legacyIndex}` : `sig-a${arena}`;
+}
+const sigTier = (arena: number): TrophyTier => (arena >= 18 ? 'legendary' : arena >= 12 ? 'epic' : 'rare');
 const TIER_RARITY: TrophyTier[] = ['common', 'common', 'rare', 'epic'];
 
 function buildDefs(): TrophyDef[] {
   const d: TrophyDef[] = [];
   for (const a of ARENAS) {
+    if (a.legacyIndex === undefined) continue; // v0.3 arenas: appended below (sig-a<index>)
     d.push({
-      id: `sig-${a.index}`, name: a.trophy, desc: `Signature trophy of ${a.name}: won the arena championship match.`,
-      category: 'signature', tier: a.index >= 9 ? 'legendary' : a.index >= 6 ? 'epic' : 'rare', prestige: 10 + 3 * a.index, arena: a.index,
+      id: sigDefFor(a.index), name: a.trophy, desc: `Signature trophy of ${a.name}: won the arena championship match.`,
+      category: 'signature', tier: sigTier(a.index), prestige: Math.round(10 + 1.5 * a.index), arena: a.index,
     });
   }
-  d.push({ id: 'imperial-crown', name: 'The Imperial Crown', desc: 'Won the championship of the Eternal Throne.', category: 'crown', tier: 'legendary', prestige: 40, arena: 11 });
+  d.push({ id: 'imperial-crown', name: 'The Imperial Crown', desc: 'Won the championship of the Eternal Throne.', category: 'crown', tier: 'legendary', prestige: 40, arena: TOP_ARENA });
   for (let k = 0; k < 4; k++) {
     const T = ARENA_TIER_NAMES[k];
     const tier = TIER_RARITY[k];
@@ -72,7 +88,70 @@ function buildDefs(): TrophyDef[] {
   d.push({ id: 'hist-dynasty', name: 'Dynasty', desc: 'Held an arena title through four consecutive championships.', category: 'historical', tier: 'legendary', prestige: 25 });
   d.push({ id: 'hist-sweep', name: 'Master of the Season', desc: 'Won three events in the same arena in one season.', category: 'historical', tier: 'legendary', prestige: 20 });
   d.push({ id: 'hist-comeback', name: 'The Return', desc: 'Regained an arena title previously lost.', category: 'historical', tier: 'epic', prestige: 15 });
+  // ---- v0.3 "Golden Age": regional circuit, imperial events, records (21 new defs; old ids unchanged) ----
+  d.push({ id: 'lopen-lower', name: 'Provincial Open Plate', desc: 'Won a regional Lower Division Open (arenas 0–7).', category: 'cup', tier: 'common', prestige: 3, arenaTier: 0 });
+  d.push({ id: 'lopen-upper', name: 'Provincial Open Cup', desc: 'Won a regional Upper Division Open (arenas 8–15).', category: 'cup', tier: 'rare', prestige: 6, arenaTier: 1 });
+  for (const r of REGIONS) {
+    d.push({ id: `rcrown-${r.id}`, name: r.trophy, desc: `Signature trophy of ${r.name}: won the ${r.signature.name} or a defence of the ${r.crown}.`, category: 'regional', tier: 'epic', prestige: 18, region: r.id });
+  }
+  d.push({ id: 'rdefense', name: "Provincial Defender's Torque", desc: 'Successfully defended a regional crown.', category: 'defense', tier: 'rare', prestige: 8 });
+  d.push({ id: 'rmedal', name: "Provincial Finalist's Medal", desc: 'Runner-up of a regional championship final or a regional title defence.', category: 'medal', tier: 'common', prestige: 2 });
+  for (let k = 0; k < 4; k++) {
+    const T = ARENA_TIER_NAMES[k];
+    d.push({ id: `qual-t${k}`, name: `${T} Qualifier's Token`, desc: `Won an arena qualifier in a ${T.toLowerCase()} arena, earning a place in its Invitational.`, category: 'cup', tier: 'common', prestige: 2 + k, arenaTier: k });
+  }
+  d.push({ id: 'masters', name: 'The Imperial Masters Trophy', desc: "Won the Imperial Masters, the invitation-only round robin of the empire's top eight.", category: 'elite', tier: 'legendary', prestige: 35, arena: 20 });
+  d.push({ id: 'rlaurel', name: 'Laurel of the Province', desc: "Top performer of a season in a region's circuit (local opens, regional championship, title defence) by placement points.", category: 'seasonal', tier: 'rare', prestige: 6 });
+  d.push({ id: 'hist-record', name: 'Breaker of Records', desc: 'Set a new all-time record of the empire (Hall of Records).', category: 'historical', tier: 'legendary', prestige: 20 });
+  d.push({ id: 'hist-regional-dynasty', name: 'Provincial Dynasty', desc: 'Held a regional crown through four consecutive title contests.', category: 'historical', tier: 'epic', prestige: 15 });
+  d.push({ id: 'hist-giant-slayer', name: 'Giant Slayer', desc: 'Won a final or title match against an opponent rated 250+ higher.', category: 'historical', tier: 'epic', prestige: 15 });
+  // v0.3: signature trophies of the 12 new arenas.
+  for (const a of ARENAS) {
+    if (a.legacyIndex !== undefined) continue;
+    d.push({
+      id: sigDefFor(a.index), name: a.trophy, desc: `Signature trophy of ${a.name}: won the arena championship match.`,
+      category: 'signature', tier: sigTier(a.index), prestige: Math.round(10 + 1.5 * a.index), arena: a.index,
+    });
+  }
   return d;
+}
+
+/** Trophy definitions introduced in v0.3 (their art reuses baked sprites, see `trophyArt`). */
+export const V3_TROPHY_IDS: string[] = [
+  'lopen-lower', 'lopen-upper', ...REGIONS.map((r) => `rcrown-${r.id}`), 'rdefense', 'rmedal', 'qual-t0', 'qual-t1', 'qual-t2', 'qual-t3',
+  'masters', 'rlaurel', 'hist-record', 'hist-regional-dynasty', 'hist-giant-slayer',
+  ...ARENAS.filter((a) => a.legacyIndex === undefined).map((a) => sigDefFor(a.index)),
+];
+
+/**
+ * Baked trophy sprite for a definition (public/trophies/<id>.webp). The 60
+ * v0.2 definitions have their own sprite; v0.3 definitions reuse the closest
+ * existing sculpt (model + metal) until dedicated art is baked. The UI should
+ * load `trophies/${trophyArt(defId)}.webp`.
+ */
+export const TROPHY_ART: Record<string, string> = {
+  'lopen-lower': 'cup-open-t0', // bronze cup
+  'lopen-upper': 'cup-open-t1', // silver cup
+  'rcrown-latium': 'sig-2', // eagle (the Capitoline standard)
+  'rcrown-campania': 'cup-cup-t2', // gold cup
+  'rcrown-etruria': 'sig-7', // fasces (an Etruscan emblem)
+  'rcrown-gallia': 'defense-t2', // gold torque (torc)
+  'rcrown-hispania': 'cup-gauntlet-t1', // silver amphora
+  'rcrown-africa': 'sig-1', // bronze standard
+  'rcrown-aegyptus': 'sig-9', // imperial amphora (lamp)
+  'rcrown-achaea': 'laurel-t2', // gold laurel (olive wreath)
+  rdefense: 'defense-t1', // silver torque
+  rmedal: 'medal-t1',
+  'qual-t0': 'medal-t0', 'qual-t1': 'medal-t1', 'qual-t2': 'medal-t2', 'qual-t3': 'medal-t3',
+  masters: 'invit-t3', // imperial eagle
+  rlaurel: 'laurel-t1',
+  'hist-record': 'hist-perfect',
+  'hist-regional-dynasty': 'hist-dynasty',
+  'hist-giant-slayer': 'hist-upset-crown',
+  // Signature trophies of the v0.3 arenas (sig-a<index>) have their own baked sprites.
+};
+export function trophyArt(defId: string): string {
+  return TROPHY_ART[defId] ?? defId;
 }
 
 export const TROPHY_DEFS: TrophyDef[] = buildDefs();
@@ -85,10 +164,15 @@ export function isVictory(a: AwardRecord): boolean {
   return !!def && WINNER_CATEGORIES.includes(def.category);
 }
 
-export function winnerDefFor(kind: TournamentKind, arena: number): string {
+export function winnerDefFor(kind: TournamentKind, arena: number, t?: { region?: string; band?: [number, number] }): string {
   const k = arenaTier(arena);
   switch (kind) {
-    case 'championship': return `sig-${arena}`;
+    case 'local-open': return (t?.band?.[0] ?? 0) >= 8 ? 'lopen-upper' : 'lopen-lower';
+    case 'regional':
+    case 'regional-defense': return `rcrown-${t?.region ?? 'latium'}`;
+    case 'qualifier': return `qual-t${k}`;
+    case 'elite': return 'masters';
+    case 'championship': return sigDefFor(arena);
     case 'league': return `league-t${k}`;
     case 'invitational': return `invit-t${k}`;
     case 'hosted': return `hosted-t${k}`;
@@ -163,7 +247,7 @@ export function emptyHall(): HallOfRecords {
  * no match scores) so existing worlds keep their past champions.
  */
 export function ensureWorldV2(w: WorldState): WorldState {
-  if (w.worldVersion === WORLD_VERSION && w.awards && w.hall && w.seasonTally) return w;
+  if ((w.worldVersion ?? 0) >= WORLD_VERSION && w.awards && w.hall && w.seasonTally) return w;
   w.hall ??= emptyHall();
   w.hall.legends ??= [];
   w.hall.rivalries ??= [];
@@ -172,22 +256,25 @@ export function ensureWorldV2(w: WorldState): WorldState {
   if (!w.awards) {
     w.awards = [];
     const hist = [...w.history].sort((a, b) => a.endDay - b.endDay);
+    // Worlds older than v0.3 still use the 12-arena numbering here (remapped later by migrateWorldArenas).
+    const a24 = (a: number) => (w.arenaLayout === 24 ? a : migrateArenaIndex(a));
     for (const h of hist) {
       if (!h.winner) continue;
       const base = { tournamentId: h.id, season: h.season, day: h.endDay, arena: h.arena, format: h.format, result: '', gameIds: [] as string[], backfilled: true };
+      const wdef = winnerDefFor(h.kind, a24(h.arena));
       appendAward(w, {
-        ...base, awardId: `${h.id}:${winnerDefFor(h.kind, h.arena)}:${h.winner}`, defId: winnerDefFor(h.kind, h.arena),
+        ...base, awardId: `${h.id}:${wdef}:${h.winner}`, defId: wdef,
         holder: h.winner, holderName: h.winnerName, finalOpponent: h.runnerUp, finalOpponentName: h.runnerUpName, current: true,
         series: h.kind === 'championship' ? `title-${h.arena}` : `${h.kind}-${h.arena}`,
       }, h.kind === 'championship' ? 'title' : 'edition');
-      if (h.kind === 'championship' && h.arena === 11) {
+      if (h.kind === 'championship' && a24(h.arena) === TOP_ARENA) {
         appendAward(w, {
           ...base, awardId: `${h.id}:imperial-crown:${h.winner}`, defId: 'imperial-crown', holder: h.winner, holderName: h.winnerName,
-          finalOpponent: h.runnerUp, finalOpponentName: h.runnerUpName, current: true, series: 'title-11',
+          finalOpponent: h.runnerUp, finalOpponentName: h.runnerUpName, current: true, series: `title-${h.arena}`,
         }, 'title');
       }
       if (h.runnerUp && hasFinal(h.kind)) {
-        const md = `medal-t${arenaTier(h.arena)}`;
+        const md = `medal-t${arenaTier(a24(h.arena))}`;
         appendAward(w, {
           ...base, awardId: `${h.id}:${md}:${h.runnerUp}`, defId: md, holder: h.runnerUp, holderName: h.runnerUpName,
           finalOpponent: h.winner, finalOpponentName: h.winnerName, current: true, series: `medal-${h.kind}-${h.arena}`,
@@ -201,7 +288,7 @@ export function ensureWorldV2(w: WorldState): WorldState {
     invalidateAwardIndex(w);
     for (const t of w.tournaments) if (t.status === 'complete') t.awarded = true;
   }
-  w.worldVersion = WORLD_VERSION;
+  w.worldVersion = Math.max(w.worldVersion ?? 0, WORLD_VERSION);
   return w;
 }
 
@@ -227,8 +314,11 @@ export function appendAward(w: WorldState, a: AwardRecord, mode: 'edition' | 'ti
 
 /** A title changed hands (or was vacated): every current award of its series held by others becomes historical. */
 export function titleSeriesChanged(w: WorldState, arena: number, newHolder: string | null) {
+  seriesChanged(w, `title-${arena}`, newHolder);
+}
+/** A title series (arena "title-N" or regional "crown-<region>") changed hands. */
+export function seriesChanged(w: WorldState, series: string, newHolder: string | null) {
   const ix = index(w);
-  const series = `title-${arena}`;
   const cur = ix.bySeriesCurrent.get(series) ?? [];
   const keep: AwardRecord[] = [];
   for (const x of cur) {
@@ -285,13 +375,26 @@ export type AwardContext = {
 };
 
 /** Finalist medals are presented where there is a real final: Cups, Gauntlets and championship matches. */
-export function hasFinal(kind: string): boolean {
-  return kind === 'cup' || kind === 'gauntlet' || kind === 'championship';
+export function hasFinal(kind: string, format?: Format | string): boolean {
+  if (kind === 'regional') return format === 'single-elim' || format === 'double-elim';
+  return kind === 'cup' || kind === 'gauntlet' || kind === 'championship' || kind === 'regional-defense';
+}
+/** Medal definition for the runner-up of an event with a real final. */
+export function medalDefFor(kind: string, arena: number): string {
+  return kind === 'regional' || kind === 'regional-defense' ? 'rmedal' : `medal-t${arenaTier(arena)}`;
+}
+/** Regional circuit events (as opposed to the arena circuit / imperial events). */
+export function isRegionalKind(kind: string): boolean {
+  return kind === 'local-open' || kind === 'regional' || kind === 'regional-defense';
 }
 
 /** Placement points for the Season Laurel tally. */
 export const PLACE_POINTS = [10, 6, 4, 4, 2, 2, 2, 2];
-export const KIND_WEIGHT: Record<string, number> = { championship: 1.5, league: 1.25, invitational: 1.25, cup: 1, gauntlet: 1, open: 1, hosted: 0.5 };
+export const KIND_WEIGHT: Record<string, number> = {
+  championship: 1.5, league: 1.25, invitational: 1.25, cup: 1, gauntlet: 1, open: 1, hosted: 0.5,
+  // v0.3: qualifiers / Masters count toward the arena Season Laurel; regional events toward the Provincial Laurel.
+  qualifier: 0.5, elite: 1.5, 'local-open': 1, regional: 1.5, 'regional-defense': 1.5,
+};
 export function placementPoints(kind: string, place: number): number {
   return Math.round((PLACE_POINTS[place - 1] ?? 1) * (KIND_WEIGHT[kind] ?? 1));
 }
@@ -310,29 +413,30 @@ export function processTournamentAwards(w: WorldState, t: WorldTournament, ctx: 
   const rows = standings(st);
   const winner = st.winner ?? rows[0]?.id ?? null;
   const runnerUp = st.runnerUp ?? rows[1]?.id ?? null;
+  const regional = isRegionalKind(t.kind);
+  const region = t.region ?? IMPERIAL;
 
-  // Season Laurel tally (real placements of real events).
-  const key = `${t.season}:${t.arena}`;
-  const tally = (w.seasonTally![key] ??= {});
+  // Season tally (real placements of real events): arena Season Laurel, or the Provincial Laurel for regional events.
+  const key = `${t.season}:${regional ? region : t.arena}`;
+  const tally = regional ? ((w.regionTally ??= {})[key] ??= {}) : (w.seasonTally![key] ??= {});
   rows.forEach((r, i) => {
     const place = r.id === winner ? 1 : r.id === runnerUp ? 2 : Math.max(3, r.place || i + 1);
     tally[r.id] = (tally[r.id] ?? 0) + placementPoints(t.kind, place);
   });
 
   if (!winner) return out;
-  const gameIdsFor = (id: string) => {
-    const ps = new Map(st.rounds.flat().map((p) => [p.id, p]));
-    return Object.entries(t.gameIds).filter(([pid]) => {
-      const p = ps.get(pid);
-      return p && (p.white === id || p.black === id);
-    }).map(([, g]) => g);
-  };
+  const pairs = new Map(st.rounds.flat().map((p) => [p.id, p]));
+  const gameIdsFor = (id: string) => Object.entries(t.gameIds).filter(([pid]) => {
+    const p = pairs.get(pid);
+    return p && (p.white === id || p.black === id);
+  }).map(([, g]) => g);
   const wRow = rows.find((r) => r.id === winner);
+  const isTitle = t.kind === 'championship' || t.kind === 'regional' || t.kind === 'regional-defense';
   const base = (holder: string, defId: string, opp: string | null): AwardRecord => ({
     awardId: `${t.id}:${defId}:${holder}`, defId, holder, holderName: ctx.nameOf(holder), tournamentId: t.id, season: t.season, day: w.day,
     arena: t.arena, format: t.format, finalOpponent: opp, finalOpponentName: opp ? ctx.nameOf(opp) : undefined,
-    result: '', gameIds: gameIdsFor(holder), current: false,
-    ...(t.kind === 'championship' ? { holderRating: st.ratings[holder], opponentRating: opp ? st.ratings[opp] : undefined } : {}),
+    result: '', gameIds: gameIdsFor(holder), current: false, region,
+    ...(isTitle || hasFinal(t.kind, t.format) ? { holderRating: st.ratings[holder], opponentRating: opp ? st.ratings[opp] : undefined } : {}),
   });
   const add = (a: AwardRecord, mode: 'edition' | 'title' | 'none') => {
     const r = appendAward(w, a, mode);
@@ -347,25 +451,30 @@ export function processTournamentAwards(w: WorldState, t: WorldTournament, ctx: 
   const perfect = !!wRow && st.format !== 'match-series' && wRow.losses === 0 && wRow.draws === 0 && wRow.wins >= 5;
   const flags = { ...(unbeaten ? { unbeaten: true } : {}), ...(perfect ? { perfect: true } : {}) };
 
-  const wd = winnerDefFor(t.kind, t.arena);
+  const wd = t.trophy ?? winnerDefFor(t.kind, t.arena, t);
   const isChamp = t.kind === 'championship';
-  const series = isChamp ? `title-${t.arena}` : `${t.kind}-${t.arena}`;
-  const defense = isChamp && ctx.prevHolder === winner;
-  add({ ...base(winner, wd, runnerUp), result, current: true, series, ...flags, ...(defense ? { defenseNumber: (ctx.prevDefenses ?? 0) + 1 } : {}) }, isChamp ? 'title' : 'edition');
-  if (isChamp && t.arena === 11) add({ ...base(winner, 'imperial-crown', runnerUp), result, current: true, series, ...flags }, 'title');
+  const isCrown = t.kind === 'regional' || t.kind === 'regional-defense';
+  const series = isChamp ? `title-${t.arena}` : isCrown ? `crown-${region}` : (t.series ?? `${t.kind}-${t.arena}`);
+  const defense = isTitle && !!ctx.prevHolder && ctx.prevHolder === winner;
+  add({ ...base(winner, wd, runnerUp), result, current: true, series, ...flags, ...(defense ? { defenseNumber: (ctx.prevDefenses ?? 0) + 1 } : {}) }, isTitle ? 'title' : 'edition');
+  if (isChamp && t.arena === TOP_ARENA) add({ ...base(winner, 'imperial-crown', runnerUp), result, current: true, series, ...flags }, 'title');
   if (defense) {
     const n = (ctx.prevDefenses ?? 0) + 1;
-    add({ ...base(winner, `defense-t${arenaTier(t.arena)}`, runnerUp), result, current: true, series, defenseNumber: n }, 'title');
-    if (n === 3) add({ ...base(winner, 'hist-dynasty', runnerUp), result, defenseNumber: n }, 'none');
+    add({ ...base(winner, isCrown ? 'rdefense' : `defense-t${arenaTier(t.arena)}`, runnerUp), result, current: true, series, defenseNumber: n }, 'title');
+    if (n === 3) add({ ...base(winner, isCrown ? 'hist-regional-dynasty' : 'hist-dynasty', runnerUp), result, defenseNumber: n }, 'none');
   }
-  if (runnerUp && hasFinal(t.kind)) {
-    add({ ...base(runnerUp, `medal-t${arenaTier(t.arena)}`, winner), result: eventResult(st, runnerUp, winner), current: true, series: `medal-${t.kind}-${t.arena}` }, 'edition');
+  if (runnerUp && hasFinal(t.kind, t.format)) {
+    add({ ...base(runnerUp, medalDefFor(t.kind, t.arena), winner), result: eventResult(st, runnerUp, winner), current: true, series: `medal-${isCrown ? region : t.kind}-${isCrown ? 'crown' : t.arena}` }, 'edition');
   }
   // Historical feats.
   if (perfect) add({ ...base(winner, 'hist-perfect', runnerUp), result, perfect: true }, 'none');
-  if (!isChamp && st.entrants.length >= 8 && st.entrants[st.entrants.length - 1] === winner) add({ ...base(winner, 'hist-underdog', runnerUp), result }, 'none');
+  if (!isTitle && st.entrants.length >= 8 && st.entrants[st.entrants.length - 1] === winner) add({ ...base(winner, 'hist-underdog', runnerUp), result }, 'none');
+  let upsetCrown = false;
   if (isChamp && ctx.prevHolder && ctx.prevHolder !== winner && runnerUp === ctx.prevHolder) {
-    if ((st.ratings[runnerUp] ?? 0) - (st.ratings[winner] ?? 0) >= 150) add({ ...base(winner, 'hist-upset-crown', runnerUp), result }, 'none');
+    if ((st.ratings[runnerUp] ?? 0) - (st.ratings[winner] ?? 0) >= 150) upsetCrown = !!add({ ...base(winner, 'hist-upset-crown', runnerUp), result }, 'none');
+  }
+  if (!upsetCrown && runnerUp && (hasFinal(t.kind, t.format) || isTitle && st.format === 'match-series') && (st.ratings[runnerUp] ?? 0) - (st.ratings[winner] ?? 0) >= 250) {
+    add({ ...base(winner, 'hist-giant-slayer', runnerUp), result }, 'none');
   }
   if (isChamp && ctx.prevHolder !== winner && w.reigns.some((r) => r.titleId === t.titleId && r.holder === winner && r.to !== null)) {
     add({ ...base(winner, 'hist-comeback', runnerUp), result }, 'none');
@@ -373,18 +482,25 @@ export function processTournamentAwards(w: WorldState, t: WorldTournament, ctx: 
   const ix = index(w);
   const mine = ix.byHolder.get(winner) ?? [];
   const victories = mine.filter(isVictory);
-  if (victories.filter((a) => a.season === t.season && a.arena === t.arena).length === 3) add({ ...base(winner, 'hist-sweep', runnerUp), result }, 'none');
+  if (!regional && t.kind !== 'elite' && victories.filter((a) => a.season === t.season && a.arena === t.arena && (a.region ?? IMPERIAL) === IMPERIAL && a.defId !== 'masters').length === 3) {
+    add({ ...base(winner, 'hist-sweep', runnerUp), result }, 'none');
+  }
   // Lifetime distinctions (once per holder).
   const life = (defId: string, cond: boolean) => {
     if (!cond) return;
-    add({ ...base(winner, defId, null), awardId: `life:${defId}:${winner}`, finalOpponent: null, finalOpponentName: undefined, opponentRating: undefined, result: '' }, 'none');
+    add({ ...base(winner, defId, null), awardId: `life:${defId}:${winner}`, finalOpponent: null, finalOpponentName: undefined, opponentRating: undefined, holderRating: undefined, result: '' }, 'none');
   };
   life('dist-decorated', victories.length >= 10);
   life('dist-laureate', victories.length >= 25);
   life('dist-triple-crown', new Set(mine.filter((a) => a.defId.startsWith('sig-')).map((a) => a.arena)).size >= 3);
-  life('dist-polymath', new Set(victories.map((a) => a.defId.replace(/-t\d$/, '').replace(/^sig-\d+$/, 'sig'))).size >= 5);
+  life('dist-polymath', new Set(victories.map(victoryKind)).size >= 5);
   life('dist-iron-champion', mine.filter((a) => a.defId.startsWith('defense-')).length >= 10);
   return out;
+}
+
+/** Kind of event victory, for the "Laurel of Many Fields" distinction. */
+export function victoryKind(a: AwardRecord): string {
+  return a.defId.replace(/-t\d$/, '').replace(/^sig-\d+$/, 'sig').replace(/^rcrown-.*$/, 'rcrown').replace(/^lopen-.*$/, 'lopen');
 }
 
 /**
@@ -398,7 +514,7 @@ export function presentSeasonLaurels(w: WorldState, nameOf: (id: string) => stri
   const tallies = w.seasonTally!;
   for (const key of Object.keys(tallies)) {
     const [season, arena] = key.split(':').map(Number);
-    const pending = w.tournaments.some((t) => t.season === season && t.arena === arena && t.status !== 'complete');
+    const pending = w.tournaments.some((t) => t.season === season && t.arena === arena && t.status !== 'complete' && !isRegionalKind(t.kind));
     if (season >= w.season) continue; // the season is still being played
     if (pending && w.season < season + 2) continue; // late events (e.g. waiting on the player) get one extra season
     const tally = tallies[key];
@@ -414,7 +530,7 @@ export function presentSeasonLaurels(w: WorldState, nameOf: (id: string) => stri
     const a = appendAward(w, {
       awardId: `${tid}:${defId}:${holder}`, defId, holder, holderName: nameOf(holder), tournamentId: tid, season, day: w.day, arena,
       format: 'season', finalOpponent: second?.[0] ?? null, finalOpponentName: second ? nameOf(second[0]) : undefined,
-      result: `${pts} pts`, gameIds: [], current: true, series: `laurel-${arena}`,
+      result: `${pts} pts`, gameIds: [], current: true, series: `laurel-${arena}`, region: IMPERIAL,
     }, 'edition');
     if (a) {
       out.push(a);
@@ -422,6 +538,48 @@ export function presentSeasonLaurels(w: WorldState, nameOf: (id: string) => stri
     }
   }
   return out;
+}
+
+/**
+ * Provincial Laurels (v0.3): the top performer of each region's circuit in a
+ * season (local opens, regional championship / title defence), once all of
+ * that season's regional events in the region are complete (at the latest two
+ * seasons later). Same tie-break rules as the Season Laurel.
+ */
+export function presentRegionLaurels(w: WorldState, nameOf: (id: string) => string, onAward?: (a: AwardRecord) => void, arenaOf: (id: string) => number = () => 5): AwardRecord[] {
+  const out: AwardRecord[] = [];
+  const tallies = (w.regionTally ??= {});
+  for (const key of Object.keys(tallies)) {
+    const [ss, region] = key.split(':');
+    const season = Number(ss);
+    if (season >= w.season) continue;
+    const pending = w.tournaments.some((t) => t.season === season && t.region === region && t.status !== 'complete' && isRegionalKind(t.kind));
+    if (pending && w.season < season + 2) continue;
+    const tally = tallies[key];
+    delete tallies[key];
+    const ix = index(w);
+    const wins = (id: string) => (ix.byHolder.get(id) ?? []).filter((a) => isVictory(a) && a.season === season && a.region === region).length;
+    const ranked = Object.entries(tally).sort((a, b) => b[1] - a[1] || wins(b[0]) - wins(a[0]) || (a[0] < b[0] ? -1 : 1));
+    if (!ranked.length) continue;
+    const [holder, pts] = ranked[0];
+    const second = ranked[1];
+    const tid = `S${season}-R${region}`;
+    const a = appendAward(w, {
+      awardId: `${tid}:rlaurel:${holder}`, defId: 'rlaurel', holder, holderName: nameOf(holder), tournamentId: tid, season, day: w.day, arena: Math.max(0, Math.min(TOP_ARENA, arenaOf(holder))),
+      format: 'season', finalOpponent: second?.[0] ?? null, finalOpponentName: second ? nameOf(second[0]) : undefined,
+      result: `${pts} pts`, gameIds: [], current: true, series: `rlaurel-${region}`, region,
+    }, 'edition');
+    if (a) {
+      out.push(a);
+      onAward?.(a);
+    }
+  }
+  return out;
+}
+
+/** Awards of a regional circuit, oldest first. */
+export function awardsByRegion(w: WorldState, region: string): AwardRecord[] {
+  return allAwards(w).filter((a) => (a.region ?? IMPERIAL) === region);
 }
 
 // ---------------------------------------------------------------- selectors

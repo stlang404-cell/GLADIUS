@@ -12,15 +12,20 @@
  */
 import type { Competitor, HallOfRecords, LegendEntry, RivalryEntry, AwardRecord, ChronicleEntry } from './types';
 import type { WorldState, PlayerState } from '../game/state';
-import { awardsFor, allAwards, isVictory, trophyPrestige, emptyHall, PLAYER } from './trophies';
+import { awardsFor, allAwards, isVictory, trophyPrestige, emptyHall, appendAward, PLAYER } from './trophies';
+import { getCompetitor, regionOf } from './indexes';
+import { RANKS, TOP_ARENA } from './arenas';
 
 const LEGEND_TOP = 40;
 const RIVALRY_TOP = 40;
+/** Arena champions kept in the legends archive beyond the per-metric top lists. */
+const LEGEND_CHAMPION_CAP = 1000;
 
 export function legendOf(c: Competitor): LegendEntry {
   return {
     id: c.id, name: c.name, peak: c.peak, peakRank: c.peakRank, games: c.games, w: c.w, d: c.d, l: c.l,
     tournamentsWon: c.tournamentsWon, championships: c.championships, retiredDay: c.retiredDay, debutDay: c.debutDay,
+    region: regionOf(c), style: c.style, birthDay: c.birthDay, tp: c.tp,
   };
 }
 
@@ -50,18 +55,32 @@ export function archiveLegends(hall: HallOfRecords, removed: Competitor[]) {
     const sorted = [...all].sort((a, b) => m(b) - m(a) || (a.id < b.id ? -1 : 1));
     for (const l of sorted.slice(0, LEGEND_TOP)) if (m(l) > 0) keep.add(l.id);
   }
+  // v0.3: every arena champion stays in the archive (Hall of Fame "legends"), capped by championships then peak.
+  const champs = all.filter((l) => l.championships > 0 && !keep.has(l.id)).sort((a, b) => b.championships - a.championships || b.peak - a.peak || (a.id < b.id ? -1 : 1));
+  for (const l of champs.slice(0, LEGEND_CHAMPION_CAP)) keep.add(l.id);
   hall.legends = all.filter((l) => keep.has(l.id)).sort((a, b) => (a.id < b.id ? -1 : 1));
 }
 
-/** Update the max-snapshot of most-played pairings from competitors' head-to-head lists. */
+/** Update the max-snapshot of most-played pairings from competitors' head-to-head lists. O(n·8). */
 export function snapshotRivalries(hall: HallOfRecords, competitors: Competitor[], day: number) {
-  const names = new Map(competitors.map((c) => [c.id, c.name]));
   const map = new Map(hall.rivalries.map((r) => [`${r.a}|${r.b}`, r]));
+  // Entries below the current RIVALRY_TOP-th pairing can never enter the list (games only grow).
+  let floor = hall.rivalries.length >= RIVALRY_TOP ? Math.min(...hall.rivalries.map((r) => r.games)) : 0;
+  if (floor === 0) {
+    // First snapshot: only pairings at or above the RIVALRY_TOP-th largest count (×2: each pairing appears twice) can enter.
+    const all: number[] = [];
+    for (const c of competitors) for (const h of c.h2h) all.push(h.w + h.d + h.l);
+    const g = Float64Array.from(all).sort();
+    floor = g.length > 2 * RIVALRY_TOP ? g[g.length - 2 * RIVALRY_TOP] : 0;
+  }
+  let names: Map<string, string> | null = null;
   for (const c of competitors) {
     for (const h of c.h2h) {
-      if (h.id === PLAYER || !names.has(h.id)) continue;
-      const [a, b] = c.id < h.id ? [c.id, h.id] : [h.id, c.id];
       const games = h.w + h.d + h.l;
+      if (games < floor || h.id === PLAYER) continue;
+      names ??= new Map(competitors.map((x) => [x.id, x.name]));
+      if (!names.has(h.id)) continue;
+      const [a, b] = c.id < h.id ? [c.id, h.id] : [h.id, c.id];
       const key = `${a}|${b}`;
       const prev = map.get(key);
       if (prev && prev.games >= games) continue;
@@ -228,9 +247,23 @@ export function checkRecordsBroken(w: WorldState, push: (e: ChronicleEntry) => v
     }
     if (top.value > prev.value) {
       if (top.holder !== prev.holder && prev.value > 0) {
-        const e: ChronicleEntry = { day: w.day, kind: 'record', tag: 'record-broken', ids: [top.holder], text: `${top.name} breaks the record — ${RECORD_LABELS[k]}: ${top.value} (was ${prev.value}, ${prev.name}).` };
+        // v0.3: a new all-time peak rating is a 'rating-record'; other records stay 'record-broken'.
+        const c = getCompetitor(w, top.holder);
+        const e: ChronicleEntry = {
+          day: w.day, kind: 'record', tag: k === 'peak-elo' ? 'rating-record' : 'record-broken', ids: [top.holder],
+          ...(c ? { arena: RANKS[c.rank].arena, region: regionOf(c) } : {}),
+          text: k === 'peak-elo'
+            ? `Rating record: ${top.name} reaches ${top.value}, the highest rating ever recorded in the empire (was ${prev.value}, ${prev.name}).`
+            : `${top.name} breaks the record — ${RECORD_LABELS[k]}: ${top.value} (was ${prev.value}, ${prev.name}).`,
+        };
         push(e);
         out.push(e);
+        // Historical trophy, once per holder per record (deterministic id).
+        appendAward(w, {
+          awardId: `rec:${k}:${top.holder}`, defId: 'hist-record', holder: top.holder, holderName: top.name, tournamentId: `rec-${k}`, season: w.season, day: w.day,
+          arena: c ? RANKS[c.rank].arena : TOP_ARENA, format: 'record', finalOpponent: prev.holder, finalOpponentName: prev.name,
+          result: `${RECORD_LABELS[k]}: ${top.value}`, gameIds: [], current: false, region: c ? regionOf(c) : 'imperial',
+        }, 'none');
       }
       w.hall.best[k] = { holder: top.holder, name: top.name, value: top.value, day: w.day };
     }
@@ -250,7 +283,7 @@ export type CompetitorHonours = {
 };
 /** Everything a competitor profile needs to show real trophies and records. */
 export function competitorHonours(w: WorldState, id: string): CompetitorHonours | null {
-  const c = w.competitors.find((x) => x.id === id);
+  const c = getCompetitor(w, id);
   const leg = c ? null : w.hall?.legends.find((l) => l.id === id);
   if (!c && !leg) return null;
   const awards = awardsFor(w, id);

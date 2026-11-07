@@ -16,6 +16,7 @@ import { objectives, legacyTimeline } from '../../src/game/legacy';
 import { ACHIEVEMENTS } from '../../src/game/achievements';
 import type { Save } from '../../src/game/state';
 import type { Competitor } from '../../src/world/types';
+import { CHRONICLE_CAP, CHRONICLE_SLACK } from '../../src/world/sim';
 
 const SEASONS = Number(process.env.SOAK_SEASONS ?? 50);
 const PLAYER_SKILL = 1750;
@@ -59,8 +60,8 @@ describe('soak: 50+ seasons of a living empire with a player career', () => {
         const win = mine.filter(isVictory);
         expect(win.length).toBe(h.winner ? 1 : 0);
         if (h.winner) expect(win[0].holder).toBe(h.winner);
-        const md = mine.filter((a) => a.defId.startsWith('medal-')).length;
-        expect(md).toBe(h.winner && h.runnerUp && hasFinal(h.kind) ? 1 : 0);
+        const md = mine.filter((a) => a.defId.startsWith('medal-') || a.defId === 'rmedal').length;
+        expect(md).toBe(h.winner && h.runnerUp && hasFinal(h.kind, h.format) ? 1 : 0);
         winnerAwards += win.length;
         medals += md;
       }
@@ -69,7 +70,7 @@ describe('soak: 50+ seasons of a living empire with a player career', () => {
       expect(seenAwards.size).toBe(w.awards!.length);
       // Award count == completed tournaments × awarded defs (winner cup / medal).
       expect(w.awards!.filter(isVictory).length).toBe(winnerAwards);
-      expect(w.awards!.filter((a) => a.defId.startsWith('medal-')).length).toBe(medals);
+      expect(w.awards!.filter((a) => a.defId.startsWith('medal-') || a.defId === 'rmedal').length).toBe(medals);
       // One current holder per title.
       for (const t of w.titles) {
         const holders = new Set(currentOfSeries(w, `title-${t.arena}`).map((a) => a.holder));
@@ -94,7 +95,7 @@ describe('soak: 50+ seasons of a living empire with a player career', () => {
           if (c) expect(c.arc?.prodigy).toBe(e.day);
         }
       }
-      expect(w.chronicle.length).toBeLessThanOrEqual(600);
+      expect(w.chronicle.length).toBeLessThanOrEqual(CHRONICLE_CAP + CHRONICLE_SLACK);
       // Live competitors: tournament wins == registry victories (since the world began).
       for (const c of w.competitors) expect(awardsFor(w, c.id).filter(isVictory).length).toBe(c.tournamentsWon);
       // Player: objectives never empty, timeline ordered.

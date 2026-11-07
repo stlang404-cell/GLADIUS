@@ -29,6 +29,12 @@ export type TournamentConfig = {
   matchGames?: number;
   /** Entrants seeded first, in this order, ahead of rating order (e.g. reigning title holders). */
   topSeeds?: EntrantId[];
+  /**
+   * Match series only (v0.3): this entrant (the reigning champion) wins a
+   * drawn classical match — the classic "champion's draw odds" — so no
+   * tiebreak is played. Default: tiebreaks (rapid, then armageddon).
+   */
+  retainOnTie?: EntrantId;
 };
 
 type Stage = 'bracket' | 'gf' | 'gf2' | 'done';
@@ -839,6 +845,9 @@ function generateMatch(t: TournamentState): void {
     t.rounds.push([newPairing(t, r, w, b, { game: total + 1 })]);
     return;
   }
+  const keeper = t.config.retainOnTie;
+  if (keeper === A) return finish(t, A, B);
+  if (keeper === B) return finish(t, B, A);
   const [ra, rb] = scoreOf(rapid);
   if (ra > 1) return finish(t, A, B);
   if (rb > 1) return finish(t, B, A);

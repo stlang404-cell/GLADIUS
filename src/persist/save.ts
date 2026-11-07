@@ -2,6 +2,7 @@ import { idb, commitOps, getMany, CommitConflict, type Op } from './db';
 import { hashString } from '../core/rng';
 import { SAVE_SCHEMA, DEFAULT_SETTINGS, type Save, type GameRecord } from '../game/state';
 import { createCompetitor } from '../world/population';
+import { migrateGameRecordArenas } from '../game/legacy';
 import {
   splitSave, assembleSave, decodePart, verifyPart, sumOf, sizeOf, sumString, layoutSizes, canonicalJson,
   COLD, RH, HOT_KEYS, type StoredPart, type SplitResult,
@@ -467,7 +468,7 @@ async function loadSplit(manRec: ManifestRecord): Promise<LoadResult> {
   return recoverParts(m, decoded, raw, damaged);
 }
 
-const isPopData = (n: string) => n.startsWith('pop/hot/') || n.startsWith('pop/cold/') || n.startsWith('pop/rh/') || n.startsWith('pop/warm/');
+const isPopData = (n: string) => n.startsWith('pop/hot/') || n.startsWith('pop/cold/') || n.startsWith('pop/rh/') || n.startsWith('pop/warm/') || n.startsWith('pop/h2h/');
 
 function lenient(r: StoredPart | undefined): unknown {
   try {
@@ -513,7 +514,7 @@ async function recoverParts(m: Manifest, decoded: Map<string, unknown>, raw: Map
     let regenerated = 0;
     const hotSet = new Set<string>(HOT_KEYS);
     const keysOf = (fam: string, src: Record<string, unknown>) =>
-      fam === 'cold' ? COLD.keys : fam === 'rh' ? RH.keys : Object.keys(src).filter((k) => !COLD.keys.includes(k) && !RH.keys.includes(k) && !hotSet.has(k));
+      fam === 'cold' ? COLD.keys : fam === 'rh' ? RH.keys : fam === 'h2h' ? ['h2h'] : Object.keys(src).filter((k) => !COLD.keys.includes(k) && !RH.keys.includes(k) && !hotSet.has(k) && k !== 'h2h');
     const fill = (id: string, what: string, c: Record<string, unknown>) => {
       const src = byId.get(id);
       if (what.startsWith('hot:')) {
@@ -618,14 +619,21 @@ async function migrateLegacy(env: Envelope): Promise<LoadResult> {
 
 // ------------------------------------------------------------------ games
 
+/**
+ * Game records. v0.3: records written before the 24-arena layout carry v0.2
+ * arena / rank numbers; they are remapped when read (and tagged with
+ * `arenaLayout`), new records are tagged when stored.
+ */
 export function storeGame(g: GameRecord) {
+  g.arenaLayout ??= 24;
   return idb.put('games', g.id, g);
 }
-export function getGame(id: string) {
-  return idb.get<GameRecord>('games', id);
+export async function getGame(id: string) {
+  const g = await idb.get<GameRecord>('games', id);
+  return g ? migrateGameRecordArenas(g) : g;
 }
-export function allGames() {
-  return idb.all<GameRecord>('games');
+export async function allGames() {
+  return (await idb.all<GameRecord>('games')).map(migrateGameRecordArenas);
 }
 
 // ------------------------------------------------------------------ export / import
@@ -658,7 +666,7 @@ export function parseImport(text: string): { save: Save; games: GameRecord[] } {
 export async function importAll(text: string): Promise<Save> {
   const { save, games } = parseImport(text);
   await idb.clear('games');
-  await commitOps(games.map((g) => ({ store: 'games' as const, key: g.id, value: g })));
+  await commitOps(games.map((g) => ({ store: 'games' as const, key: g.id, value: migrateGameRecordArenas(g) })));
   T = fresh();
   await enqueue(save, { full: true, verify: true, forceBackup: true });
   return save;

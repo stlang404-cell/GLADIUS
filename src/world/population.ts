@@ -3,19 +3,47 @@ import { generateName } from './names';
 import { naturalRank } from './arenas';
 import { applyResult } from '../rating/elo';
 import { TRAITS, DAYS_PER_YEAR, type Competitor, type Trait } from './types';
+import { regionForOrigin } from './regions';
 import { type PlayStyle, STYLE_TO_OPENINGS, PLAY_STYLES } from '../engine/styles';
 
-export const POPULATION_SIZE = 5000;
+/** v0.3: 25,000 persistent competitors (architected for 50,000+: indexes, no O(n²)). */
+export const POPULATION_SIZE = 25000;
+/** v0.2 population size (old saves; migration grows them to POPULATION_SIZE). */
+export const POPULATION_SIZE_V2 = 5000;
 export const MIN_SKILL = 250;
 export const MAX_SKILL = 3150;
 
 const STYLES: PlayStyle[] = PLAY_STYLES;
 
 /**
- * Potential (career-peak strength). A normal core with a stretched upper tail
- * so the empire has a broad base and a thin, contested elite.
+ * Potential (career-peak strength), v0.3 competitive pyramid.
+ *
+ * A piecewise-linear transform of a standard normal draw: a broad base of
+ * developing players, a thinner expert band and a very thin elite. The knots
+ * are chosen for a 25,000-strong empire (≈ 1 in 740 can reach 2710, ≈ 1 in
+ * 4,300 can reach 2900, ≈ 1 in 31,000 can reach 3040); a larger population
+ * simply has proportionally more elite (no per-size tuning, no O(n) step).
+ * The v0.2 sampler (`samplePotentialV2`) had a quadratic tail that produced
+ * dozens of 3000+ players at 25k; it is kept for reference/tests only.
  */
+const POT_KNOTS: [number, number][] = [[-4, 420], [-2, 560], [-1, 850], [0, 1250], [1, 1680], [2, 2150], [2.5, 2430], [3, 2710], [3.5, 2900], [4, 3040], [4.6, 3140]];
+export function potentialFromZ(z: number): number {
+  const k = POT_KNOTS;
+  if (z <= k[0][0]) return k[0][1];
+  for (let i = 1; i < k.length; i++) {
+    if (z <= k[i][0]) {
+      const [z0, p0] = k[i - 1];
+      const [z1, p1] = k[i];
+      return p0 + ((z - z0) / (z1 - z0)) * (p1 - p0);
+    }
+  }
+  return MAX_SKILL;
+}
 export function samplePotential(rng: Rng): number {
+  return clamp(potentialFromZ(rng.normal()), 500, MAX_SKILL);
+}
+/** v0.2 sampler (quadratic upper tail). Not used by the simulation any more. */
+export function samplePotentialV2(rng: Rng): number {
   const z = rng.normal();
   const tail = z > 1 ? 230 * (z - 1) * (z - 1) : 0;
   return clamp(1250 + 430 * z + tail, 500, MAX_SKILL);
@@ -71,8 +99,8 @@ export function createCompetitor(
     female,
     origin,
     portraitSeed: mixSeed(worldSeed, 'portrait', serial),
-    birthDay: Math.round(day - age * DAYS_PER_YEAR),
-    debutDay: Math.round(day - careerYears * DAYS_PER_YEAR),
+    birthDay: Math.round(day - age * DAYS_PER_YEAR) || 0, // never -0 (JSON would not round-trip it)
+    debutDay: Math.round(day - careerYears * DAYS_PER_YEAR) || 0,
     skill,
     potential,
     peakAge,
@@ -97,6 +125,9 @@ export function createCompetitor(
     ratingHistory: [[day, rating]],
     h2h: [],
     retiredDay: null,
+    region: regionForOrigin(origin, serial),
+    tp: 0,
+    last: 0,
   };
 }
 
@@ -118,10 +149,9 @@ export function ageYears(c: Competitor, day: number): number {
   return (day - c.birthDay) / DAYS_PER_YEAR;
 }
 
-export function generatePopulation(worldSeed: number, size = POPULATION_SIZE, day = 0): Competitor[] {
-  const taken = new Set<string>();
+export function generatePopulation(worldSeed: number, size = POPULATION_SIZE, day = 0, firstSerial = 1, taken = new Set<string>()): Competitor[] {
   const out: Competitor[] = [];
-  for (let i = 1; i <= size; i++) {
+  for (let i = firstSerial; i < firstSerial + size; i++) {
     const c = createCompetitor(i, worldSeed, day, taken);
     seedRecord(c, createRng(mixSeed(worldSeed, 'record', i)));
     out.push(c);

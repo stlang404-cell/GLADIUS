@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { emptyWorld } from '../src/world/world';
 import { advanceWorld } from '../src/world/world';
 import { newSave, startGame, finishPlayerGame, suggestOpponents, playerTournamentGame, acceptTournament, refreshInvitations, careerRating, restDays } from '../src/game/career';
-import { RANKS, decideRank, ARENAS } from '../src/world/arenas';
+import { RANKS, decideRank, ARENAS, naturalRank, migrateArenaIndex, migrateRankIndex, TRIAL_BYPASS_MARGIN, ARENA_DEMOTION_MARGIN } from '../src/world/arenas';
 import { PLAYER_ID } from '../src/world/calendar';
 import type { GameRecord, Save } from '../src/game/state';
 import { createRng } from '../src/core/rng';
@@ -27,18 +27,30 @@ function play(s: Save, oppId: string, score: number, kind: GameRecord['kind'] = 
 
 describe('rank rules', () => {
   it('provisional players are placed by rating', () => {
+    // v0.3 layout: 24 arenas × 3 grades. 1250 lies in the Aqueduct Heights (arena 7, 1200–1299).
+    expect(naturalRank(1250)).toBe(22);
     expect(decideRank(0, 1250, true)).toEqual({ kind: 'grade-up', to: 2 });
-    expect(decideRank(10, 1250, true)).toEqual({ kind: 'grade-up', to: 11 });
+    expect(decideRank(20, 1250, true)).toEqual({ kind: 'grade-up', to: 22 });
     expect(decideRank(2, 1250, true)).toEqual({ kind: 'grade-up', to: 4 });
   });
   it('crossing an arena needs a trial unless dominant', () => {
-    const top = 5; // Principalis, top of Legion Camp (700-899)
-    expect(decideRank(top, 905, false).kind).toBe('trial-available');
-    expect(decideRank(top, 905 + 150, false).kind).toBe('arena-up');
+    const top = 8; // Miles I, top of the Legion Camp (700-799)
+    expect(RANKS[top].name).toBe('Miles I');
+    expect(decideRank(top, 805, false).kind).toBe('trial-available');
+    expect(decideRank(top, 800 + TRIAL_BYPASS_MARGIN, false).kind).toBe('arena-up');
   });
   it('demotion buffers', () => {
-    expect(decideRank(6, 880, false).kind).toBe('stay'); // 20 below Iron Citadel floor
-    expect(decideRank(6, 790, false).kind).toBe('arena-down');
+    const rhine = 9; // Veteranus III, Rhine Frontier floor 800
+    expect(decideRank(rhine, 780, false).kind).toBe('stay'); // 20 below the floor
+    expect(decideRank(rhine, 800 - ARENA_DEMOTION_MARGIN - 1, false).kind).toBe('arena-down');
+  });
+  it('v0.2 indices map onto the 24-arena layout', () => {
+    expect(migrateArenaIndex(0)).toBe(0);
+    expect(migrateArenaIndex(5)).toBe(10);
+    expect(migrateArenaIndex(11)).toBe(23);
+    expect(migrateRankIndex(35)).toBe(71);
+    expect(migrateRankIndex(4)).toBe(7); // Decanus (arena 1, tier 1) → Legion Camp tier 1
+    for (let a = 0; a < 12; a++) expect(ARENAS[migrateArenaIndex(a)].legacyIndex).toBe(a);
   });
 });
 
@@ -52,7 +64,7 @@ describe('career integration', () => {
     expect(pg.delta).toBeGreaterThan(0);
     expect(s.player.w).toBe(1);
     expect(s.world.day).toBe(day0 + 1);
-    expect(opp.games).toBe(oppGames + 1);
+    expect(opp.games).toBeGreaterThanOrEqual(oppGames + 1); // + any off-screen game the opponent plays on the new day
     expect(s.player.h2h[opp.id].w).toBe(1);
     expect(pg.influence).toBeGreaterThan(0);
   });
@@ -105,7 +117,9 @@ describe('career integration', () => {
   it('ARENAS floors are increasing', () => {
     for (let i = 1; i < ARENAS.length; i++) expect(ARENAS[i].floor).toBeGreaterThan(ARENAS[i - 1].floor);
     for (let i = 1; i < RANKS.length; i++) expect(RANKS[i].floor).toBeGreaterThan(RANKS[i - 1].floor);
-    expect(RANKS.length).toBe(36);
+    expect(RANKS.length).toBe(72);
+    expect(ARENAS.length).toBe(24);
+    expect(new Set(RANKS.map((r) => r.id)).size).toBe(72);
     expect(PLAYER_ID).toBe('player');
   });
 });

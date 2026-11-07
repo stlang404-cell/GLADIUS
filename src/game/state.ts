@@ -1,5 +1,6 @@
 import type { RatingState, TimeControlPool } from '../rating/elo';
-import type { Competitor, ChronicleEntry, TitleState, TitleReign, AwardRecord, HallOfRecords } from '../world/types';
+import type { Competitor, ChronicleEntry, TitleState, TitleReign, AwardRecord, HallOfRecords, Feud, UpsetEntry } from '../world/types';
+import type { RegionId } from '../world/regions';
 import type { SimContext } from '../world/sim';
 import type { TournamentState, Format } from '../tournament/formats';
 import type { ResultCode, Termination } from '../chess/rules';
@@ -94,6 +95,11 @@ export type PlayerState = {
   timeline?: TimelineEvent[];
   /** Append-only season-end reports (one per season rollover). */
   seasonReports?: SeasonReport[];
+  // ---- v0.3 (optional) ----
+  /** Home region for the regional circuit (default 'latium', see career.playerRegion). */
+  region?: RegionId;
+  /** Rank layout of rank / peakRank / rankHistory / trial / unlockedSets: 24 arenas (v0.3). Absent = v0.2 (12 arenas), remapped by ensureSaveV2. */
+  rankLayout?: number;
 };
 
 export type PlayerLedger = {
@@ -202,6 +208,8 @@ export type GameRecord = {
   analysis?: GameAnalysis;
   opening?: { eco: string; name: string } | null;
   source: 'engine' | 'player';
+  /** v0.3: arena / rank numbering of `arena` and the sides' `rank` (24 = 24 arenas). Absent = v0.2 numbering; persist/save.ts remaps on read. */
+  arenaLayout?: number;
 };
 
 export type ActiveGame = {
@@ -230,9 +238,14 @@ export type Invitation = {
 };
 export type InvitationContext =
   | 'rival-rematch' | 'regional-championship' | 'open-registration' | 'elite-invitational' | 'invitational'
-  | 'seeded' | 'wildcard' | 'title-challenge' | 'exhibition' | 'challenge' | 'trial';
+  | 'seeded' | 'wildcard' | 'title-challenge' | 'exhibition' | 'challenge' | 'trial'
+  // v0.3 regional circuit
+  | 'local-open' | 'regional-crown' | 'regional-defense' | 'qualifier' | 'imperial-masters' | 'rival-challenge';
 
-export type TournamentKind = 'open' | 'cup' | 'gauntlet' | 'invitational' | 'league' | 'championship' | 'hosted';
+export type TournamentKind =
+  | 'open' | 'cup' | 'gauntlet' | 'invitational' | 'league' | 'championship' | 'hosted'
+  // v0.3: regional circuit and imperial events
+  | 'local-open' | 'regional' | 'regional-defense' | 'qualifier' | 'elite';
 
 export type WorldTournament = {
   id: string;
@@ -257,6 +270,27 @@ export type WorldTournament = {
   hostId?: string;
   /** v0.2: set once trophies for this tournament have been presented (idempotency guard). */
   awarded?: boolean;
+  // ---- v0.3 (optional; `tournamentInfo()` derives them for older records) ----
+  /** Regional circuit, or 'imperial' for the arena circuit / imperial events. */
+  region?: string;
+  /** Prestige value of the event (see calendar.tournamentPrestige). */
+  prestige?: number;
+  /** Human-readable qualification rule. */
+  qualification?: string;
+  /** Historical series key (winners by series), e.g. "open-4", "crown-latium", "lopen-gallia-upper", "masters". */
+  series?: string;
+  /** Winner's trophy definition id. */
+  trophy?: string;
+  /** Local opens: arena band [lo, hi]. */
+  band?: [number, number];
+  /** Qualifier: the tournament its winner qualifies for. */
+  feeds?: string;
+  /** Entrants guaranteed a place through qualifiers / regional opens. */
+  qualified?: string[];
+  /** Match length for match-series events created by the regional circuit. */
+  matchGames?: number;
+  /** Set once rivalry encounters / upsets have been recorded (idempotency guard). */
+  encounters?: boolean;
 };
 
 export type WorldState = SimContext & {
@@ -275,11 +309,28 @@ export type WorldState = SimContext & {
   /** Seasonal points tally per "season:arena" until the seasonal award is presented. */
   seasonTally?: Record<string, Record<string, number>>;
   worldVersion?: number;
+  // ---- v0.3 (optional; `ensureWorldV3` initialises them) ----
+  /** Regional crowns (one per region; `arena` is -1). */
+  regionTitles?: TitleState[];
+  /** Reigns of regional crowns (never pruned). */
+  regionReigns?: TitleReign[];
+  /** Seasonal points tally per "season:region" (regional events) until the Provincial Laurel is presented. */
+  regionTally?: Record<string, Record<string, number>>;
+  /** Rivalries built from important tournament encounters (capped, see world/rivalry.ts). */
+  feuds?: Feud[];
+  /** Notable upsets (capped log). */
+  upsets?: UpsetEntry[];
+  /** Population size the world was created / last grown for. */
+  populationTarget?: number;
+  /** Arena layout: 24 (v0.3: 24 arenas, 72 ranks). Absent = v0.2 layout (12 / 36), remapped by ensureWorldV3. */
+  arenaLayout?: number;
 };
 
 export type TournamentSummary = {
   id: string; name: string; arena: number; kind: TournamentKind; format: Format; season: number; endDay: number;
   winner: string | null; winnerName: string; runnerUp: string | null; runnerUpName: string; playerPlace?: number; size: number;
+  /** v0.3 (optional): circuit, series and prestige of the event. */
+  region?: string; series?: string; prestige?: number;
 };
 
 export type Save = {

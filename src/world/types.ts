@@ -1,4 +1,5 @@
 import type { PlayStyle, OpeningStyleTag as OpeningStyle } from '../engine/styles';
+import type { RegionId } from './regions';
 
 export const DAYS_PER_SEASON = 28;
 export const SEASONS_PER_YEAR = 4;
@@ -46,6 +47,15 @@ export type Competitor = {
   prep?: { vsPlayerOpenings: string[] };
   /** Career-arc markers (day of each real event), used so the Chronicle reports each arc once. v0.2, optional. */
   arc?: { prodigy?: number; breakthrough?: number; fell?: number };
+  // ---- v0.3 (optional in the type for old saves; `ensureWorldV3` fills them) ----
+  /** Home region (derived from origin at creation; never changes). */
+  region?: RegionId;
+  /** Tournaments entered (counted from v0.3; migrated saves start at tournamentsWon). */
+  tp?: number;
+  /** Last 10 results packed 2 bits each, newest in the low bits: 3 = win, 2 = draw, 1 = loss, 0 = none. See `recentResults`. */
+  last?: number;
+  /** Day of the last rule-based style change (style drift, see sim.styleDrift). */
+  styleDay?: number;
 };
 
 export type ChronicleKind = 'title' | 'tournament' | 'promotion' | 'retirement' | 'debut' | 'record' | 'player' | 'season';
@@ -55,12 +65,18 @@ export type ChronicleKind = 'title' | 'tournament' | 'promotion' | 'retirement' 
  */
 export type ChronicleTag =
   | 'new-champion' | 'comeback' | 'elite-upset' | 'tournament-upset' | 'rival-promoted'
-  | 'prodigy' | 'breakthrough' | 'fall-from-elite' | 'retirement' | 'record-broken';
-export type ChronicleEntry = { day: number; kind: ChronicleKind; text: string; ids?: string[]; arena?: number; tag?: ChronicleTag };
+  | 'prodigy' | 'breakthrough' | 'fall-from-elite' | 'retirement' | 'record-broken'
+  // v0.3
+  | 'major-upset' | 'legend-defeated' | 'historic-defense' | 'veteran-retirement' | 'rating-record'
+  | 'invitation' | 'regional-champion';
+/** `region` (v0.3): the regional circuit the event belongs to, or 'imperial'. */
+export type ChronicleEntry = { day: number; kind: ChronicleKind; text: string; ids?: string[]; arena?: number; tag?: ChronicleTag; region?: string };
 
 export type TitleState = {
-  id: string; // e.g. "arena-3"
-  arena: number;
+  id: string; // e.g. "title-3"; v0.3 regional crowns: "crown-latium" (in WorldState.regionTitles)
+  arena: number; // regional crowns: -1
+  /** v0.3: set on regional crowns. */
+  region?: RegionId;
   name: string;
   holder: string | null; // competitor id or 'player'
   since: number;
@@ -102,12 +118,16 @@ export type AwardRecord = {
   unbeaten?: boolean;
   perfect?: boolean;
   backfilled?: boolean; // reconstructed by ensureWorldV2 from the persisted tournament history
+  /** v0.3: regional circuit of the event ('imperial' for arena / imperial events). Migrated awards get 'imperial'. */
+  region?: string;
 };
 
 /** Compact snapshot of a pruned competitor, so records survive the archive pruning. */
 export type LegendEntry = {
   id: string; name: string; peak: number; peakRank: number; games: number; w: number; d: number; l: number;
   tournamentsWon: number; championships: number; retiredDay: number | null; debutDay: number;
+  /** v0.3 (optional): home region, style, birth day, tournaments entered. */
+  region?: string; style?: string; birthDay?: number; tp?: number;
 };
 export type RivalryEntry = { a: string; b: string; aName: string; bName: string; games: number; aw: number; d: number; bw: number; day: number };
 
@@ -116,4 +136,34 @@ export type HallOfRecords = {
   rivalries: RivalryEntry[];
   /** Current record holder per record key (for "record broken" Chronicle entries). */
   best: Record<string, { holder: string; name: string; value: number; day: number }>;
+};
+
+// ---------------------------------------------------------------- v0.3: rivalries & upsets
+
+/**
+ * A rivalry between two competitors (or a competitor and the player, id
+ * 'player'), built only from important tournament encounters: finals,
+ * eliminations, title clashes and upsets. `a < b` lexicographically.
+ */
+export type Feud = {
+  a: string; b: string; aName: string; bName: string;
+  /** Tournament encounters (any pairing in an event). */
+  meetings: number;
+  finals: number;
+  eliminations: number;
+  titleClashes: number;
+  upsets: number;
+  /** Games won by a / b in those encounters (draws not counted). */
+  aWins: number; bWins: number;
+  firstDay: number; lastDay: number;
+  /** Who won the latest encounter ('a' | 'b' | null for a draw). */
+  lastWinner: 'a' | 'b' | null;
+};
+
+/** A notable upset (event-driven, capped log). */
+export type UpsetEntry = {
+  day: number; season: number; tournamentId: string; tournamentName: string; arena: number; region: string;
+  winner: string; winnerName: string; winnerRating: number;
+  loser: string; loserName: string; loserRating: number;
+  gap: number; stage: 'final' | 'title' | 'elimination' | 'game';
 };

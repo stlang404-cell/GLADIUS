@@ -13,6 +13,7 @@ describe('living empire', () => {
     // Every format completed at least once.
     const kinds = new Set(w.history.map((h) => h.format));
     for (const f of ['single-elim', 'double-elim', 'swiss', 'round-robin', 'league', 'match-series']) expect(kinds.has(f as never)).toBe(true);
+    expect(w.competitors.filter((c) => c.retiredDay === null).length).toBe(25000);
     // Titles: one open reign per title, holder consistent with competitor record.
     for (const t of w.titles) {
       const open = w.reigns.filter((r) => r.titleId === t.id && r.to === null);
@@ -34,8 +35,26 @@ describe('living empire', () => {
     }
     // Ids unique, never reused.
     expect(new Set(w.competitors.map((c) => c.id)).size).toBe(w.competitors.length);
-    // Save size bounded.
-    expect(JSON.stringify(w).length).toBeLessThan(12 * 1024 * 1024);
+    // Save size bounded (v0.3: ~25k competitors; per-competitor JSON stays compact).
+    const bytes = JSON.stringify(w).length;
+    expect(bytes / w.competitors.length).toBeLessThan(1300);
+    // Regional crowns: one open reign each, holder alive and from that region.
+    for (const t of w.regionTitles!) {
+      const open = w.regionReigns!.filter((r) => r.titleId === t.id && r.to === null);
+      expect(open.length).toBeLessThanOrEqual(1);
+      if (t.holder) {
+        expect(open[0]?.holder).toBe(t.holder);
+        const c = w.competitors.find((x) => x.id === t.holder)!;
+        expect(c.retiredDay).toBe(null);
+        expect(c.region).toBe(t.region);
+      }
+    }
+    expect(w.regionTitles!.filter((t) => t.holder).length).toBeGreaterThan(4);
+    // Retired competitors never hold an arena title.
+    for (const t of w.titles) if (t.holder) expect(w.competitors.find((x) => x.id === t.holder)!.retiredDay).toBe(null);
+    // Every v0.3 kind ran.
+    for (const k of ['local-open', 'regional', 'regional-defense', 'qualifier', 'elite']) expect(w.history.some((h) => h.kind === k)).toBe(true);
+    expect(burnMs).toBeLessThan(60000);
     // Running tournaments are not stuck.
     const running = w.tournaments.filter((t) => t.status === 'running');
     for (const t of running) expect(t.nextRoundDay).toBeLessThanOrEqual(w.day + 3);

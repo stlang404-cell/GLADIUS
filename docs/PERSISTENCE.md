@@ -1,4 +1,4 @@
-# Persistence (save format 2)
+# Persistence (save format 2; layout v3 in GLADIUS v0.3 — see the last section)
 
 GLADIUS keeps everything on the device in IndexedDB (database `gladius`, version 2).
 Until v0.1 the whole career + world was one JSON document (~6 MB after a few seasons)
@@ -214,3 +214,42 @@ Additions:
   today; checked with grep). An edit would still be saved, at the latest by the rolling
   verification within 8 full commits. A field that must change often belongs anywhere
   except `COLD.keys`.
+
+---
+
+## v0.3 (25,000 competitors): layout version 3
+
+`layoutSizes()` now records `{ cold: 250, rh: 250, warm: 100, h2h: 1024, v: 3 }`. A manifest written by v0.2 has different sizes, so the first commit after loading an old save is a full verified rewrite (old keys are garbage-collected); old saves are still read with their own recorded sizes.
+
+Changes:
+- **Head-to-head lists in a binary family** `pop/h2h/<n>` (1,024 competitors per chunk by id serial; Int32 words per competitor `[serial, n, (oppSerial, w + 65536·d, l) × n]`, opponent `player` = −1). No JSON.stringify of 200,000 h2h entries per commit; unchanged chunks are detected by checksum. A list that cannot be encoded (non-standard ids, huge counts) stays in the warm family.
+- **Adaptive integer columns**: hot columns use Int8 / Int16 / Int32 / Float64, whichever fits (`dt: 'i8' | 'i16' | 'i32' | 'f64'`); new hot keys `tp`, `last`.
+- **Warm chunks are skipped when unchanged** (signature over titles, honours count / first / last, arcs, preparation, style day), 100 per chunk; covered by the rolling verification like cold / rh. A warm edit the signature cannot see is saved within 8 full commits.
+- **Cold signature includes style / opening styles** (style drift is the only cold edit); `region` is a cold key.
+- Game records: `GameRecord.arenaLayout` (24); records stored by v0.2 are remapped on read (`getGame`, `allGames`, import), new ones are tagged in `storeGame`.
+- Fix: debut days of `-0` (from `Math.round(-0.3)`) did not survive JSON; competitors are now created with `0`.
+
+Migration of v0.2 saves happens in memory on load (`ensureSaveV2` → `ensureWorldV3` → `migrateWorldArenas`, `growPopulation`, `migratePlayerArenas`), then the first commit rewrites the split save. Test: `tests/migrate.v03.test.ts` with a genuine v0.2 save produced by the v0.2 code (`tests/fixtures/v02-save.json.gz`, 429 competitors, 6 seasons, a 160-game career): ids, names, records, titles, reigns, history, awards (ids and defIds) preserved and remapped, regions assigned, population grown to 25,000 with fresh serials, idempotent, a season can be played afterwards, and the migrated save round-trips through IndexedDB exactly.
+
+### Sizes and timings at 25,000 competitors (measured)
+`tests/persist.perf.test.ts`: `createWorld(4242)` (8 seasons) + 3 seasons → 26,693 competitors (incl. retired archive), 338 tournaments, 1,848 history entries. Node 22, shared 4-vCPU Xeon with load average 5–7; fake-indexeddb.
+
+| | v0.2 (5,472 competitors) | v0.3 (26,693) |
+|---|---|---|
+| Whole Save JSON | 5.96 MB | 29.0 MB |
+| Parts | 433 | 957 |
+| pop/cold · rh · warm · h2h · hot (KB, UTF-16 chars for JSON) | 1,530 · 761 · 1,745 · — · 390 | 7,956 · 3,762 · 1,048 · 2,695 (binary) · 1,277 (binary) |
+| In-game move (light commit) | prep 0.3 ms, ~1 KB | prep **1.0 ms** (max 1.1), ~1 KB |
+| Post-game commit (world advances 1 day) | prep 45 ms, ~560 KB | prep median **130 ms** (max 318 at a season boundary), ~2.3 MB of JSON-equivalent (≈ 4.7 MB incl. the binary h2h / hot columns) |
+| Season-boundary commit | ~1.3 MB | ~13.5 MB (all rating histories; cold chunks when the retired archive is pruned) |
+| Load (read + verify + assemble) | 160–185 ms | 580 ms |
+| Backup snapshot (stringify + gzip) | 280–350 ms, 6.2 → 1.1 MB | 1.07 s, 29.6 → 5.5 MB |
+| Migration of a schema-1 document | 0.6–1.1 s | 2.8 s |
+
+Long run (`scripts/soak-world.ts`, 40 seasons): JSON grows ≈ 220 KB / season (28.2 → 37.7 MB), almost entirely the append-only award registry (≈ 300 awards / season); the live population, chronicle (≤ 1,200), feuds (≤ 1,500 + one season), upsets (≤ 300), history (≤ 2,000) and retired archive (1,500–2,000 + legends) are bounded.
+
+### Limits (honest)
+- A simulated day touches ~30% of the population (ratings, games, h2h), so the hot columns and every h2h chunk change after each game: chunking cannot avoid rewriting ≈ 4 MB per post-game commit. Next step if needed: a per-row delta journal for h2h / hot columns, compacted periodically, or moving `prepare` to a worker.
+- Post-game prep (~130 ms here) is main-thread work; on a phone expect 2–3× more.
+- Backups and exports are whole-save JSON (~30 MB, ~5.5 MB gzipped); a backup is taken at most every 10 games / per season.
+- The award registry grows without bound by design (permanent honours); at ~300 awards per season it adds ~0.2 MB per season.

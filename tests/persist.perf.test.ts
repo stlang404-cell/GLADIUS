@@ -166,7 +166,7 @@ describe('persistence performance', () => {
     console.log('\n' + out.join('\n'));
     // Budgets (generous for CI variance; typical numbers are far lower — see the printout).
     expect(med(movePrep)).toBeLessThan(5);
-    expect(med(gamePrep)).toBeLessThan(120); // ~30–45 ms typical; CI machines are noisy
+    expect(med(gamePrep)).toBeLessThan(300); // v0.3 (25k competitors): ~80–140 ms on a loaded 4-vCPU box; see docs/PERSISTENCE.md
     expect(med(gameBytes)).toBeLessThan(0.25 * JSON.stringify(s).length * 2);
   }, 180_000);
 });

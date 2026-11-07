@@ -6,7 +6,7 @@ import {
   resetPersistState, whenSaved, persistStats, wipeAll, type Manifest,
 } from '../src/persist/save';
 import { idb, dbStats, dbFaults, resetDbHandle } from '../src/persist/db';
-import { canonicalJson, WARM, COLD } from '../src/persist/layout';
+import { canonicalJson, WARM, COLD, H2H, HOT_KEYS } from '../src/persist/layout';
 import { emptyWorld, advanceWorld } from '../src/world/world';
 import { newSave, startGame, suggestOpponents, finishPlayerGame, hooksFor } from '../src/game/career';
 import type { Save } from '../src/game/state';
@@ -60,7 +60,7 @@ describe('split persistence', () => {
     const names = Object.keys(m.parts);
     expect(names).toContain('active');
     expect(names.filter((n) => n.startsWith('pop/cold/')).length).toBeGreaterThan(5);
-    expect(names.filter((n) => n.startsWith('pop/hot/')).length).toBe(15);
+    expect(names.filter((n) => n.startsWith('pop/hot/')).length).toBe(HOT_KEYS.length);
   });
 
   it('migrates a schema-1 single-document save and keeps it as a backup', async () => {
@@ -103,14 +103,18 @@ describe('split persistence', () => {
     // First commit after load re-verifies everything but writes nothing that did not change.
     await persistSave(x);
     expect(written()).toEqual(['meta']);
-    // One competitor's head-to-head record (warm family) -> one warm chunk.
+    // One competitor's head-to-head record (v0.3: binary h2h family) -> one h2h chunk.
     const c = x.world.competitors[1234];
     c.h2h.push({ id: 'c000001', w: 1, d: 0, l: 0 });
     dbStats.putKeys.length = 0;
     await persistSave(x);
     const serial = Number(c.id.slice(1));
-    expect(written().sort()).toEqual(['meta', `pop/warm/${Math.floor(serial / WARM.size)}`]);
+    expect(written().sort()).toEqual(['meta', `pop/h2h/${Math.floor(serial / H2H.size)}`]);
     expect(dbStats.putKeys.length).toBe(3); // meta, chunk, manifest
+    // A new honour (warm family) -> one warm chunk.
+    c.honours.push('Test Cup (S1)');
+    await persistSave(x);
+    expect(written().sort()).toEqual(['meta', `pop/warm/${Math.floor(serial / WARM.size)}`]);
     // One rating -> one hot column.
     x.world.competitors[10].rating += 7;
     await persistSave(x);

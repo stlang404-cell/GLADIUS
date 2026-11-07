@@ -10,10 +10,11 @@
  */
 import type { Save, GameRecord, PlayerLedger } from './state';
 import type { AwardRecord } from '../world/types';
-import { RANKS } from '../world/arenas';
+import { RANKS, ARENAS, ARENA_COUNT, RANK_COUNT, TOP_ARENA, TRIAL_BYPASS_MARGIN, migrateArenaIndex } from '../world/arenas';
 import { awardsFor, isVictory, TROPHY_BY_ID } from '../world/trophies';
 import { recordLeaders, type RecordKey } from '../world/records';
 import { cnt, setSize, ensureLedger, ledgerRecordAnalysis } from './ledger';
+import { feudsOf } from '../world/rivalry';
 
 export type AchievementCategory =
   | 'chess-mastery' | 'tactical-brilliance' | 'endgame-excellence' | 'tournament-victories' | 'arena-conquests'
@@ -86,7 +87,11 @@ const ARENA_REACH: [number, string, string, AchievementRarity][] = [
   [7, 'arena-7', 'Consul', 'epic'], [8, 'arena-8', 'Fifty Thousand Voices', 'epic'], [9, 'arena-9', 'Palatine', 'epic'],
   [10, 'arena-10', 'Hall of the Immortals', 'legendary'], [11, 'arena-11', 'Eternal', 'legendary'],
 ];
-const ARENA_DESC = ['', 'the Legion Camp', 'the Iron Citadel', "the Gladiator's Court", 'the Forum of Triumph', 'the Praetorian Bastion', 'the Senate Hall', 'the Consular Palace', 'the Grand Colosseum', 'the Imperial Palace', 'the Hall of Caesars', 'the Eternal Throne'];
+/** v0.3: the ids keep naming the v0.2 arenas (old index i); the target is that arena's v0.3 index (2·i, Eternal Throne 23). */
+const reachTarget = (old: number) => migrateArenaIndex(old);
+const arenaDesc = (a: number) => ARENAS[a].name.replace(/^The /, 'the ');
+const TITLE_TOP = `title-${TOP_ARENA}`;
+const CENTURIO_RANK = RANKS.find((r) => r.title === 'Centurio')!.index;
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   ...cat('chess-mastery', [
@@ -157,15 +162,15 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     ['master-of-season', 'Master of the Season', 'Win three events in one arena in a single season.', 'legendary', 1, wonDef('hist-sweep')],
   ]),
   ...cat('arena-conquests', [
-    ...ARENA_REACH.map(([a, id, name, r]): Row => [id, name, `Reach ${ARENA_DESC[a]}.`, r, a, peakArena, { progress: true }]),
-    ['rank-centurio', 'The Centurion', 'Reach the rank of Centurio.', 'rare', 12, (x) => x.s.player.peakRank, { progress: true }],
-    ['rank-caesar-aeternus', 'Caesar Aeternus', 'Reach the highest rank of the empire.', 'legendary', 35, (x) => x.s.player.peakRank, { progress: true }],
+    ...ARENA_REACH.map(([a, id, name, r]): Row => [id, name, `Reach ${arenaDesc(reachTarget(a))}.`, r, reachTarget(a), peakArena, { progress: true }]),
+    ['rank-centurio', 'The Centurion', 'Reach the rank of Centurio.', 'rare', CENTURIO_RANK, (x) => x.s.player.peakRank, { progress: true }],
+    ['rank-caesar-aeternus', 'Caesar Aeternus', 'Reach the highest rank of the empire.', 'legendary', RANK_COUNT - 1, (x) => x.s.player.peakRank, { progress: true }],
     ['proven-in-trial', 'Proven in Trial', 'Win a promotion trial.', 'common', 1, C('trialsWon')],
     ['trial-master', 'Five Gates', 'Win 5 promotion trials.', 'rare', 5, C('trialsWon')],
-    ['dominance', 'Dominance', 'Be promoted into a new arena by dominance (150+ above its floor).', 'rare', 1, C('dominancePromotions')],
+    ['dominance', 'Dominance', `Be promoted into a new arena by dominance (${TRIAL_BYPASS_MARGIN}+ above its floor).`, 'rare', 1, C('dominancePromotions')],
     ['first-signature', 'Signature Victory', "Win any arena's signature championship trophy.", 'epic', 1, wonDef('sig-')],
-    ['half-the-empire', 'Half the Empire', 'Win signature championships in 6 different arenas.', 'legendary', 6, sigArenas],
-    ['the-conqueror', 'The Conqueror', 'Win the signature championships of all 12 arenas.', 'legendary', 12, sigArenas],
+    ['half-the-empire', 'Half the Empire', `Win signature championships in ${ARENA_COUNT / 2} different arenas.`, 'legendary', ARENA_COUNT / 2, sigArenas],
+    ['the-conqueror', 'The Conqueror', `Win the signature championships of all ${ARENA_COUNT} arenas.`, 'legendary', ARENA_COUNT, sigArenas],
     ['collector', 'Collector', 'Unlock 6 board and piece collections.', 'rare', 6, (x) => x.s.player.unlockedSets.length],
   ]),
   ...cat('rivalries', [
@@ -183,13 +188,13 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   ...cat('championship-defenses', [
     ['champion', 'Champion', 'Win an arena championship.', 'rare', 1, (x) => x.s.player.championships],
     ['title-contender', 'Title Contender', 'Play in a championship match.', 'common', 1, C('championshipGames')],
-    ['emperor', 'Caesar of the Throne', 'Hold the Eternal Throne title.', 'legendary', 1, (x) => (x.s.player.titles.includes('title-11') || reigns(x).some((r) => r.titleId === 'title-11') ? 1 : 0)],
+    ['emperor', 'Caesar of the Throne', 'Hold the Eternal Throne title.', 'legendary', 1, (x) => (x.s.player.titles.includes(TITLE_TOP) || reigns(x).some((r) => r.titleId === TITLE_TOP) ? 1 : 0)],
     ['first-defense', 'First Defence', 'Successfully defend an arena title.', 'rare', 1, wonDef('defense-')],
     ['iron-crown', 'Iron Crown', 'Defend arena titles 3 times.', 'epic', 3, wonDef('defense-')],
     ['iron-champion', 'The Iron Champion', 'Defend arena titles 10 times.', 'legendary', 10, wonDef('defense-')],
     ['dynasty', 'Dynasty', 'Hold one title through four consecutive championships.', 'legendary', 3, maxDefenses()],
-    ['imperial-defender', 'Imperial Defender', 'Defend the Eternal Throne title 3 times.', 'legendary', 3, (x) => x.aw.filter((a) => a.defId.startsWith('defense-') && a.arena === 11).length],
-    ['eternal-caesar', 'Eternal Caesar', 'Hold the Eternal Throne for 4 consecutive seasons.', 'legendary', 3, maxDefenses('title-11')],
+    ['imperial-defender', 'Imperial Defender', 'Defend the Eternal Throne title 3 times.', 'legendary', 3, (x) => x.aw.filter((a) => a.defId.startsWith('defense-') && a.arena === TOP_ARENA).length],
+    ['eternal-caesar', 'Eternal Caesar', 'Hold the Eternal Throne for 4 consecutive seasons.', 'legendary', 3, maxDefenses(TITLE_TOP)],
     ['the-return', 'The Return', 'Regain a title you had lost.', 'epic', 1, wonDef('hist-comeback')],
     ['three-crowns', 'Three Crowns', 'Win the championships of 3 different arenas.', 'epic', 3, sigArenas],
     ['year-of-reign', 'A Year on the Throne', 'Hold an arena title for 112 days (one in-world year).', 'epic', 112, maxReignDays],
@@ -216,6 +221,24 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     ...RATING_STEPS.map(([r, name, rar]): Row => [`rating-${r}`, name, `Reach an established rating of ${r} (any pool, 20+ games).`, rar, r, (x) => x.L.peakEstablished, { progress: true }]),
     ['breakthrough-season', 'Breakthrough Season', 'Gain 200 rating points within one season.', 'rare', 200, (x) => Math.max(0, ...(x.s.player.seasonReports ?? []).map((r) => r.ratingEnd - r.ratingStart))],
     ['immortal-peak', 'Immortal Peak', "Hold the empire's all-time highest peak rating.", 'legendary', 1, holdsRecord(['peak-elo'])],
+  ]),
+  // v0.3 "Golden Age": regional circuits, imperial events and tournament rivalries (9 new; all from the award registry / feuds).
+  ...cat('tournament-victories', [
+    ['local-hero', 'Local Hero', 'Win a Local Open of your region.', 'common', 1, wonDef('lopen-')],
+    ['through-the-qualifier', 'Through the Qualifier', 'Win an arena Qualifier and earn your Invitational place.', 'common', 1, wonDef('qual-')],
+    ['imperial-master', 'Imperial Master', 'Win the Imperial Masters.', 'legendary', 1, wonDef('masters')],
+    ['laurel-of-the-province', 'Laurel of the Province', "Be a season's top performer in your region's circuit.", 'rare', 1, wonDef('rlaurel')],
+  ]),
+  ...cat('championship-defenses', [
+    ['provincial-crown', 'Crown of the Province', 'Win your region\'s crown.', 'epic', 1, wonDef('rcrown-')],
+    ['crown-defender', 'Defender of the Province', 'Successfully defend a regional crown.', 'epic', 1, wonDef('rdefense')],
+    ['provincial-dynasty', 'Provincial Dynasty', 'Hold a regional crown through four consecutive title contests.', 'legendary', 1, wonDef('hist-regional-dynasty')],
+  ]),
+  ...cat('rivalries', [
+    ['blood-feud', 'Blood Feud', 'Build a tournament rivalry of intensity 15 (finals, eliminations, title clashes).', 'epic', 15, (x) => Math.max(0, ...feudsOf(x.s.world, 'player', 1).map((f) => f.intensity))],
+  ]),
+  ...cat('historical-legacy', [
+    ['slayer-of-giants', 'Slayer of Giants', 'Win a final or title match against an opponent rated 250+ higher.', 'legendary', 1, wonDef('hist-giant-slayer')],
   ]),
   ...cat('historical-legacy', [
     ['hall-of-records', 'Hall of Records', 'Hold any all-time record of the empire.', 'legendary', 1, holdsRecord(['championships', 'consecutive-defenses', 'longest-reign', 'tournament-wins', 'arena-championships', 'peak-elo'])],
