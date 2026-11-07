@@ -1,40 +1,42 @@
-# Implementation status
+# Implementation status — GLADIUS v0.2 "Imperial Reforging"
 
-_Last updated with the commit that added this file. Only verified items are marked done._
+Only items verified in this repository are marked done. Screenshots: `docs/screenshots/`.
 
-## Playable entry point
-`npm install && npm run dev` (or `npm run build && npm run preview`). Windows: `npm run package:win`. iPhone: see DEPLOY.md.
+## How to run
+`npm install && npm run dev` · production: `npm run build && npm run preview` · Windows: `npm run package:win` · iPhone: see DEPLOY.md · re-bake art: `npm run bake:pieces`, `npm run bake:trophies` · benchmarks: `npm run bench` · long world soak: `npm run soak`.
 
-## Milestones
-| Milestone | State |
-|---|---|
-| **M0 Foundation** | ✅ Done. Legal chess, local engine, persistent games, five-tab shell, Windows launcher, PWA. Gate verified in browser (Playwright): play → finish → save → reload → analyse. |
-| **M1 Beautiful chess** | ✅ Functional. 2.5D three.js board with sculpted procedural pieces, shadows, animated moves/captures/castling/promotion/check pulse/mate topple; three animation speeds, skippable (double-tap); camera tilt + view rotation; classical 2D board; 12 board/piece collections; iPhone portrait verified. Art is procedural vector — see limitations. |
-| **M2 Chess intelligence** | ✅ Done. Calibrated strength ladder (benchmarked), styles, opening book, Elo with four pools, matchmaking with stakes preview, full analysis (eval bar/graph, 11 classes, accuracy, best lines, critical moments, opening/endgame labels, PGN/FEN export), permanent library. |
-| **M3 Living empire** | ✅ Done. 5,000 persistent competitors with careers, ageing, retirement/replacement, rivalries, preparation against your openings, 12 arenas × 3 grades, trials, Influence. 20-year stability test passes. |
-| **M4 Tournament civilization** | ✅ Done. Six formats with tie-breaks, a seasonal calendar across all arenas, invitations/wildcards/championship challenges, hosting, title lineages, live engine broadcasts that decide real tournament games, Imperial Chronicle, Hall of Champions. |
-| **M5 Eternal dynasty** | 🟡 Partial. Seasons, title defences, generations, coach, achievements (20), collections, career records exist. Missing: dedicated Hall of *your* legacy timeline, season-end ceremonies, personal-best challenges as explicit objectives. |
-| **M6 Release polish** | 🟡 Partial. Audio is procedural (move/capture/check/fanfares + per-arena ambient drone). Not done: commissioned art, accessibility audit (keyboard play on the 3D board), real-device iPhone test, Windows test on real hardware. |
+## Phase gates
+| Phase | State | Evidence |
+|---|---|---|
+| **A — Visual vertical slice** | ✅ | New SDF-sculpted "Legio" set (close-ups, both colours on both square colours, iPhone size); new board renderer; new UI language; new header, opponent card, post-game ceremony. Screenshots desktop + iPhone 13. |
+| **A — Animation** | ✅ | Timeline system with Fast/Balanced/Majestic/Custom; capture contact, castling, e.p., promotion flare, mate/resign topple, landing settle, skip, reduce motion. Deterministic sampling of 19 moves (captures, both castles, e.p., promotion): 0 regressions, exact landing, max 0.6 square/16 ms. |
+| **B — Chess intelligence** | see ENGINE.md | Capability-aware tiers, scheduler, clock-aware search, eight styles, rival preparation; benchmark results and limits in ENGINE.md. |
+| **C — Living empire** | ✅ | Trophy registry (60 defs), 139 achievements with eligibility & analysis gating, hall of records, rivalry model, objectives, season reports, prestige-driven invitations; 50-season soak with invariants (WORLD.md). |
+| **D — Twelve arenas** | ✅ (stylized, see limits) | 12 distinct 3D environments + scenic framing; arena portraits used across the UI; arena reveal ceremony. |
+| **E — Career & polish** | ✅ mostly | Legacy timeline, season ceremony, objectives, Hall of Honors with 2.5D trophies, achievements UI, split persistence with migration, background broadcasts, keyboard play, text scaling, reduced motion, contrast; offline verified. |
 
-## Tests actually executed (`npm test`, 226 passing)
-- **Chess (22):** perft (start d3, Kiwipete d3, positions 3/4/5), castling incl. through-check, en passant, under-promotion, mate, stalemate, insufficient material, threefold claim, fivefold auto, 50-move claim, 75-move auto, mate-on-75th precedence, flag vs lone king, resignation, PGN/FEN round-trips.
-- **Engine (7):** UCI parsing, win% model, Stockfish legal best move, mate-in-one, MultiPV, search cancellation, game-over positions.
-- **Strength ladder (1):** monotone error ladder (table in DESIGN.md).
-- **Elo (5)**, **Tournaments (154)** incl. fuzzing all six formats at 2–32 entrants, **Openings/endgames/puzzles (13)**, **Art (9)**.
-- **Persistence (5):** checksum corruption detection, recovery from backup, schema migration, interrupted game restore, export/import.
-- **Career (7):** rank rules, rated result effects on both careers, trial unlock/win/arena unlock, player completing a full Swiss Open (rounds waiting on the player).
-- **Simulation (3):** 5,000 unique IDs/names, 20-year rating stability (mean 1154→1158, rating−skill bias ≤5, pyramid preserved, 7.6 ms/day), 8+8-season world with all formats completing, one open reign per exclusive title, records consistent.
-- **Manual/E2E (Playwright, Chromium, SwiftShader WebGL):** desktop and iPhone 13 emulation; onboarding + world creation (~3 s); 3D tap input; 2D play vs engine; resign; post-game with analysis; all tabs; live spectate; reload persistence; **offline reload via service worker**. No console errors.
+## Tests actually executed
+- `npm test`: **296 passing, 17 files** (chess rules & perft, engine integration, strength ladder, Elo, tournaments fuzz, openings/puzzles, art, persistence incl. split-format migration/crash/corruption, career, trophies/achievements/legacy, population & world sims).
+- Engine benches & soak: see ENGINE.md and WORLD.md for commands, sample sizes and results.
+- Browser E2E (Playwright, Chromium + SwiftShader WebGL, no real GPU):
+  - Desktop 1440×900 and iPhone 13 emulation: onboarding → world creation → Arena → 2.5D game (scenic and focused) → 2D game → Empire (arena cards, tournament sheet, records, competitor profile) → Legacy (Hall of Honors, achievements) → ceremonies. **No console errors.**
+  - Keyboard/3D tap input previously verified; deterministic animation sampling on the real renderer.
+  - **Offline**: production build, service worker controlling, network disabled, reload → game auto-resumes with sculpted pieces and fonts; **0 failed requests** after adding `.bin`/`.woff2` to the precache (4.9 MB).
+  - Broadcast survival: left a live broadcast at move 6, returned at move 13 to the same game.
+
+## Fixed during v0.2 verification
+- WebGL probe leaked a context on every React render → phone board went blank ("Too many active WebGL contexts").
+- Game screen inherited the Arena scroll position on phones.
+- Offline precache missed baked models and fonts.
+- Smooth-subtraction sign error in the SDF kit (broke knight/rook/bishop meshes).
 
 ## Known limitations (honest)
-- Art is original procedural SVG/geometry: consistent and colourful but not illustrator-grade. Portraits share one face template. Some dark piece sets are low-contrast on dark squares.
-- Persona Elo below ~1300 and above ~2600 is approximately calibrated (single benchmark, 48 samples per level); not validated against humans.
-- Clocks: the opponent's thinking time (engine search + "natural" delay) runs on its clock, but the persona does not yet budget its time against the clock, it drops its human-like delay below one minute but searches are not otherwise scaled to the clock.
-- AI ratings are discipline-neutral (one rating shown in every pool).
-- Off-screen AI games are statistical (by design); only broadcasts and your games have move lists.
-- World save ≈ 6 MB after a few seasons; autosave of the whole document after each game. Fine on desktop; on low-end phones a split store would be better.
-- Leaving a broadcast early discards it (the game is then simulated).
-- Not tested on a physical iPhone or Windows PC in this environment.
+- **Art is code-generated.** Pieces, trophies and arenas are original SDF/three.js work and look coherent and premium-stylized, but arenas are low-poly kits with flat lighting (no baked GI or hand-painted textures); portraits remain the v0.1 procedural SVG family (one face template).
+- **Performance on real devices is unmeasured.** All rendering checks ran on software WebGL (SwiftShader), where frames take ~0.2–2 s; render-on-demand keeps idle cost at zero, but frame rate, battery and memory on a real iPhone/Windows GPU were not measured.
+- Scenic framing makes the board smaller; it is auto-disabled under 700 px width (setting: Arena scenery).
+- Achievements that existed before v0.2 counters (ledger) cannot be back-dated; trophies before v0.2 are back-filled from tournament history without match scores.
+- Persistence light commits during a game skip unseen changes until the next full commit (see PERSISTENCE.md).
+- Not tested on a physical iPhone or Windows PC.
 
 ## Next recommended milestone
-M5 completion: a player legacy timeline, season-end ceremony, explicit personal-best objectives; then M6: art pass on portraits/backdrops, keyboard input for accessibility, physical-device testing, save splitting.
+Real-device pass (iPhone Safari PWA + Windows Edge): frame-time and memory budgets, big-net download UX; hand-painted texture/lighting pass for the twelve arenas; 3D portrait busts to replace SVG portraits; larger engine match samples on desktop hardware.
