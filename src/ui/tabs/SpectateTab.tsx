@@ -1,25 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Move } from 'chess.js';
-import { useSave, mutate, archiveGame, getSave } from '../store';
+import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useSave } from '../store';
 import { useNav } from '../nav';
 import { Card, CompetitorPortrait, Emblem } from '../components/common';
 import { Board } from '../components/Board';
 import { EvalBar } from '../AnalysisView';
-import { ChessGame, START_FEN } from '../../chess/rules';
-import { getEngine } from '../../engine/browserEngine';
-import { chooseMove, type Persona } from '../../engine/persona';
-import { mixSeed, hashString } from '../../core/rng';
 import { RANKS, ARENAS } from '../../world/arenas';
 import { pendingPairings } from '../../tournament/formats';
-import { recordEngineTournamentGame, PLAYER_ID } from '../../world/calendar';
-import { hooksFor, opponentPersonaElo, sideFor, newGameId } from '../../game/career';
-import { identifyOpening } from '../../chess/openings';
-import type { Competitor } from '../../world/types';
-import type { GameRecord, Save } from '../../game/state';
-import { sfx } from '../sound';
-import type { Score } from '../../engine/uci';
-
-type Feature = { id: string; label: string; white: Competitor; black: Competitor; tournamentId?: string; pairingId?: string; arena: number; weight: number };
+import { PLAYER_ID } from '../../world/calendar';
+import type { Save } from '../../game/state';
+import { broadcastStore, startBroadcast, setPaused, setSpeed, type Feature } from '../broadcast';
+import { IconPause, IconPlay, IconRotate } from '../components/icons';
 
 function features(s: Save): Feature[] {
   const byId = new Map(s.world.competitors.map((c) => [c.id, c]));
@@ -52,16 +42,25 @@ export function SpectateTab() {
   const s = useSave();
   const nav = useNav();
   const list = useMemo(() => features(s), [s.world.day, s.world.tournaments.length]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [live, setLive] = useState<Feature | null>(null);
+  const [viewing, setViewing] = useState(false);
+  useSyncExternalStore(broadcastStore.subscribe, broadcastStore.version);
+  const current = broadcastStore.get();
   const broadcasts = [...s.library].reverse().filter((id) => s.libraryMeta[id]?.source === 'engine').slice(0, 20);
-  if (live) return <LiveBroadcast f={live} onExit={() => setLive(null)} />;
+  if (viewing && current) return <LiveBroadcast onExit={() => setViewing(false)} />;
   return (
     <div className="page">
       <Card title="Live from the empire">
         <div className="muted small">Broadcasts are real engine games played now, move by move, at each competitor's strength. Tournament broadcasts decide the actual result.</div>
       </Card>
-      {list.map((f) => (
-        <Card key={f.id} className="feature" onClick={() => setLive(f)}>
+      {current && (
+        <Card className="feature resume" onClick={() => setViewing(true)}>
+          <div className="kicker"><span className="live-dot" /> {current.doneGameId ? `Final ${current.result}` : `In progress · move ${Math.ceil(current.san.length / 2)}`}</div>
+          <b>{current.feature.white.name} – {current.feature.black.name}</b>
+          <div className="muted small">{current.feature.label}</div>
+        </Card>
+      )}
+      {list.filter((f) => f.id !== current?.feature.id).map((f) => (
+        <Card key={f.id} className="feature" onClick={() => { startBroadcast(f); setViewing(true); }}>
           <div className="kicker">{f.label} · {ARENAS[f.arena].name}</div>
           <div className="vs-row">
             <div className="vs-side"><CompetitorPortrait c={f.white} day={s.world.day} size={48} /><b>{f.white.name}</b><span className="muted"><Emblem rank={f.white.rank} size={14} /> {f.white.rating}</span></div>
@@ -84,90 +83,39 @@ export function SpectateTab() {
 
 const SPEEDS = [0.5, 1, 2, 4];
 
-function LiveBroadcast({ f, onExit }: { f: Feature; onExit: () => void }) {
+function LiveBroadcast({ onExit }: { onExit: () => void }) {
   const s = useSave();
   const nav = useNav();
-  const game = useRef(new ChessGame());
-  const [fen, setFen] = useState(START_FEN);
-  const [last, setLast] = useState<Move | null>(null);
-  const [paused, setPaused] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const [evalScore, setEval] = useState<Score | undefined>();
+  useSyncExternalStore(broadcastStore.subscribe, broadcastStore.version);
+  const b = broadcastStore.get();
   const [showEval, setShowEval] = useState(true);
-  const [done, setDone] = useState<string | null>(null);
   const [azimuth, setAz] = useState(0);
-  const ctl = useRef({ paused: false, speed: 1, alive: true });
-  ctl.current.paused = paused;
-  ctl.current.speed = speed;
-
-  useEffect(() => {
-    ctl.current.alive = true;
-    const eng = getEngine('spectate');
-    const g = game.current;
-    const seed = hashString(f.id + s.world.day);
-    const persona = (c: Competitor): Persona => ({ elo: opponentPersonaElo(c), style: c.style, openingStyles: c.openingStyles, seed: mixSeed(seed, c.portraitSeed) });
-    const pw = persona(f.white);
-    const pb = persona(f.black);
-    void (async () => {
-      await eng.newGame();
-      while (ctl.current.alive && !g.status().over && g.ply() < 400) {
-        while (ctl.current.paused && ctl.current.alive) await new Promise((r) => setTimeout(r, 150));
-        const t0 = Date.now();
-        const mv = await chooseMove(eng, g.fen(), g.uciHistory, g.turn() === 'w' ? pw : pb, { pace: 'instant' });
-        if (!ctl.current.alive) return;
-        const m = g.playUci(mv.uci);
-        if (!m) break;
-        setLast(m);
-        setFen(g.fen());
-        sfx(m.captured ? 'capture' : 'move', getSave().settings);
-        // Live evaluation of the CURRENT position only — never future moves.
-        const ev = await eng.search({ fen: g.fen(), depth: 9 });
-        const sc = ev.lines[0]?.score;
-        if (sc) setEval(g.turn() === 'w' ? sc : sc.mate !== undefined ? { mate: -sc.mate } : { cp: -(sc.cp ?? 0) });
-        const wait = 1400 / ctl.current.speed - (Date.now() - t0);
-        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-      }
-      if (!ctl.current.alive) return;
-      if (!g.status().over) g.agreeDraw(); // adjudicated after 200 moves
-      const st = g.status();
-      const rec: GameRecord = {
-        id: newGameId(getSave()), kind: 'spectated', rated: !!f.tournamentId, pool: 'rapid', tc: 'rapid-10', day: getSave().world.day, date: new Date().toISOString(),
-        white: sideFor(f.white), black: sideFor(f.black), playerColor: null, startFen: START_FEN, moves: [...g.uciHistory], san: g.sanHistory(),
-        result: st.result, termination: st.termination, arena: f.arena, tournamentId: f.tournamentId, pairingId: f.pairingId, source: 'engine',
-        opening: identifyOpening(g.uciHistory),
-      };
-      await archiveGame(rec);
-      if (f.tournamentId && f.pairingId) {
-        mutate((x) => recordEngineTournamentGame(x.world, f.tournamentId!, f.pairingId!, st.result === '1-0' ? 1 : st.result === '0-1' ? 0 : 0.5, rec.id, hooksFor(x)));
-      }
-      setDone(rec.id);
-    })();
-    return () => {
-      ctl.current.alive = false;
-      eng.stop();
-    };
-  }, [f]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const st = game.current.status();
+  if (!b) return null;
+  const f = b.feature;
   return (
     <div className="game spectate">
-      <div className="game-ctx">● LIVE · {f.label}</div>
-      <div className="player-bar opp"><CompetitorPortrait c={f.black} day={s.world.day} size={40} /><div className="pb-name"><div>{f.black.name}</div><div className="pb-sub">{RANKS[f.black.rank].name} · {f.black.rating}</div></div></div>
-      <div className="an-board">
-        {showEval && <EvalBar e={evalScore} orientation="w" />}
-        <div className="an-board-inner"><Board fen={fen} orientation="w" interactive={false} lastMove={last} settings={s.settings} set={f.arena} arena={f.arena} mate={st.termination === 'checkmate'} azimuth={azimuth} /></div>
+      <div className="game-main">
+        <div className="game-ctx"><span className="live-dot" /> {b.doneGameId ? 'FINAL' : 'LIVE'} · {f.label}</div>
+        <div className="player-bar opp"><CompetitorPortrait c={f.black} day={s.world.day} size={44} /><div className="pb-name"><div>{f.black.name}</div><div className="pb-sub">{RANKS[f.black.rank].name} · {f.black.rating}</div></div></div>
+        <div className="an-board">
+          {showEval && <EvalBar e={b.evalScore} orientation="w" />}
+          <div className="an-board-inner"><Board fen={b.fen} orientation="w" interactive={false} lastMove={b.last} settings={s.settings} set={f.arena} arena={f.arena} azimuth={azimuth} /></div>
+        </div>
+        <div className="player-bar me"><CompetitorPortrait c={f.white} day={s.world.day} size={44} /><div className="pb-name"><div>{f.white.name}</div><div className="pb-sub">{RANKS[f.white.rank].name} · {f.white.rating}</div></div></div>
       </div>
-      <div className="player-bar me"><CompetitorPortrait c={f.white} day={s.world.day} size={40} /><div className="pb-name"><div>{f.white.name}</div><div className="pb-sub">{RANKS[f.white.rank].name} · {f.white.rating}</div></div></div>
-      <div className="move-strip">{game.current.sanHistory().map((m, i) => <span key={i}>{i % 2 === 0 ? `${i / 2 + 1}. ` : ''}{m} </span>)}</div>
-      {done && <div className="notice">Final: {st.result}. <button className="btn small gold" onClick={() => nav.open({ kind: 'analysis', gameId: done })}>Review</button></div>}
-      <div className="game-actions">
-        <button className="btn" onClick={() => setPaused((p) => !p)} disabled={!!done}>{paused ? '▶ Resume' : '⏸ Pause'}</button>
-        {SPEEDS.map((x) => <button key={x} className={'btn small' + (speed === x ? ' gold' : '')} onClick={() => setSpeed(x)}>{x}×</button>)}
-        <button className={'btn small' + (showEval ? ' gold' : '')} onClick={() => setShowEval((v) => !v)}>Eval</button>
-        <button className="btn small" onClick={() => setAz((a) => (a > 0.5 ? -0.6 : a + 0.6))}>⟳ View</button>
-        <button className="btn" onClick={onExit}>✕ Leave</button>
+      <div className="game-side">
+        <div className="move-strip">{b.san.map((m, i) => <span key={i}>{i % 2 === 0 ? `${i / 2 + 1}. ` : ''}{m} </span>)}</div>
+        {b.doneGameId && <div className="notice">Final: {b.result}. <button className="btn small gold" onClick={() => nav.open({ kind: 'analysis', gameId: b.doneGameId! })}>Review</button></div>}
+        {s.active && !b.doneGameId && <div className="notice">Paused while your own game is in progress.</div>}
+        <div className="game-actions">
+          <button className="btn" onClick={() => setPaused(!b.paused)} disabled={!!b.doneGameId}>{b.paused ? <><IconPlay size={18} /> Resume</> : <><IconPause size={18} /> Pause</>}</button>
+          {SPEEDS.map((x) => <button key={x} className={'btn small' + (b.speed === x ? ' gold' : '')} onClick={() => setSpeed(x)}>{x}×</button>)}
+          <button className={'btn small' + (showEval ? ' gold' : '')} onClick={() => setShowEval((v) => !v)}>Eval</button>
+          <button className="btn small" aria-label="Rotate view" onClick={() => setAz((a) => (a > 0.5 ? -0.6 : a + 0.6))}><IconRotate size={18} /></button>
+          <button className="btn" onClick={onExit}>Back</button>
+        </div>
+        {!b.doneGameId && <div className="muted small center">The game continues in the background if you leave.</div>}
       </div>
-      {!done && f.tournamentId && <div className="muted small center">Leaving early hands this game back to the off-screen simulation.</div>}
     </div>
   );
 }
