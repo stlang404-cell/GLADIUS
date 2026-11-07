@@ -29,7 +29,7 @@ _Last updated with the commit that added this file. Only verified items are mark
 ## Known limitations (honest)
 - Art is original procedural SVG/geometry: consistent and colourful but not illustrator-grade. Portraits share one face template. Some dark piece sets are low-contrast on dark squares.
 - Persona Elo below ~1300 and above ~2600 is approximately calibrated (single benchmark, 48 samples per level); not validated against humans.
-- Clocks: the opponent's "natural" thinking delay is simulated; engine time is not budgeted per clock (it never flags).
+- Clocks: the opponent's thinking time (engine search + "natural" delay) runs on its clock, but the persona does not yet budget its time against the clock, it drops its human-like delay below one minute but searches are not otherwise scaled to the clock.
 - AI ratings are discipline-neutral (one rating shown in every pool).
 - Off-screen AI games are statistical (by design); only broadcasts and your games have move lists.
 - World save ≈ 6 MB after a few seasons; autosave of the whole document after each game. Fine on desktop; on low-end phones a split store would be better.

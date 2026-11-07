@@ -115,10 +115,13 @@ export function GameScreen({ onExit, onAnalyse, onRematch }: { onExit: () => voi
     setThinking(true);
     const persona: Persona = { elo: opponentPersonaElo(opp), style: opp.style, openingStyles: opp.openingStyles, seed: mixSeed(opp.portraitSeed, hashString(rec.id)) };
     const t0 = Date.now();
-    void chooseMove(getEngine('play'), game.fen(), game.uciHistory, persona, { pace: getSave().settings.opponentPace, startFen: rec.startFen.startsWith('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w') ? undefined : rec.startFen })
+    const a = getSave().active;
+    const oppClock = a && timed ? a.clockMs[game.turn()] : Infinity;
+    const pace = oppClock < 60000 ? 'instant' : getSave().settings.opponentPace; // time management under pressure
+    void chooseMove(getEngine('play'), game.fen(), game.uciHistory, persona, { pace, startFen: rec.startFen.startsWith('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w') ? undefined : rec.startFen })
       .then(async (mv) => {
         const rng = createRng(mixSeed(persona.seed, game.ply()));
-        const wait = humanDelay(persona.elo, game.ply(), rng, getSave().settings.opponentPace) - (Date.now() - t0);
+        const wait = humanDelay(persona.elo, game.ply(), rng, pace) - (Date.now() - t0);
         if (wait > 0) await new Promise((r) => setTimeout(r, wait));
         if (stop || cancelled.current) return;
         setThinking(false);
