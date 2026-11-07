@@ -19,27 +19,29 @@ import { signatureTheme } from '../../board2d/themes';
 import { TROPHY_BY_ID } from '../../world/trophies';
 import { recordLeaders, RECORD_LABELS, ALL_RECORD_KEYS, competitorHonours, type RecordKey } from '../../world/records';
 import { rivalPrep } from '../../game/legacy';
-import { IconCrown, IconTrophy, IconStar, IconArena, IconShield, IconLaurel } from '../components/icons';
+import { IconCrown, IconTrophy, IconArena, IconShield } from '../components/icons';
 import type React from 'react';
+import { Regions, ChronicleFeed, CompetitorCareer } from './empireExtras';
 
-type Section = 'arenas' | 'tournaments' | 'leaders' | 'hall' | 'chronicle';
+type Section = 'arenas' | 'regions' | 'tournaments' | 'leaders' | 'hall' | 'chronicle';
 
 export function EmpireTab() {
   const [sec, setSec] = useState<Section>('arenas');
   return (
     <div className="page">
       <div className="seg">
-        {(['arenas', 'tournaments', 'leaders', 'hall', 'chronicle'] as Section[]).map((x) => (
+        {(['arenas', 'regions', 'tournaments', 'leaders', 'hall', 'chronicle'] as Section[]).map((x) => (
           <button key={x} className={sec === x ? 'on' : ''} onClick={() => setSec(x)}>
-            {{ arenas: 'Arenas', tournaments: 'Tournaments', leaders: 'Leaders', hall: 'Champions', chronicle: 'Chronicle' }[x]}
+            {{ arenas: 'Arenas', regions: 'Regions', tournaments: 'Tournaments', leaders: 'Leaders', hall: 'Champions', chronicle: 'Chronicle' }[x]}
           </button>
         ))}
       </div>
       {sec === 'arenas' && <Arenas />}
+      {sec === 'regions' && <Regions />}
       {sec === 'tournaments' && <Tournaments />}
       {sec === 'leaders' && <Leaders />}
       {sec === 'hall' && <Hall />}
-      {sec === 'chronicle' && <Chronicle />}
+      {sec === 'chronicle' && <ChronicleFeed />}
     </div>
   );
 }
@@ -317,32 +319,6 @@ function Hall() {
   );
 }
 
-const TAG_ICON: Record<string, () => React.ReactElement> = {
-  'new-champion': () => <IconCrown size={16} />, comeback: () => <IconCrown size={16} />, 'record-broken': () => <IconStar size={16} />,
-  'elite-upset': () => <IconArena size={16} />, 'tournament-upset': () => <IconTrophy size={16} />, 'rival-promoted': () => <IconShield size={16} />,
-  prodigy: () => <IconStar size={16} />, breakthrough: () => <IconStar size={16} />, 'fall-from-elite': () => <IconShield size={16} />, retirement: () => <IconLaurel size={16} />,
-};
-
-function Chronicle() {
-  const s = useSave();
-  const [all, setAll] = useState(false);
-  const items = [...s.world.chronicle].reverse().filter((e) => all || e.tag || e.kind === 'title' || e.kind === 'player').slice(0, 120);
-  return (
-    <Card title="Imperial Chronicle">
-      <div className="chips"><button className={'chip' + (!all ? ' on' : '')} onClick={() => setAll(false)}>Headlines</button><button className={'chip' + (all ? ' on' : '')} onClick={() => setAll(true)}>Everything</button></div>
-      {items.map((e, i) => {
-        const Ico = TAG_ICON[e.tag ?? ''] ?? (() => (e.kind === 'title' ? <IconCrown size={16} /> : <IconTrophy size={16} />));
-        return (
-          <div key={i} className={'chron ' + e.kind}>
-            <span className="chron-ico"><Ico /></span>
-            <div className="grow"><div>{e.text}</div><div className="muted small">{dayLabel(e.day)}{e.arena !== undefined ? ` · ${ARENAS[e.arena].name}` : ''}</div></div>
-          </div>
-        );
-      })}
-    </Card>
-  );
-}
-
 export function CompetitorSheet({ id, onClose }: { id: string; onClose: () => void }) {
   const s = useSave();
   const nav = useNav();
@@ -352,8 +328,6 @@ export function CompetitorSheet({ id, onClose }: { id: string; onClose: () => vo
   const hon = competitorHonours(s.world, c.id);
   const prep = rivalPrep(s, c.id);
   const age = compAge(c, s.world.day);
-  const traj = c.skill > c.rating + 40 ? 'Rising' : c.skill < c.rating - 40 ? 'Slipping' : age < c.peakAge ? 'Developing' : age > c.peakAge + 6 ? 'Veteran' : 'At their peak';
-  const ambition = c.titles.length ? 'Defend the crown' : c.rating > RANKS[c.rank].floor + 150 ? 'Win promotion' : c.form > 0.2 ? 'Ride the hot streak' : c.form < -0.2 ? 'Rebuild confidence' : 'Climb the ladder';
   return (
     <Sheet title={c.name} onClose={onClose}>
       <div className="row">
@@ -362,7 +336,7 @@ export function CompetitorSheet({ id, onClose }: { id: string; onClose: () => vo
           <div className="opp-rank"><Emblem rank={c.rank} size={24} /> {RANKS[c.rank].name}</div>
           <div><b>{c.rating}</b> <span className="muted">peak {c.peak}</span></div>
           <div className="muted">{c.origin} · age {age} · {STYLE_LABEL[c.style]}</div>
-          <div className="muted">{c.retiredDay !== null ? `Retired ${dayLabel(c.retiredDay)}` : `${traj} · ${ambition}`}</div>
+          {c.retiredDay !== null && <div className="muted">Retired {dayLabel(c.retiredDay)}</div>}
         </div>
       </div>
       <div className="stats-row">
@@ -373,6 +347,7 @@ export function CompetitorSheet({ id, onClose }: { id: string; onClose: () => vo
         <div>Form {c.form > 0.15 ? '▲' : c.form < -0.15 ? '▼' : '◆'}</div>
       </div>
       <Sparkline values={c.ratingHistory.map((x) => x[1])} w={300} h={50} />
+      <CompetitorCareer id={c.id} />
       <div className="muted small">Strengths: {c.strengths.join(', ')} · Weaknesses: {c.weaknesses.join(', ')}</div>
       {c.prep?.vsPlayerOpenings.length ? <div className="muted small">Has prepared against your {c.prep.vsPlayerOpenings[0]}.</div> : null}
       {h && <div>You vs {c.name.split(' ')[0]}: <Record {...h} /></div>}

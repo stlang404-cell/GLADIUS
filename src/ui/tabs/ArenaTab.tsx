@@ -1,3 +1,4 @@
+import { rankProgress } from '../../world/arenas';
 import { useMemo, useState } from 'react';
 import { useSave, mutate } from '../store';
 import { useNav } from '../nav';
@@ -92,6 +93,19 @@ export function ArenaTab() {
           </div>
           {'progress' in obj && obj.progress && <div className="meter"><span style={{ width: `${Math.round((obj.progress.current / Math.max(1, obj.progress.target)) * 100)}%` }} /></div>}
           {objs.length > 1 && <div className="obj-alts">{objs.slice(1, 4).map((o) => <span key={o.id} className="pill" title={o.detail}>{o.title}</span>)}</div>}
+          {(() => {
+            const rp = rankProgress(me.rank, careerRating(s).rating);
+            return (
+              <div className="rank-prog">
+                <Emblem rank={me.rank} size={30} />
+                <div className="grow">
+                  <div className="row between"><b>{rp.rank.name}</b><span className="muted small">{rp.next ? `→ ${rp.next.name}` : 'Summit'}</span></div>
+                  {rp.next && <div className="meter"><span style={{ width: `${Math.max(2, Math.min(100, Math.round((rp.current / Math.max(1, rp.target)) * 100)))}%` }} /></div>}
+                  <div className="muted small">{rp.requirement}</div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {!s.active && tg && tg.opp && (

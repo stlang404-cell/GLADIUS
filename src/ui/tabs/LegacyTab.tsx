@@ -1,3 +1,4 @@
+import { ChessPerformance, CareerHistory, HallOfFame } from './legacyExtras';
 import { sigDefFor } from '../../world/trophies';
 import { isPieceSetUnlocked, pieceSetById } from '../../board2d/pieceSets';
 import { useEffect, useMemo, useState } from 'react';
@@ -19,21 +20,22 @@ import { engineStatus, installEnginePack, cancelEnginePack, verifyEnginePack, re
 import type { Settings } from '../../game/state';
 import { PLAYER_ID } from '../../world/calendar';
 
-type Sec = 'profile' | 'honors' | 'achievements' | 'timeline' | 'collection' | 'settings' | 'saves';
+type Sec = 'profile' | 'honors' | 'achievements' | 'timeline' | 'collection' | 'settings' | 'saves' | 'fame';
 
 export function LegacyTab() {
   const [sec, setSec] = useState<Sec>('profile');
   return (
     <div className="page">
       <div className="seg">
-        {(['profile', 'honors', 'achievements', 'timeline', 'collection', 'settings', 'saves'] as Sec[]).map((x) => (
+        {(['profile', 'honors', 'fame', 'achievements', 'timeline', 'collection', 'settings', 'saves'] as Sec[]).map((x) => (
           <button key={x} className={sec === x ? 'on' : ''} onClick={() => setSec(x)}>
-            {{ profile: 'Profile', honors: 'Hall of Honors', achievements: 'Achievements', timeline: 'Timeline', collection: 'Collection', settings: 'Settings', saves: 'Saves' }[x]}
+            {{ profile: 'Profile', honors: 'Hall of Honors', fame: 'Hall of Fame', achievements: 'Achievements', timeline: 'Timeline', collection: 'Collection', settings: 'Settings', saves: 'Saves' }[x]}
           </button>
         ))}
       </div>
       {sec === 'profile' && <Profile />}
       {sec === 'honors' && <HallOfHonors />}
+      {sec === 'fame' && <HallOfFame />}
       {sec === 'achievements' && <Achievements />}
       {sec === 'timeline' && <Timeline />}
       {sec === 'collection' && <Collection />}
@@ -54,7 +56,7 @@ export function Profile() {
   const rivals = useMemo(() => rivalries(s, 5), [s.world.day]); // eslint-disable-line react-hooks/exhaustive-deps
   const recent = s.library.slice(-10).map((id) => s.libraryMeta[id]).filter((m) => m?.playerColor);
   const form = recent.map((m) => (m.result === '1/2-1/2' ? 'd' : (m.result === '1-0') === (m.playerColor === 'w') ? 'w' : 'l'));
-  const openings = Object.entries(p.openingsPlayed).sort((a, b) => b[1].w + b[1].d + b[1].l - (a[1].w + a[1].d + a[1].l)).slice(0, 4);
+  const openings = Object.entries(p.openingsPlayed).sort((a, b) => b[1].w + b[1].d + b[1].l - (a[1].w + a[1].d + a[1].l)).slice(0, 6);
   const analysed = Object.values(s.libraryMeta).filter((m) => m.playerColor && m.accuracy !== undefined);
   const avgAcc = analysed.length ? analysed.reduce((a, m) => a + (m.accuracy ?? 0), 0) / analysed.length : null;
   const trophies = useMemo(() => awardsFor(s.world, PLAYER_ID), [s.world.day]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -106,7 +108,9 @@ export function Profile() {
           ))}
         </Card>
       )}
-      {openings.length > 0 && <Card title="Favourite openings">{openings.map(([n, o]) => <div key={n} className="leader"><span className="grow">{n}</span><Record w={o.w} d={o.d} l={o.l} /></div>)}</Card>}
+      {openings.length > 0 && <Card title="Opening results">{openings.map(([n, o]) => <div key={n} className="leader"><span className="grow">{n}</span><Record w={o.w} d={o.d} l={o.l} /></div>)}</Card>}
+      <ChessPerformance />
+      <CareerHistory />
     </>
   );
 }

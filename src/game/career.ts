@@ -45,7 +45,7 @@ export function newSave(world: WorldState, name: string, female: boolean, startR
   const now = new Date().toISOString();
   const s: Save = {
     schema: SAVE_SCHEMA, createdAt: now, updatedAt: now, seed: world.seed,
-    player: newPlayer(name, female, world.day, startRating), world, settings: { ...DEFAULT_SETTINGS },
+    player: newPlayer(name, female, world.day, startRating), world, settings: { ...DEFAULT_SETTINGS, pieceStyle: 'classical' }, // new careers start on the primary Legio set; older saves keep their choice
     active: null, library: [], libraryMeta: {}, coach: { positions: [] },
   };
   return ensureSaveV2(s);
