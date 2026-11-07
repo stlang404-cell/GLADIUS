@@ -155,7 +155,7 @@ function LiveBroadcast({ f, onExit }: { f: Feature; onExit: () => void }) {
       <div className="player-bar opp"><CompetitorPortrait c={f.black} day={s.world.day} size={40} /><div className="pb-name"><div>{f.black.name}</div><div className="pb-sub">{RANKS[f.black.rank].name} · {f.black.rating}</div></div></div>
       <div className="an-board">
         {showEval && <EvalBar e={evalScore} orientation="w" />}
-        <div className="an-board-inner"><Board fen={fen} orientation="w" interactive={false} lastMove={last} settings={s.settings} mate={st.termination === 'checkmate'} azimuth={azimuth} /></div>
+        <div className="an-board-inner"><Board fen={fen} orientation="w" interactive={false} lastMove={last} settings={s.settings} set={f.arena} arena={f.arena} mate={st.termination === 'checkmate'} azimuth={azimuth} /></div>
       </div>
       <div className="player-bar me"><CompetitorPortrait c={f.white} day={s.world.day} size={40} /><div className="pb-name"><div>{f.white.name}</div><div className="pb-sub">{RANKS[f.white.rank].name} · {f.white.rating}</div></div></div>
       <div className="move-strip">{game.current.sanHistory().map((m, i) => <span key={i}>{i % 2 === 0 ? `${i / 2 + 1}. ` : ''}{m} </span>)}</div>

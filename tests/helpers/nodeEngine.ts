@@ -28,8 +28,15 @@ export function findBuild(id: BuildId): string | null {
   return null;
 }
 
-/** In-process transport (single-threaded builds only). */
+let inProcessUsed = false;
+
+/**
+ * In-process transport (single-threaded builds only). The emscripten glue only
+ * supports ONE instance per Node process (a second instance looks for
+ * `stockfish.wasm`), so callers should use it once; see nodeEngine().
+ */
 export function inProcessTransport(jsPath: string): UciTransport {
+  inProcessUsed = true;
   const factory = require(jsPath);
   const eng = factory();
   let listener: (l: string) => void = () => {};
@@ -106,12 +113,21 @@ export function processRssMB(pid?: number): number {
 }
 
 /**
- * Default test engine: Stockfish 19 lite single-threaded, in-process (as before).
- * Pass a build id to get another build; non-default builds run as child processes.
+ * Default test engine: Stockfish 19 lite single-threaded, in-process (as before)
+ * for the first instance; further instances, other builds and restarts run as
+ * child processes (`node stockfish-19-*.js`).
  */
 export function nodeEngine(build: BuildId = 'lite-single', opts: EngineOptions & { process?: boolean } = {}): UciEngine {
   const p = findBuild(build);
   if (!p) throw new Error(`Stockfish build ${build} not found (set GLADIUS_SF_DIR)`);
-  const useProcess = opts.process ?? (build !== 'lite-single');
-  return new UciEngine(() => (useProcess ? processTransport(p) : inProcessTransport(p)), opts);
+  // In-process only for the first lite-single engine of this process (fast unit tests);
+  // every other engine — and every restart — gets its own child process.
+  let first = !(opts.process ?? (build !== 'lite-single')) && !inProcessUsed;
+  return new UciEngine(() => {
+    if (first) {
+      first = false;
+      return inProcessTransport(p);
+    }
+    return processTransport(p);
+  }, opts);
 }

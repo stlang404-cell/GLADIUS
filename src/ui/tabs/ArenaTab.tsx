@@ -10,7 +10,7 @@ import {
 } from '../../game/career';
 import { STYLE_LABEL } from '../../engine/styles';
 import { isProvisional, PROVISIONAL_GAMES } from '../../rating/elo';
-import { backdropUri } from '../art';
+import { useArenaArt } from '../components/ArenaArt';
 import { CHALLENGE_COST } from '../../game/influence';
 import { objectives } from '../../game/legacy';
 
@@ -50,10 +50,11 @@ export function ArenaTab() {
   };
 
   const oppAge = main ? compAge(main.c, day) : 0;
+  const heroArt = useArenaArt(arena);
   return (
     <div className="arena-home">
       <div className="arena-col">
-        <div className="hero" style={{ ['--backdrop' as string]: `url("${backdropUri(arena)}")` }}>
+        <div className="hero" style={{ ['--backdrop' as string]: heroArt }}>
           <div className="hero-shade" />
           <div className="hero-content">
             <div className="kicker">{ARENAS[arena].name} · Objective</div>

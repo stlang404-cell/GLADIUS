@@ -20,6 +20,7 @@ export type BoardProps = {
   hint?: [Square, Square] | null;
   azimuth?: number;
   label?: string;
+  arena?: number | null; // arena environment (null = none)
 };
 
 export function moveAnimFrom(m: Move | null | undefined): MoveAnim | null {
@@ -29,6 +30,12 @@ export function moveAnimFrom(m: Move | null | undefined): MoveAnim | null {
   if (m.isQueensideCastle()) a.castle = m.color === 'w' ? { rookFrom: 'a1', rookTo: 'd1' } : { rookFrom: 'a8', rookTo: 'd8' };
   if (m.isEnPassant()) a.epSquare = (m.to[0] + m.from[1]) as Square;
   return a;
+}
+
+export function sceneryOn(s: Settings): boolean {
+  const mode = s.scenery ?? 'auto';
+  if (mode === 'auto') return typeof window !== 'undefined' && window.innerWidth >= 700;
+  return mode === 'scenic';
 }
 
 export function animMs(s: Settings): number {
@@ -126,7 +133,7 @@ export function Board(props: BoardProps) {
   };
   return (
     <div
-      className={'board-wrap' + (use3d ? ' is3d' : ' is2d')}
+      className={'board-wrap' + (use3d ? ' is3d' : ' is2d') + (use3d && props.arena != null && sceneryOn(settings) ? ' scenic' : '')}
       tabIndex={0}
       role="application"
       aria-label={props.label ?? 'Chessboard. Use arrow keys to move the cursor and Enter to select.'}
@@ -165,6 +172,8 @@ function Board3DView(p: BoardProps & { set: number; onTap: (s: Square) => void; 
     return () => b.dispose();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => board.current?.setPalette(ARENAS[p.set].palette), [p.set]);
+  const envArena = p.arena === undefined || p.arena === null || !sceneryOn(p.settings) ? null : p.arena;
+  useEffect(() => board.current?.setArena(envArena), [envArena]);
   useEffect(() => {
     const b = board.current!;
     b.setMoveDuration(animMs(p.settings));

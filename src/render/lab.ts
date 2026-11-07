@@ -33,6 +33,8 @@ if (params.get('mode') === 'trophies') {
   const chess = new Chess(params.get('fen') ?? undefined);
   board.setPosition(chess.fen());
   board.onReady = () => (W.__ready = true);
+  W.setArena = (i: number) => { board.setPalette(ARENAS[i].palette); board.setArena(i); };
+  if (params.get('env') !== null) (W.setArena as (i: number) => void)(Number(params.get('env')));
   const toAnim = (m: ReturnType<Chess['move']>): MoveAnim => {
     const a: MoveAnim = { from: m.from, to: m.to, promotion: m.promotion, captured: !!m.captured };
     if (m.isKingsideCastle()) a.castle = m.color === 'w' ? { rookFrom: 'h1', rookTo: 'f1' } : { rookFrom: 'h8', rookTo: 'f8' };

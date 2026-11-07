@@ -322,6 +322,7 @@ function SettingsPanel() {
   return (
     <Card title="Settings">
       <Choice k="boardMode" label="Board" options={[['3d', '2.5D sculpted'], ['2d', 'Classical 2D']]} />
+      <Choice k="scenery" label="Arena scenery (2.5D)" options={[['auto', 'Auto'], ['scenic', 'Scenic'], ['focused', 'Board only']]} />
       <Choice k="animSpeed" label="Piece movement" options={[['fast', 'Fast'], ['balanced', 'Balanced'], ['majestic', 'Majestic'], ['custom', 'Custom']]} />
       {s.settings.animSpeed === 'custom' && <div className="choice"><span>Move duration · {s.settings.animMs ?? 480} ms</span><input type="range" min={150} max={1200} step={10} value={s.settings.animMs ?? 480} onChange={(e) => mutate((x) => (x.settings.animMs = Number(e.target.value)))} /></div>}
       <div className="choice"><span>Text size · {Math.round((s.settings.textScale ?? 1) * 100)}%</span><input type="range" min={0.9} max={1.3} step={0.05} value={s.settings.textScale ?? 1} onChange={(e) => mutate((x) => (x.settings.textScale = Number(e.target.value)))} /></div>

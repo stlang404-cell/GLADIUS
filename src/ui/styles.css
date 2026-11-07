@@ -418,3 +418,13 @@ html[data-motion='reduce'] *, html[data-motion='reduce'] *::before, html[data-mo
 .tl-item::before { content: ''; position: absolute; left: -19px; top: 11px; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 3px #fffaf0; }
 .tl-item.trophy::before, .tl-item.title-won::before { background: var(--crimson); }
 .tl-item .muted { font-size: .74rem; }
+.board-wrap.scenic { aspect-ratio: 4 / 3; max-width: min(100%, calc((100dvh - 250px) * 4 / 3)); }
+.board-wrap.scenic .board3d { border-radius: 18px; box-shadow: 0 20px 40px -18px rgba(40, 15, 5, .6), inset 0 0 0 2px rgba(255,230,160,.6); }
+/* Arena cards: badges anchor to the card, not the caption block. */
+.arena-card .ac-body { position: static; inset: auto; }
+.arena-card .ac-body > .ac-name, .arena-card .ac-body > .ac-meta, .arena-card .ac-body > .ac-champ { position: relative; }
+.arena-card { display: flex; flex-direction: column; justify-content: flex-end; }
+.arena-card .ac-body { padding: 10px 12px; color: #fff7e6; z-index: 1; }
+.arena-card .ac-num { position: absolute; top: 10px; left: 12px; }
+.arena-card .ac-lock, .arena-card .ac-here { position: absolute; top: 12px; right: 12px; }
+.arena-card .ac-body { position: static; }

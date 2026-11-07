@@ -172,11 +172,14 @@ function bigBuild(): BuildId {
  * play: until it completes the elite slot uses the lite build. The service
  * worker caches it with a CacheFirst runtime route (not precache), so it is
  * downloaded once and works offline afterwards. Returns true when ready.
+ * Skipped on data-saver / 2G–3G connections unless `force` (e.g. a Settings button).
  */
-export function prefetchBigNet(): Promise<boolean> {
+export function prefetchBigNet(opts: { force?: boolean } = {}): Promise<boolean> {
   if (bigNetPromise) return bigNetPromise;
   const p0 = currentPlan();
-  if (!p0.bigNetAllowed || bigNetBroken) {
+  const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  const metered = !!conn && (conn.saveData === true || /(^|-)2g|3g/.test(conn.effectiveType ?? ''));
+  if (!p0.bigNetAllowed || bigNetBroken || (metered && !opts.force)) {
     bigNet.state = 'unavailable';
     return Promise.resolve(false);
   }

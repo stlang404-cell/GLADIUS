@@ -3,7 +3,9 @@ import { ARENAS, RANKS } from '../world/arenas';
 import { TROPHY_BY_ID } from '../world/trophies';
 import type { SeasonReport } from '../game/state';
 import type { AwardRecord } from '../world/types';
-import { emblemUri, backdropUri } from './art';
+import { emblemUri } from './art';
+import { useArenaArt } from './components/ArenaArt';
+import type React from 'react';
 import { TrophyImage } from './components/TrophyImage';
 import { getSave } from './store';
 import { sfx } from './sound';
@@ -59,14 +61,14 @@ export function CeremonyHost() {
         </div>
       )}
       {item.kind === 'arena' && (
-        <div className="arena-transition" style={{ ['--backdrop' as string]: `url("${backdropUri(item.arena)}")` }}>
+        <ArenaReveal arena={item.arena}>
           <div>
             <div className="kicker" style={{ color: '#f2cf6e' }}>Arena {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][item.arena]}</div>
             <h1>{ARENAS[item.arena].name}</h1>
             <p>{ARENAS[item.arena].motto}</p>
             <div className="next" style={{ display: 'inline-block' }}>{item.next}</div>
           </div>
-        </div>
+        </ArenaReveal>
       )}
       {item.kind === 'trophy' && (
         <div className="ceremony-card">
@@ -88,4 +90,9 @@ export function CeremonyHost() {
       <div className="skip" style={{ position: 'absolute', bottom: 'calc(30px + env(safe-area-inset-bottom))' }}>Tap to continue</div>
     </div>
   );
+}
+
+function ArenaReveal({ arena, children }: { arena: number; children: React.ReactNode }) {
+  const art = useArenaArt(arena);
+  return <div className="arena-transition" style={{ ['--backdrop' as string]: art }}>{children}</div>;
 }

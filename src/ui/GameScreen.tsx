@@ -256,6 +256,7 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
           lastMove={lastMove}
           settings={s.settings}
           set={tournament ? tournament.arena : playerArena(s)}
+          arena={tournament ? tournament.arena : playerArena(s)}
           mate={st.termination === 'checkmate'}
           resigned={resigned}
           azimuth={azimuth}

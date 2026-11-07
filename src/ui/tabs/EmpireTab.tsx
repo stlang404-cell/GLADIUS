@@ -3,7 +3,6 @@ import { useSave, mutate } from '../store';
 import { useNav } from '../nav';
 import { Card, CompetitorPortrait, Emblem, Record, Sheet, Sparkline, dayLabel } from '../components/common';
 import { ARENAS, RANKS } from '../../world/arenas';
-import { trophyUri, backdropUri } from '../art';
 import { standings, describeFormat, matchOutcome, type Pairing } from '../../tournament/formats';
 import { PLAYER_ID } from '../../world/calendar';
 import { acceptTournament, playerArena, playerWithdraw, hostInvitational, startGame } from '../../game/career';
@@ -12,6 +11,7 @@ import { STYLE_LABEL } from '../../engine/styles';
 import type { Save, WorldTournament } from '../../game/state';
 import { compAge } from '../components/common';
 import { TrophyImage } from '../components/TrophyImage';
+import { useArenaArt } from '../components/ArenaArt';
 import { TROPHY_BY_ID } from '../../world/trophies';
 import { recordLeaders, RECORD_LABELS, ALL_RECORD_KEYS, competitorHonours, type RecordKey } from '../../world/records';
 import { rivalPrep } from '../../game/legacy';
@@ -46,6 +46,11 @@ function nameOf(s: Save, id: string | null) {
   return s.world.competitors.find((c) => c.id === id)?.name ?? 'Unknown';
 }
 
+function ArenaCard({ index, mine, onClick, children }: { index: number; mine: boolean; onClick: () => void; children: React.ReactNode }) {
+  const art = useArenaArt(index);
+  return <div className={'arena-card' + (mine ? ' mine' : '')} style={{ backgroundImage: art }} onClick={onClick}>{children}</div>;
+}
+
 function Arenas() {
   const s = useSave();
   const nav = useNav();
@@ -61,7 +66,7 @@ function Arenas() {
         const title = s.world.titles[a.index];
         const locked = a.index > mine && !s.player.unlockedSets.includes(a.index);
         return (
-          <div key={a.id} className={'arena-card' + (a.index === mine ? ' mine' : '')} style={{ backgroundImage: `url("${backdropUri(a.index)}")` }} onClick={() => nav.open({ kind: 'arena', index: a.index })}>
+          <ArenaCard key={a.id} index={a.index} mine={a.index === mine} onClick={() => nav.open({ kind: 'arena', index: a.index })}>
             <div className="ac-shade" />
             <div className="ac-body">
               <div className="ac-num">{['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][a.index]}</div>
@@ -71,7 +76,7 @@ function Arenas() {
               {locked && <div className="ac-lock"><IconShield size={16} /></div>}
               {a.index === mine && <div className="ac-here">YOU ARE HERE</div>}
             </div>
-          </div>
+          </ArenaCard>
         );
       })}
     </div>
@@ -82,13 +87,14 @@ export function ArenaSheet({ index, onClose }: { index: number; onClose: () => v
   const s = useSave();
   const nav = useNav();
   const a = ARENAS[index];
+  const art = useArenaArt(index);
   const title = s.world.titles[index];
   const reigns = s.world.reigns.filter((r) => r.titleId === title.id).slice(-12).reverse();
   const top = s.world.competitors.filter((c) => c.retiredDay === null && RANKS[c.rank].arena === index).sort((x, y) => y.rating - x.rating).slice(0, 10);
   return (
     <Sheet title={a.name} onClose={onClose} wide>
-      <div className="arena-banner" style={{ backgroundImage: `url("${backdropUri(index)}")` }}>
-        <img src={trophyUri(index)} width={84} height={84} alt={a.trophy} />
+      <div className="arena-banner" style={{ backgroundImage: art }}>
+        <TrophyImage defId={`sig-${index}`} arena={index} size={96} alt={a.trophy} />
         <div><div className="kicker">{a.trophy}</div><i>{a.motto}</i></div>
       </div>
       <div className="ranks3">
@@ -176,7 +182,7 @@ function Tournaments() {
       {sorted.map((t) => (
         <Card key={t.id} className={'tourn ' + t.status} onClick={() => nav.open({ kind: 'tournament', id: t.id })}>
           <div className="row">
-            <img src={trophyUri(t.arena)} width={36} height={36} alt="" />
+            <TrophyImage defId={t.kind === 'championship' ? `sig-${t.arena}` : t.kind === 'league' ? `league-t${Math.min(3, Math.floor(t.arena / 3))}` : t.kind === 'invitational' ? `invit-t${Math.min(3, Math.floor(t.arena / 3))}` : `cup-open-t${Math.min(3, Math.floor(t.arena / 3))}`} arena={t.arena} size={44} />
             <div className="grow">
               <b>{t.name}</b>
               <div className="muted">{describeFormat(t.format, t.state ?? undefined)} · {t.status === 'scheduled' ? `starts ${dayLabel(t.startDay)}` : t.status === 'running' ? `round ${(t.state?.rounds.length ?? 0)}` : `won by ${nameOf(s, t.state?.winner ?? null)}`}</div>

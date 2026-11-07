@@ -6,7 +6,8 @@ import { loadPieceSet, type PieceGeoms } from './pieceAssets';
 import { FINISHES, pieceMaterials, studioEnvironment, type PieceFinish } from './materials';
 import { squaresTexture, frameTexture, glowTexture, type BoardTheme } from './boardTextures';
 import { Timeline, ease } from './animation';
-import type { Palette } from '../world/arenas';
+import { ARENAS, type Palette } from '../world/arenas';
+import { buildArenaEnvironment, arenaKeyLight, type ArenaEnv } from './arenaScene';
 
 export type MoveAnim = { from: Square; to: Square; promotion?: string; captured?: boolean; castle?: { rookFrom: Square; rookTo: Square }; epSquare?: Square };
 export type Highlights = {
@@ -66,6 +67,10 @@ export class Board3D {
   private showCoords = true;
   private quality: 'high' | 'low';
   private boardPlane!: THREE.Mesh;
+  private env: ArenaEnv | null = null;
+  private envIndex = -1;
+  private keyLight!: THREE.DirectionalLight;
+  private framing = 0.97;
   moveMs = 480;
   renders = 0;
   onSquare: (sq: Square) => void = () => {};
@@ -118,6 +123,7 @@ export class Board3D {
     const s = this.scene;
     s.add(new THREE.HemisphereLight(0xfff3df, 0x5a3a28, 0.55));
     const key = new THREE.DirectionalLight(0xfff0da, 2.3);
+    this.keyLight = key;
     key.position.set(-4.5, 10, 6);
     key.castShadow = true;
     const sm = this.quality === 'high' ? 2048 : 1536;
@@ -176,6 +182,54 @@ export class Board3D {
     g.add(shadow);
   }
 
+  /** Surround the board with an arena environment (null = none, transparent background). */
+  setArena(index: number | null) {
+    if (index === this.envIndex) return;
+    if (this.env) {
+      this.scene.remove(this.env.group);
+      for (const l of this.env.lights) this.scene.remove(l);
+      this.env.dispose();
+      this.env = null;
+    }
+    this.envIndex = index ?? -1;
+    if (index === null || index < 0) {
+      this.scene.background = null;
+      this.scene.fog = null;
+      this.framing = 0.97;
+      this.updateCamera(true);
+      return;
+    }
+    const env = buildArenaEnvironment(index, () => (this.dirty = true));
+    this.env = env;
+    this.scene.add(env.group);
+    for (const l of env.lights) this.scene.add(l);
+    this.scene.background = env.background;
+    this.scene.fog = env.fog;
+    this.renderer.toneMappingExposure = env.exposure;
+    const k = arenaKeyLight(index);
+    this.keyLight.intensity = k.intensity;
+    this.keyLight.color.set(k.color);
+    this.framing = 0.86;
+    this.fitBackground();
+    this.updateCamera(true);
+    void ARENAS;
+  }
+
+  /** CSS-like "cover" for the backdrop texture. */
+  private fitBackground() {
+    const t = this.scene.background as THREE.Texture | null;
+    if (!t || !(t as THREE.Texture).isTexture) return;
+    const imgAspect = 16 / 9;
+    const a = this.camera.aspect || 1;
+    if (a < imgAspect) {
+      t.repeat.set(a / imgAspect, 1);
+      t.offset.set((1 - a / imgAspect) / 2, 0);
+    } else {
+      t.repeat.set(1, imgAspect / a);
+      t.offset.set(0, (1 - imgAspect / a) / 2);
+    }
+  }
+
   setPalette(p: Palette) {
     this.palette = p;
     this.buildBoard();
@@ -218,19 +272,21 @@ export class Board3D {
   }
 
   private updateCamera(snap = false) {
-    const elev = THREE.MathUtils.lerp(82, 40, this.tilt) * (Math.PI / 180);
+    const scenic = this.env !== null;
+    // Scenic framing: lower camera, board in the lower ~70% of the frame, arena rising behind.
+    const elev = (scenic ? THREE.MathUtils.lerp(50, 26, this.tilt) : THREE.MathUtils.lerp(82, 40, this.tilt)) * (Math.PI / 180);
     const az = this.azimuth + (this.orientation === 'w' ? 0 : Math.PI);
-    // Fit: find the smallest distance at which every board corner projects inside the viewport.
     const half = 4 + FRAME + 0.25;
     const corners = [-half, half].flatMap((x) => [-half, half].flatMap((z) => [new THREE.Vector3(x, 0.05, z), new THREE.Vector3(x, -0.78, z)]));
-    corners.push(new THREE.Vector3(0, 1.25, -3.5), new THREE.Vector3(0, 1.25, 3.5)); // tall back-rank pieces
-    let lo = 4, hi = 60;
-    for (let i = 0; i < 24; i++) {
+    corners.push(new THREE.Vector3(0, 1.25, -3.5), new THREE.Vector3(0, 1.25, 3.5));
+    const top = scenic ? (this.camera.aspect < 0.9 ? 0.6 : 0.5) : this.framing;
+    let lo = 4, hi = 80;
+    for (let i = 0; i < 26; i++) {
       const mid = (lo + hi) / 2;
       this.placeCamera(elev, az, mid);
       const fits = corners.every((c) => {
         const v = c.clone().project(this.camera);
-        return Math.abs(v.x) <= 0.97 && Math.abs(v.y) <= 0.97 && v.z < 1;
+        return Math.abs(v.x) <= 0.95 && v.y >= -0.96 && v.y <= top && v.z < 1;
       });
       if (fits) hi = mid;
       else lo = mid;
@@ -238,14 +294,22 @@ export class Board3D {
     this.camTarget = { elev, az, dist: hi };
     if (snap) this.cam = { ...this.camTarget };
     this.placeCamera(this.cam.elev, this.cam.az, this.cam.dist);
+    if (this.scene.fog instanceof THREE.Fog) {
+      this.scene.fog.near = hi + 4;
+      this.scene.fog.far = hi + 42;
+    }
     this.dirty = true;
   }
 
   private placeCamera(elev: number, az: number, dist: number) {
-    const lookZ = 0.3 * this.tilt * Math.cos(az);
-    const lookX = 0.3 * this.tilt * Math.sin(az);
-    this.camera.position.set(Math.sin(az) * Math.cos(elev) * dist + lookX, Math.sin(elev) * dist, Math.cos(az) * Math.cos(elev) * dist + lookZ);
-    this.camera.lookAt(lookX, -0.2, lookZ);
+    const scenic = this.env !== null;
+    // Scenic: aim beyond the far edge so the board sits low and the arena fills the top.
+    const aimFwd = scenic ? 3.2 : 0.3 * this.tilt;
+    const aimY = scenic ? 2.2 : -0.2;
+    const lookX = -Math.sin(az) * aimFwd * (scenic ? 1 : -1);
+    const lookZ = -Math.cos(az) * aimFwd * (scenic ? 1 : -1);
+    this.camera.position.set(Math.sin(az) * Math.cos(elev) * dist, Math.sin(elev) * dist, Math.cos(az) * Math.cos(elev) * dist);
+    this.camera.lookAt(lookX, aimY, lookZ);
     this.camera.updateMatrixWorld(true);
   }
 
@@ -261,6 +325,7 @@ export class Board3D {
     this.renderer.domElement.style.height = h + 'px';
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.fitBackground();
     this.updateCamera(this.cam.dist === 0);
   }
 
@@ -642,9 +707,13 @@ export class Board3D {
     return out;
   }
 
-  snapshot(): string {
+  snapshot(type = 'image/png', quality?: number): string {
+    this.tl.skip();
+    this.applyCamera();
+    this.cam = { ...this.camTarget };
+    this.applyCamera();
     this.renderer.render(this.scene, this.camera);
-    return this.renderer.domElement.toDataURL('image/png');
+    return this.renderer.domElement.toDataURL(type, quality);
   }
 
   dispose() {

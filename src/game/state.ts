@@ -35,6 +35,7 @@ export type Settings = {
   cameraTilt: number; // 0..1
   animMs?: number; // custom move duration (150–1200)
   textScale?: number; // 0.9–1.3 UI text scaling
+  scenery?: 'auto' | 'scenic' | 'focused'; // arena environment around the 2.5D board
   reduceMotion: boolean;
   highContrast: boolean;
 };
