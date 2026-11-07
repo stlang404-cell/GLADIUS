@@ -9,10 +9,12 @@ import { ArenaTab } from './tabs/ArenaTab';
 import { EmpireTab, ArenaSheet, TournamentSheet, CompetitorSheet } from './tabs/EmpireTab';
 import { AcademyTab } from './tabs/AcademyTab';
 import { SpectateTab } from './tabs/SpectateTab';
-import { LegacyTab, PassportSheet } from './tabs/LegacyTab';
+import { LegacyTab, PassportSheet, TrophySheet } from './tabs/LegacyTab';
 import { GameScreen } from './GameScreen';
 import { AnalysisSheet } from './AnalysisView';
 import { Onboarding } from './Onboarding';
+import { CeremonyHost } from './Ceremony';
+import { toasts } from './store';
 import { startGame, playerArena } from '../game/career';
 import { backdropUri } from './art';
 import { setAmbience } from './sound';
@@ -103,6 +105,9 @@ function Shell({ notice }: { notice: string | null }) {
         </main>
         <TabBar badge={{ arena: s.world.invitations.length || undefined }} />
         {top?.kind === 'passport' && <PassportSheet onClose={nav.close} />}
+        {top?.kind === 'trophy' && <TrophySheet awardId={top.awardId} onClose={nav.close} />}
+        <CeremonyHost />
+        <div className="toasts" aria-live="polite">{toasts.map((t) => <div key={t.id} className={'toast ' + t.kind}>{t.kind === 'achievement' ? 'Achievement · ' : ''}{t.text}</div>)}</div>
         {top?.kind === 'competitor' && <CompetitorSheet id={top.id} onClose={nav.close} />}
         {top?.kind === 'tournament' && <TournamentSheet id={top.id} onClose={nav.close} />}
         {top?.kind === 'arena' && <ArenaSheet index={top.index} onClose={nav.close} />}

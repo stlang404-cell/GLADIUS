@@ -196,9 +196,11 @@ export class UciEngine {
   }
 
   /** Swap the transport factory (e.g. big net became available). Takes effect at the next idle restart. */
-  setFactory(f: TransportFactory, opts: { restartNow?: boolean } = {}) {
+  setFactory(f: TransportFactory, opts: { restartNow?: boolean; fallbackFactory?: TransportFactory; handshakeTimeoutMs?: number } = {}) {
     this.factory = f;
     this.usingFallback = false;
+    this.o.fallbackFactory = opts.fallbackFactory;
+    if (opts.handshakeTimeoutMs) this.o.handshakeTimeoutMs = opts.handshakeTimeoutMs;
     if (!opts.restartNow) return;
     if (this.busy === 0) this.teardown('factory changed');
     else this.pendingRestart = true; // after the running operation

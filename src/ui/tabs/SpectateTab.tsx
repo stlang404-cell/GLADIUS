@@ -56,7 +56,7 @@ export function SpectateTab() {
   const broadcasts = [...s.library].reverse().filter((id) => s.libraryMeta[id]?.source === 'engine').slice(0, 20);
   if (live) return <LiveBroadcast f={live} onExit={() => setLive(null)} />;
   return (
-    <div className="tab-page">
+    <div className="page">
       <Card title="Live from the empire">
         <div className="muted small">Broadcasts are real engine games played now, move by move, at each competitor's strength. Tournament broadcasts decide the actual result.</div>
       </Card>

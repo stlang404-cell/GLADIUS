@@ -14,7 +14,8 @@
     "package:win": "npm run build && node scripts/package-windows.mjs",
     "bench": "vitest run tests/bench --reporter=verbose",
     "soak": "vitest run --config vitest.soak.config.ts --reporter=verbose",
-    "bake:pieces": "tsx scripts/bake-pieces.ts"
+    "bake:pieces": "tsx scripts/bake-pieces.ts",
+    "bake:trophies": "SET=trophies CELL=0.007 ERR=0.0012 tsx scripts/bake-pieces.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

@@ -1,0 +1,6 @@
+# Big-net Stockfish 19 builds (~99 MB each) are deployed but not committed.
+# Fetch them with: npm pack stockfish@19.0.1 && tar xzf stockfish-19.0.1.tgz
+#   cp package/bin/stockfish-19-single.{js,wasm} public/engine/   (see docs/ENGINE.md)
+stockfish-19-single.wasm
+stockfish-19.wasm
+stockfish-19.js

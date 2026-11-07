@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { Save, GameRecord, LibraryMeta } from '../game/state';
 import { persistSave, storeGame } from '../persist/save';
+import { ensureSaveV2 } from '../game/legacy';
 
 /**
  * Single source of truth for the UI. All gameplay mutations go through
@@ -26,8 +27,23 @@ export function hasSave() {
 }
 
 export function setSave(s: Save | null) {
-  save = s;
+  save = s ? ensureSaveV2(s) : null; // idempotent v2 world/career upgrade for any loaded or imported save
   bump();
+}
+
+/** Lightweight toasts (achievements, trophies, records) — never blocking. */
+export type Toast = { id: number; text: string; kind: 'achievement' | 'trophy' | 'info' };
+let toastSerial = 0;
+export const toasts: Toast[] = [];
+export function pushToast(text: string, kind: Toast['kind'] = 'info') {
+  toasts.push({ id: ++toastSerial, text, kind });
+  if (toasts.length > 4) toasts.shift();
+  bump();
+  setTimeout(() => {
+    const i = toasts.findIndex((t) => t.text === text);
+    if (i >= 0) toasts.splice(i, 1);
+    bump();
+  }, 4200);
 }
 
 function bump() {

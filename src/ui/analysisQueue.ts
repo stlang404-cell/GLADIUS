@@ -1,7 +1,8 @@
 import { getEngine } from '../engine/browserEngine';
 import { analyseGame } from '../analysis/analyzer';
 import { getGame, storeGame } from '../persist/save';
-import { mutate, metaOf } from './store';
+import { mutate, metaOf, pushToast } from './store';
+import { onGameAnalysed } from '../game/achievements';
 import type { GameRecord, TrainingPosition } from '../game/state';
 import { Chess } from 'chess.js';
 import { parseUci } from '../chess/rules';
@@ -49,10 +50,15 @@ async function pump() {
         g.analysis = a;
         if (!g.opening && a.opening) g.opening = a.opening;
         await storeGame(g);
+        let unlocked: string[] = [];
         mutate((s) => {
           s.libraryMeta[g.id] = metaOf(g);
-          if (g.playerColor) addTrainingPositions(s.coach.positions, g);
+          if (g.playerColor) {
+            addTrainingPositions(s.coach.positions, g);
+            unlocked = onGameAnalysed(s, g); // analysis-gated achievements unlock only here
+          }
         });
+        for (const a of unlocked) pushToast(a, 'achievement');
       }
     }
   } catch (e) {

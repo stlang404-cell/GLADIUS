@@ -12,6 +12,7 @@ import { STYLE_LABEL } from '../../engine/styles';
 import { isProvisional, PROVISIONAL_GAMES } from '../../rating/elo';
 import { backdropUri } from '../art';
 import { CHALLENGE_COST } from '../../game/influence';
+import { objectives } from '../../game/legacy';
 
 export function careerObjective(s: ReturnType<typeof useSave>): { title: string; detail: string } {
   const p = s.player;
@@ -36,7 +37,8 @@ export function ArenaTab() {
   const [tcId, setTcId] = useState(s.settings.defaultTc);
   const sugg = useMemo(() => suggestOpponents(s, salt), [s.world.day, s.player.ratedGames, salt]); // eslint-disable-line react-hooks/exhaustive-deps
   const tg = playerTournamentGame(s);
-  const obj = careerObjective(s);
+  const objs = useMemo(() => objectives(s), [s.world.day, s.player.ratedGames, s.world.invitations.length, s.player.rank]); // eslint-disable-line react-hooks/exhaustive-deps
+  const obj = objs[0] ?? careerObjective(s);
   const main = sugg[0];
   const arena = playerArena(s);
   const day = s.world.day;
@@ -57,6 +59,8 @@ export function ArenaTab() {
             <div className="kicker">{ARENAS[arena].name} · Objective</div>
             <div className="obj-title">{obj.title}</div>
             <div className="obj-detail">{obj.detail}</div>
+            {'progress' in obj && obj.progress && <div className="meter" style={{ maxWidth: 320 }}><span style={{ width: `${Math.round((obj.progress.current / Math.max(1, obj.progress.target)) * 100)}%` }} /></div>}
+            {objs.length > 1 && <div className="obj-alts">{objs.slice(1, 4).map((o) => <span key={o.id} className="pill" title={o.detail}>{o.title}</span>)}</div>}
           </div>
         </div>
 

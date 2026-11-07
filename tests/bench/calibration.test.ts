@@ -4,6 +4,7 @@ import { nodeEngine } from '../helpers/nodeEngine';
 import { chooseMove } from '../../src/engine/persona';
 import { winPercent } from '../../src/engine/uci';
 import { parseUci } from '../../src/chess/rules';
+import { saveResult } from './lib/report';
 
 /**
  * Strength-ladder benchmark: for each persona Elo, measure the average
@@ -40,8 +41,12 @@ async function evalWin(fen: string): Promise<number> {
 
 describe('strength ladder', () => {
   it('weaker personas lose more win% per move', async () => {
-    const elos = [500, 900, 1300, 1700, 2100, 2600];
-    const TARGET: Record<number, number> = { 500: 13, 900: 9, 1300: 6.5, 1700: 4.5, 2100: 3.2, 2600: 2 };
+    // BENCH_LADDER_REPS (default 4) samples per position; BENCH_LADDER_ELITE=1 adds the
+    // 2800/3000 rows (time-based search, 300 ms) — used for the docs/ENGINE.md table.
+    const reps = Number(process.env.BENCH_LADDER_REPS ?? 4);
+    const elite = !!process.env.BENCH_LADDER_ELITE;
+    const elos = [500, 900, 1300, 1700, 2100, 2600, ...(elite ? [2800, 3000] : [])];
+    const TARGET: Record<number, number> = { 500: 13, 900: 9, 1300: 6.5, 1700: 4.5, 2100: 3.2, 2600: 2, 2800: 1.2, 3000: 0.6 };
     const table: { elo: number; target: number; avgWinLoss: number; worstLoss: number; topMoveRate: number }[] = [];
     const ref = new Map<string, { best: number; move: string }>();
     for (const f of POSITIONS) {
@@ -54,8 +59,8 @@ describe('strength ladder', () => {
       let top = 0;
       let n = 0;
       for (const [i, fen] of POSITIONS.entries()) {
-        for (let rep = 0; rep < 4; rep++) {
-          const mv = await chooseMove(eng, fen, [], { elo, style: 'universal', openingStyles: [], seed: 1000 * rep + i * 7 + elo }, { pace: 'instant', startFen: fen });
+        for (let rep = 0; rep < reps; rep++) {
+          const mv = await chooseMove(eng, fen, [], { elo, style: 'universal', openingStyles: [], seed: 1000 * rep + i * 7 + elo }, { pace: 'instant', startFen: fen, thinkMs: 300 });
           const c = new Chess(fen);
           c.move(parseUci(mv.uci));
           const after = 100 - (await evalWin(c.fen()));
@@ -69,6 +74,7 @@ describe('strength ladder', () => {
       table.push({ elo, target: TARGET[elo], avgWinLoss: Math.round((loss / n) * 10) / 10, worstLoss: Math.round(worst), topMoveRate: Math.round((top / n) * 100) });
     }
     console.table(table);
+    if (reps !== 4 || elite) saveResult(`ladder-${reps}reps`, table);
     for (let i = 1; i < table.length; i++) expect(table[i].avgWinLoss).toBeLessThanOrEqual(table[i - 1].avgWinLoss + 1.5);
     expect(table[0].avgWinLoss).toBeGreaterThan(table[table.length - 1].avgWinLoss + 4);
   }, 600000);

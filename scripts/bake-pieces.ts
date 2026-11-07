@@ -8,10 +8,13 @@
 import { writeFileSync } from 'node:fs';
 import { MeshoptSimplifier, MeshoptEncoder } from 'meshoptimizer';
 import { SCULPTS } from '../src/render/pieceSculpt';
+import { TROPHY_SCULPTS } from '../src/render/trophySculpt';
 import { meshSDF, type SDF, type Vec3 } from '../src/render/sdf';
 
 const CELL = Number(process.env.CELL ?? 0.008);
 const ERR = Number(process.env.ERR ?? 0.0009);
+const SET = process.env.SET ?? 'legio';
+const SOURCE: Record<string, () => { body: SDF; accent: SDF | null; bounds: [Vec3, Vec3] }> = SET === 'trophies' ? TROPHY_SCULPTS : SCULPTS;
 
 type Entry = { piece: string; part: 'body' | 'accent'; vcount: number; icount: number; bmin: number[]; bmax: number[]; pos: [number, number]; nrm: [number, number]; idx: [number, number] };
 
@@ -29,7 +32,7 @@ async function main() {
     return r;
   };
   const entries: Entry[] = [];
-  for (const [piece, make] of Object.entries(SCULPTS)) {
+  for (const [piece, make] of Object.entries(SOURCE)) {
     const s = make();
     const parts: ['body' | 'accent', SDF | null, number][] = [['body', s.body, CELL], ['accent', s.accent, CELL * 0.8]];
     for (const [part, f, cell] of parts) {
@@ -75,7 +78,7 @@ async function main() {
       console.log(`${piece}.${part}: ${idx0.length / 3} → ${newIdx.length / 3} tris, ${vcount} verts, ${((encPos.length + encNrm.length + encIdx.length) / 1024).toFixed(1)} KB, ${Date.now() - t0} ms`);
     }
   }
-  const header = new TextEncoder().encode(JSON.stringify({ set: 'legio', version: 1, cell: CELL, error: ERR, entries }));
+  const header = new TextEncoder().encode(JSON.stringify({ set: SET, version: 1, cell: CELL, error: ERR, entries }));
   const len = new Uint32Array([header.length]);
   const out = new Uint8Array(4 + header.length + offset + 4);
   out.set(new Uint8Array(len.buffer), 0);
@@ -86,7 +89,7 @@ async function main() {
   for (const c of chunks) { out.set(c, o); o += c.length; }
   // Store blob start in the last 4 bytes.
   new DataView(out.buffer).setUint32(out.length - 4, blobStart, true);
-  writeFileSync('public/models/legio.bin', out.subarray(0, Math.max(o, out.length)));
+  writeFileSync(`public/models/${SET}.bin`, out.subarray(0, Math.max(o, out.length)));
   console.log('total KB', (out.length / 1024).toFixed(1));
 }
 void main();

@@ -6,7 +6,8 @@ export type Overlay =
   | { kind: 'competitor'; id: string }
   | { kind: 'tournament'; id: string }
   | { kind: 'analysis'; gameId: string }
-  | { kind: 'arena'; index: number };
+  | { kind: 'arena'; index: number }
+  | { kind: 'trophy'; awardId: string };
 
 export type Nav = {
   tab: Tab;

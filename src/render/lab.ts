@@ -12,7 +12,21 @@ const params = new URLSearchParams(location.search);
 const el = document.getElementById('c')!;
 const W = window as unknown as Record<string, unknown>;
 
-if (params.get('mode') === 'board') {
+if (params.get('mode') === 'trophies') {
+  void (async () => {
+    const { renderTrophy } = await import('./trophyRenderer');
+    el.style.cssText = 'display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:12px;background:#f3e7cf;height:auto';
+    const ids = (params.get('ids') ?? 'sig-0,sig-1,sig-2,sig-3,sig-4,sig-5,sig-6,sig-7,sig-8,sig-9,sig-10,sig-11,cup-open-t0,cup-gauntlet-t1,league-t2,invit-t3,medal-t1,defense-t2,laurel-t3,imperial-crown,dist-iron-champion,hist-dynasty,hosted-t0,cup-cup-t2').split(',');
+    for (const id of ids) {
+      const img = document.createElement('img');
+      img.src = await renderTrophy(id, { size: 256 });
+      img.style.width = '100%';
+      img.title = id;
+      el.appendChild(img);
+    }
+    W.__ready = true;
+  })();
+} else if (params.get('mode') === 'board') {
   const board = new Board3D(el, ARENAS[Number(params.get('arena') ?? 0)].palette);
   board.setTilt(Number(params.get('tilt') ?? 0.55));
   board.setMoveDuration(Number(params.get('ms') ?? 480));

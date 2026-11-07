@@ -3,8 +3,11 @@ import { useSave, mutate, setSave, getSave } from '../store';
 import { useNav } from '../nav';
 import { Card, Emblem, Portrait, Record, Sparkline, Stat, Sheet, dayLabel, pct } from '../components/common';
 import { RANKS, ARENAS } from '../../world/arenas';
-import { ACHIEVEMENTS } from '../../game/achievements';
-import { trophyUri, pieceUri } from '../art';
+import { achievementProgress, CATEGORY_LABELS } from '../../game/achievements';
+import { awardsFor, trophyCabinet, rarityOf, allAwards, awardsByDef, TROPHY_BY_ID } from '../../world/trophies';
+import { legacyTimeline, rivalries, championshipPrivileges } from '../../game/legacy';
+import { TrophyImage } from '../components/TrophyImage';
+import { pieceUri } from '../art';
 import { careerRating, bestRating } from '../../game/career';
 import { exportAll, importAll, listBackups, restoreBackup, wipeAll } from '../../persist/save';
 import { requestPersistence } from '../../persist/db';
@@ -13,28 +16,31 @@ import { POOLS } from '../../rating/elo';
 import type { Settings } from '../../game/state';
 import { PLAYER_ID } from '../../world/calendar';
 
-type Sec = 'profile' | 'trophies' | 'collection' | 'history' | 'settings' | 'saves';
+type Sec = 'profile' | 'honors' | 'achievements' | 'timeline' | 'collection' | 'settings' | 'saves';
 
 export function LegacyTab() {
   const [sec, setSec] = useState<Sec>('profile');
   return (
-    <div className="tab-page">
+    <div className="page">
       <div className="seg">
-        {(['profile', 'trophies', 'collection', 'history', 'settings', 'saves'] as Sec[]).map((x) => (
+        {(['profile', 'honors', 'achievements', 'timeline', 'collection', 'settings', 'saves'] as Sec[]).map((x) => (
           <button key={x} className={sec === x ? 'on' : ''} onClick={() => setSec(x)}>
-            {{ profile: 'Profile', trophies: 'Honours', collection: 'Collection', history: 'Career', settings: 'Settings', saves: 'Saves' }[x]}
+            {{ profile: 'Profile', honors: 'Hall of Honors', achievements: 'Achievements', timeline: 'Timeline', collection: 'Collection', settings: 'Settings', saves: 'Saves' }[x]}
           </button>
         ))}
       </div>
       {sec === 'profile' && <Profile />}
-      {sec === 'trophies' && <Honours />}
+      {sec === 'honors' && <HallOfHonors />}
+      {sec === 'achievements' && <Achievements />}
+      {sec === 'timeline' && <Timeline />}
       {sec === 'collection' && <Collection />}
-      {sec === 'history' && <Career />}
       {sec === 'settings' && <SettingsPanel />}
       {sec === 'saves' && <Saves />}
     </div>
   );
 }
+
+const TIER_ORDER: Record<string, number> = { legendary: 4, epic: 3, rare: 2, common: 1 };
 
 export function Profile() {
   const s = useSave();
@@ -42,48 +48,59 @@ export function Profile() {
   const p = s.player;
   const r = careerRating(s);
   const hist = p.ratingHistory.filter((h) => h.pool === s.settings.careerPool).map((h) => h.rating);
-  const rivals = Object.entries(p.h2h).sort((a, b) => b[1].w + b[1].d + b[1].l - (a[1].w + a[1].d + a[1].l)).slice(0, 6);
+  const rivals = useMemo(() => rivalries(s, 5), [s.world.day]); // eslint-disable-line react-hooks/exhaustive-deps
   const recent = s.library.slice(-10).map((id) => s.libraryMeta[id]).filter((m) => m?.playerColor);
   const form = recent.map((m) => (m.result === '1/2-1/2' ? 'd' : (m.result === '1-0') === (m.playerColor === 'w') ? 'w' : 'l'));
   const openings = Object.entries(p.openingsPlayed).sort((a, b) => b[1].w + b[1].d + b[1].l - (a[1].w + a[1].d + a[1].l)).slice(0, 4);
   const analysed = Object.values(s.libraryMeta).filter((m) => m.playerColor && m.accuracy !== undefined);
   const avgAcc = analysed.length ? analysed.reduce((a, m) => a + (m.accuracy ?? 0), 0) / analysed.length : null;
+  const trophies = useMemo(() => awardsFor(s.world, PLAYER_ID), [s.world.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  const featured = [...trophies].sort((a, b) => (TIER_ORDER[TROPHY_BY_ID[b.defId]?.tier] ?? 0) - (TIER_ORDER[TROPHY_BY_ID[a.defId]?.tier] ?? 0) || b.day - a.day)[0];
+  const ach = useMemo(() => achievementProgress(s), [s.world.day, Object.keys(p.achievements).length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const got = ach.filter((a) => a.unlockedDay !== null).length;
+  const priv = championshipPrivileges(s);
   return (
     <>
       <Card className="passport">
-        <div className="row">
-          <Portrait seed={p.portraitSeed} female={p.female} arena={RANKS[p.rank].arena} size={92} ring="#e8b04b" />
+        <div className="row wrap">
+          <Portrait seed={p.portraitSeed} female={p.female} arena={RANKS[p.rank].arena} size={96} />
           <div className="grow">
             <div className="pp-name">{p.name}</div>
-            <div className="opp-rank"><Emblem rank={p.rank} size={28} /> {RANKS[p.rank].name} <span className="muted">· {ARENAS[RANKS[p.rank].arena].name}</span></div>
-            <div className="muted">Enlisted {dayLabel(p.createdDay)} · now {dayLabel(s.world.day)}</div>
+            <div className="opp-rank"><Emblem rank={p.rank} size={30} /> {RANKS[p.rank].name} <span className="muted">· {ARENAS[RANKS[p.rank].arena].name}</span></div>
+            <div className="muted small">Enlisted {dayLabel(p.createdDay)} · now {dayLabel(s.world.day)}</div>
+            {priv.titles.length > 0 && <div className="opp-meta">{priv.titles.map((t) => <span key={t.titleId} className="pill crimson">{t.name} · {t.defenses} def.</span>)}</div>}
           </div>
+          {featured && (
+            <button className="shelf-item" onClick={() => nav.open({ kind: 'trophy', awardId: featured.awardId })} title="Featured honour">
+              <TrophyImage defId={featured.defId} arena={featured.arena} size={96} />
+              <span>{TROPHY_BY_ID[featured.defId]?.name}</span>
+            </button>
+          )}
         </div>
         <div className="stats-grid">
           <Stat label="Elo" value={r.rating} sub={`peak ${r.peak}`} />
-          <Stat label="Best ever" value={bestRating(s)} />
           <Stat label="Influence" value={p.influence} sub={`prestige ${p.prestige}`} />
           <Stat label="Games" value={p.w + p.d + p.l} sub={<Record w={p.w} d={p.d} l={p.l} />} />
           <Stat label="Score" value={`${pct(p.w, p.d, p.l)}%`} />
-          <Stat label="Tournaments" value={p.tournamentsWon} sub={`${p.tournamentsPlayed} played`} />
-          <Stat label="Championships" value={p.championships} sub={p.titles.length ? 'title holder' : undefined} />
+          <Stat label="Titles" value={p.championships} />
+          <Stat label="Trophies" value={trophies.length} />
+          <Stat label="Achievements" value={`${got}/${ach.length}`} />
           <Stat label="Accuracy" value={avgAcc !== null ? `${avgAcc.toFixed(1)}%` : '—'} />
         </div>
         <div className="form-row">{form.map((f, i) => <span key={i} className={'form ' + f}>{f.toUpperCase()}</span>)}</div>
-        <Sparkline values={hist.slice(-120)} w={320} h={60} />
-        <div className="muted small">{POOLS.map((pl) => `${pl} ${p.ratings[pl].rating}${p.ratings[pl].games < 20 ? '?' : ''}`).join(' · ')}</div>
+        <Sparkline values={hist.slice(-120)} w={320} h={60} color="#9c1f1a" />
+        <div className="muted small">{POOLS.map((pl) => `${pl} ${p.ratings[pl].rating}${p.ratings[pl].games < 20 ? '?' : ''}`).join(' · ')} · best ever {bestRating(s)}</div>
       </Card>
       {rivals.length > 0 && (
-        <Card title="Head-to-head">
-          {rivals.map(([id, h]) => {
-            const c = s.world.competitors.find((x) => x.id === id);
-            return c ? (
-              <div key={id} className="leader" onClick={() => nav.open({ kind: 'competitor', id })}>
-                <span className="grow">{c.name}{id === p.rivalId ? ' ⚔ rival' : ''}</span>
-                <Record {...h} />
-              </div>
-            ) : null;
-          })}
+        <Card title="Rivalries">
+          {rivals.map((rv) => (
+            <div key={rv.id} className="leader" onClick={() => nav.open({ kind: 'competitor', id: rv.id })}>
+              <span className="grow">{rv.name}{rv.id === p.rivalId ? ' · rival' : ''}</span>
+              {rv.championshipBattles ? <span className="pill crimson">{rv.championshipBattles} title</span> : null}
+              {rv.tournamentEncounters ? <span className="pill">{rv.tournamentEncounters} events</span> : null}
+              <Record w={rv.w} d={rv.d} l={rv.l} />
+            </div>
+          ))}
         </Card>
       )}
       {openings.length > 0 && <Card title="Favourite openings">{openings.map(([n, o]) => <div key={n} className="leader"><span className="grow">{n}</span><Record w={o.w} d={o.d} l={o.l} /></div>)}</Card>}
@@ -95,26 +112,162 @@ export function PassportSheet({ onClose }: { onClose: () => void }) {
   return <Sheet title="Imperial Passport" onClose={onClose}><Profile /></Sheet>;
 }
 
-function Honours() {
+function HallOfHonors() {
   const s = useSave();
-  const won = s.world.history.filter((h) => h.winner === PLAYER_ID);
-  const got = ACHIEVEMENTS.filter((a) => s.player.achievements[a.id] !== undefined).length;
+  const nav = useNav();
+  const [cat, setCat] = useState<string>('all');
+  const [arena, setArena] = useState<number | null>(null);
+  const [rar, setRar] = useState<string>('all');
+  const [sort, setSort] = useState<'recent' | 'rarity'>('recent');
+  const cabinet = useMemo(() => trophyCabinet(s.world, PLAYER_ID), [s.world.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  const all = useMemo(() => awardsFor(s.world, PLAYER_ID), [s.world.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cats = [...new Set(cabinet.map((c) => c.def.category))];
+  let list = cabinet.filter((c) => (cat === 'all' || c.def.category === cat) && (rar === 'all' || c.def.tier === rar) && (arena === null || c.latest.arena === arena));
+  list = sort === 'recent' ? list.sort((a, b) => b.latest.day - a.latest.day) : list.sort((a, b) => (TIER_ORDER[b.def.tier] ?? 0) - (TIER_ORDER[a.def.tier] ?? 0));
+  const signatureWon = new Set(all.filter((a) => a.defId.startsWith('sig-')).map((a) => a.defId));
+  return (
+    <div className="hall">
+      <h2 style={{ margin: '2px 0 4px' }}>Hall of Honors</h2>
+      <div className="muted small">{all.length} awards · {cabinet.length} distinct honours · every one earned in competition</div>
+      <div className="chips">
+        <button className={'chip' + (sort === 'recent' ? ' on' : '')} onClick={() => setSort('recent')}>Recent</button>
+        <button className={'chip' + (sort === 'rarity' ? ' on' : '')} onClick={() => setSort('rarity')}>Rarest</button>
+        <select className="chip" value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Category">
+          <option value="all">All kinds</option>{cats.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select className="chip" value={rar} onChange={(e) => setRar(e.target.value)} aria-label="Rarity">
+          <option value="all">Any rarity</option>{['common', 'rare', 'epic', 'legendary'].map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select className="chip" value={arena ?? ''} onChange={(e) => setArena(e.target.value === '' ? null : Number(e.target.value))} aria-label="Arena">
+          <option value="">All arenas</option>{ARENAS.map((a) => <option key={a.index} value={a.index}>{a.name}</option>)}
+        </select>
+      </div>
+      {list.length === 0 && <div className="muted" style={{ padding: 20, textAlign: 'center' }}>No honours yet. Win a tournament — every trophy you earn will stand here forever.</div>}
+      <div className="shelf">
+        {list.map((c) => (
+          <button key={c.def.id} className={'shelf-item' + (c.current ? ' current' : '')} onClick={() => nav.open({ kind: 'trophy', awardId: c.latest.awardId })}>
+            {c.count > 1 && <span className="count">×{c.count}</span>}
+            <TrophyImage defId={c.def.id} arena={c.latest.arena} size={92} />
+            <span>{c.def.name}</span>
+            <span className={'rarity ' + c.def.tier}>{c.def.tier}</span>
+          </button>
+        ))}
+      </div>
+      <h4>The twelve signature trophies</h4>
+      <div className="shelf">
+        {ARENAS.map((a) => (
+          <div key={a.index} className="shelf-item" title={a.trophy}>
+            <TrophyImage defId={`sig-${a.index}`} arena={a.index} size={80} locked={!signatureWon.has(`sig-${a.index}`)} />
+            <span>{a.trophy}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function TrophySheet({ awardId, onClose }: { awardId: string; onClose: () => void }) {
+  const s = useSave();
+  const nav = useNav();
+  const a = allAwards(s.world).find((x) => x.awardId === awardId);
+  if (!a) return <Sheet title="Trophy" onClose={onClose}><div className="muted">Not found.</div></Sheet>;
+  const def = TROPHY_BY_ID[a.defId];
+  const rarity = rarityOf(s.world, a.defId);
+  const mine = awardsFor(s.world, a.holder).filter((x) => x.defId === a.defId).sort((x, y) => y.day - x.day);
+  const history = awardsByDef(s.world, a.defId).slice(-12).reverse();
+  return (
+    <Sheet title={def?.name ?? 'Trophy'} onClose={onClose}>
+      <div className="hall-feature">
+        <TrophyImage defId={a.defId} arena={a.arena} size={170} />
+        <div>
+          <span className={'rarity ' + (def?.tier ?? '')}>{def?.tier}{rarity ? ` · ${rarity.label}` : ''}</span>
+          <h3 style={{ margin: '4px 0' }}>{def?.name}</h3>
+          <div className="muted small">{def?.desc}</div>
+          <div style={{ marginTop: 6 }}><b>{a.holderName}</b> · {a.result}{a.finalOpponentName ? ` vs ${a.finalOpponentName}` : ''}</div>
+          <div className="muted small">{ARENAS[a.arena].name} · Season {a.season + 1} · {dayLabel(a.day)}{a.defenseNumber ? ` · defence #${a.defenseNumber}` : ''}{a.current ? ' · currently held' : ''}</div>
+        </div>
+      </div>
+      {mine.length > 1 && <><h4>Won {mine.length} times</h4>{mine.map((m) => <div key={m.awardId} className="leader"><span className="grow">Season {m.season + 1} · {m.result}</span><span className="muted">{dayLabel(m.day)}</span></div>)}</>}
+      {a.gameIds.length > 0 && (
+        <>
+          <h4>Games</h4>
+          <div className="chips">{a.gameIds.map((g, i) => <button key={g} className="chip" onClick={() => nav.open({ kind: 'analysis', gameId: g })}>Replay {i + 1}</button>)}</div>
+        </>
+      )}
+      <h4>Recent holders</h4>
+      {history.map((h) => <div key={h.awardId} className="leader"><span className="grow">{h.holderName}</span><span className="muted">S{h.season + 1} · {h.result}</span></div>)}
+    </Sheet>
+  );
+}
+
+function Achievements() {
+  const s = useSave();
+  const prog = useMemo(() => achievementProgress(s), [s.world.day, Object.keys(s.player.achievements).length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [only, setOnly] = useState<'all' | 'got' | 'open'>('all');
+  const byCat = new Map<string, typeof prog>();
+  for (const a of prog) {
+    if (only === 'got' && a.unlockedDay === null) continue;
+    if (only === 'open' && a.unlockedDay !== null) continue;
+    const k = a.def.category;
+    byCat.set(k, [...(byCat.get(k) ?? []), a]);
+  }
+  const got = prog.filter((a) => a.unlockedDay !== null).length;
+  return (
+    <Card title={`Achievements · ${got}/${prog.length}`}>
+      <div className="meter"><span style={{ width: `${(got / prog.length) * 100}%` }} /></div>
+      <div className="chips">
+        {(['all', 'open', 'got'] as const).map((k) => <button key={k} className={'chip' + (only === k ? ' on' : '')} onClick={() => setOnly(k)}>{{ all: 'All', open: 'In progress', got: 'Unlocked' }[k]}</button>)}
+      </div>
+      {[...byCat.entries()].map(([cat, list]) => (
+        <div key={cat}>
+          <div className="ach-cat"><h4 style={{ margin: 0 }}>{CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] ?? cat}</h4><span className="muted small">{list.filter((a) => a.unlockedDay !== null).length}/{list.length}</span></div>
+          <div className="ach-grid">
+            {list.map((a) => (
+              <div key={a.def.id} className={'ach' + (a.unlockedDay !== null ? ' got' : '')}>
+                <div className="row between"><b>{a.def.name}</b><span className={'rarity ' + a.def.rarity}>{a.def.rarity}</span></div>
+                <span className="muted small">{a.def.desc}</span>
+                {a.unlockedDay !== null ? <span className="small" style={{ color: 'var(--win)', fontWeight: 700 }}>Unlocked {dayLabel(a.unlockedDay)}</span>
+                  : a.target > 1 ? <><div className="meter"><span style={{ width: `${a.fraction * 100}%` }} /></div><span className="muted small">{a.current}/{a.target}</span></> : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
+function Timeline() {
+  const s = useSave();
+  const nav = useNav();
+  const tl = useMemo(() => legacyTimeline(s).slice().reverse().slice(0, 200), [s.world.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  const reports = (s.player.seasonReports ?? []).slice().reverse();
+  const played = s.world.history.filter((h) => h.playerPlace !== undefined).slice(-20).reverse();
   return (
     <>
-      <Card title={`Trophy hall (${won.length})`}>
-        {won.length === 0 && <div className="muted">No trophies yet. Enter an Open from the Arena invitations.</div>}
-        <div className="trophies">
-          {won.map((h) => <div key={h.id} className="trophy"><img src={trophyUri(h.arena)} width={64} height={64} alt="" /><b>{h.name}</b><span className="muted">{dayLabel(h.endDay)}</span></div>)}
+      {reports.length > 0 && (
+        <Card title="Seasons">
+          {reports.slice(0, 8).map((r) => (
+            <div key={r.season} className="leader">
+              <span className="grow"><b>Season {r.season + 1}</b> · {r.w}–{r.d}–{r.l}{r.trophies.length ? ` · ${r.trophies.length} trophies` : ''}</span>
+              <span className={r.ratingEnd >= r.ratingStart ? 'w' : 'l'}>{r.ratingEnd >= r.ratingStart ? '+' : ''}{r.ratingEnd - r.ratingStart}</span>
+              <b>{r.ratingEnd}</b>
+            </div>
+          ))}
+        </Card>
+      )}
+      <Card title="Your legacy">
+        {tl.length === 0 && <div className="muted">Your story begins with your first game.</div>}
+        <div className="timeline">
+          {tl.map((e, i) => (
+            <div key={i} className={'tl-item ' + e.kind} onClick={() => e.kind === 'trophy' && e.ref && nav.open({ kind: 'trophy', awardId: e.ref })}>
+              <div>{e.text}</div>
+              <div className="muted">{dayLabel(e.day)}</div>
+            </div>
+          ))}
         </div>
       </Card>
-      <Card title={`Achievements ${got}/${ACHIEVEMENTS.length}`}>
-        <div className="ach-grid">
-          {ACHIEVEMENTS.map((a) => {
-            const d = s.player.achievements[a.id];
-            return <div key={a.id} className={'ach' + (d !== undefined ? ' got' : '')}><b>{d !== undefined ? '🏅' : '○'} {a.name}</b><span className="muted small">{a.desc}</span></div>;
-          })}
-        </div>
-      </Card>
+      {played.length > 0 && <Card title="Tournament record">{played.map((h) => <div key={h.id} className="leader"><span className="grow">{h.name}</span><b>#{h.playerPlace}</b><span className="muted">/{h.size}</span></div>)}</Card>}
     </>
   );
 }
@@ -133,31 +286,12 @@ function Collection() {
               <div className="set-board" style={{ background: `linear-gradient(135deg, ${a.palette.light} 50%, ${a.palette.dark} 50%)`, borderColor: a.palette.frame }}>
                 <img src={pieceUri('k', 'w', a.index)} alt="" /><img src={pieceUri('n', 'b', a.index)} alt="" />
               </div>
-              <span>{has ? a.name.replace('The ', '') : '🔒 ' + a.name.replace('The ', '')}</span>
+              <span>{a.name.replace('The ', '')}{has ? '' : ' · locked'}</span>
             </button>
           );
         })}
       </div>
     </Card>
-  );
-}
-
-function Career() {
-  const s = useSave();
-  const p = s.player;
-  const played = s.world.history.filter((h) => h.playerPlace !== undefined).slice(-30).reverse();
-  return (
-    <>
-      <Card title="Rank history">
-        {[...p.rankHistory].reverse().slice(0, 40).map((h, i) => (
-          <div key={i} className="leader"><Emblem rank={h.rank} size={22} /><span className="grow">{RANKS[h.rank].name}</span><span className="muted">{h.reason} · {dayLabel(h.day)}</span></div>
-        ))}
-      </Card>
-      <Card title="Tournament record">
-        {played.length === 0 && <div className="muted">No tournaments yet.</div>}
-        {played.map((h) => <div key={h.id} className="leader"><span className="grow">{h.name}</span><b>#{h.playerPlace}</b><span className="muted">/{h.size}</span></div>)}
-      </Card>
-    </>
   );
 }
 

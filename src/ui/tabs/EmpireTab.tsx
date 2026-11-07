@@ -7,17 +7,23 @@ import { trophyUri, backdropUri } from '../art';
 import { standings, describeFormat, matchOutcome, type Pairing } from '../../tournament/formats';
 import { PLAYER_ID } from '../../world/calendar';
 import { acceptTournament, playerArena, playerWithdraw, hostInvitational, startGame } from '../../game/career';
-import { hostCost } from '../../game/influence';
+import { hostCostFor } from '../../game/legacy';
 import { STYLE_LABEL } from '../../engine/styles';
 import type { Save, WorldTournament } from '../../game/state';
 import { compAge } from '../components/common';
+import { TrophyImage } from '../components/TrophyImage';
+import { TROPHY_BY_ID } from '../../world/trophies';
+import { recordLeaders, RECORD_LABELS, ALL_RECORD_KEYS, competitorHonours, type RecordKey } from '../../world/records';
+import { rivalPrep } from '../../game/legacy';
+import { IconCrown, IconTrophy, IconStar, IconArena, IconShield, IconLaurel } from '../components/icons';
+import type React from 'react';
 
 type Section = 'arenas' | 'tournaments' | 'leaders' | 'hall' | 'chronicle';
 
 export function EmpireTab() {
   const [sec, setSec] = useState<Section>('arenas');
   return (
-    <div className="tab-page">
+    <div className="page">
       <div className="seg">
         {(['arenas', 'tournaments', 'leaders', 'hall', 'chronicle'] as Section[]).map((x) => (
           <button key={x} className={sec === x ? 'on' : ''} onClick={() => setSec(x)}>
@@ -61,8 +67,8 @@ function Arenas() {
               <div className="ac-num">{['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][a.index]}</div>
               <div className="ac-name">{a.name}</div>
               <div className="ac-meta">{a.floor}+ Elo · {counts[a.index]} competitors</div>
-              <div className="ac-champ">👑 {nameOf(s, title.holder)}</div>
-              {locked && <div className="ac-lock">🔒</div>}
+              <div className="ac-champ"><IconCrown size={14} /> {nameOf(s, title.holder)}</div>
+              {locked && <div className="ac-lock"><IconShield size={16} /></div>}
               {a.index === mine && <div className="ac-here">YOU ARE HERE</div>}
             </div>
           </div>
@@ -118,7 +124,7 @@ function LeaderRows({ list }: { list: Save['world']['competitors'] }) {
         <div key={c.id} className="leader" onClick={() => nav.open({ kind: 'competitor', id: c.id })}>
           <span className="pos">{i + 1}</span>
           <CompetitorPortrait c={c} day={s.world.day} size={32} />
-          <span className="grow">{c.name}{c.titles.length ? ' 👑' : ''}</span>
+          <span className="grow">{c.name}{c.titles.length ? <IconCrown size={14} /> : null}</span>
           <Emblem rank={c.rank} size={20} />
           <b>{c.rating}</b>
         </div>
@@ -163,8 +169,8 @@ function Tournaments() {
           <button className={'chip' + (filter === 'mine' ? ' on' : '')} onClick={() => setFilter('mine')}>My arena</button>
           <button className={'chip' + (filter === 'all' ? ' on' : '')} onClick={() => setFilter('all')}>All arenas</button>
         </div>
-        <button className="btn small" disabled={s.player.influence < hostCost(mine) || !!s.active} onClick={() => mutate((x) => { const id = hostInvitational(x); if (id) nav.open({ kind: 'tournament', id }); })}>
-          Host invitational ({hostCost(mine)} Inf.)
+        <button className="btn small" disabled={s.player.influence < hostCostFor(s) || !!s.active} onClick={() => mutate((x) => { const id = hostInvitational(x); if (id) nav.open({ kind: 'tournament', id }); })}>
+          Host invitational · {hostCostFor(s)} Influence
         </button>
       </div>
       {sorted.map((t) => (
@@ -198,7 +204,7 @@ export function TournamentSheet({ id, onClose }: { id: string; onClose: () => vo
       </div>
       {!t.state && <div className="muted">Starts {dayLabel(t.startDay)}. Entrants are chosen by standing when it begins.</div>}
       {t.state && <TournamentBody t={t} />}
-      {t.featured.length > 0 && t.status === 'running' && <button className="btn" onClick={() => { onClose(); nav.go('spectate'); }}>👁 Watch featured games</button>}
+      {t.featured.length > 0 && t.status === 'running' && <button className="btn blue" onClick={() => { onClose(); nav.go('spectate'); }}>Watch featured games</button>}
     </Sheet>
   );
 }
@@ -266,26 +272,31 @@ function roundName(i: number, n: number, complete: boolean) {
 function Hall() {
   const s = useSave();
   const nav = useNav();
-  const legends = useMemo(() => [...s.world.competitors].filter((c) => c.championships > 0 || c.tournamentsWon >= 3).sort((a, b) => b.championships * 1000 + b.peak - (a.championships * 1000 + a.peak)).slice(0, 30), [s.world.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [key, setKey] = useState<RecordKey>('championships');
+  const rows = useMemo(() => recordLeaders(s.world, key, 15, s.player), [s.world.day, key]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
       <Card title="Reigning champions">
-        {[...s.world.titles].reverse().map((t) => (
-          <div key={t.id} className="leader" onClick={() => t.holder && t.holder !== PLAYER_ID && nav.open({ kind: 'competitor', id: t.holder })}>
-            <img src={trophyUri(t.arena)} width={28} height={28} alt="" />
-            <span className="grow">{t.name}</span>
-            <b>{nameOf(s, t.holder)}</b>
-            <span className="muted">{t.defenses} def.</span>
-          </div>
-        ))}
+        {[...s.world.titles].reverse().map((t) => {
+          const reign = s.world.reigns.find((r) => r.titleId === t.id && r.to === null);
+          return (
+            <div key={t.id} className="leader" onClick={() => t.holder && t.holder !== PLAYER_ID && nav.open({ kind: 'competitor', id: t.holder })}>
+              <TrophyImage defId={`sig-${t.arena}`} arena={t.arena} size={40} />
+              <span className="grow"><b>{nameOf(s, t.holder)}</b><div className="muted small">{t.name}</div></span>
+              <span className="muted small">{reign ? `${s.world.day - reign.from} days` : ''} · {t.defenses} def.</span>
+            </div>
+          );
+        })}
       </Card>
-      <Card title="Hall of Legends">
-        {legends.map((c) => (
-          <div key={c.id} className="leader" onClick={() => nav.open({ kind: 'competitor', id: c.id })}>
-            <CompetitorPortrait c={c} day={s.world.day} size={32} />
-            <span className="grow">{c.name}{c.retiredDay !== null ? ' (retired)' : ''}</span>
-            <span>👑{c.championships} 🏆{c.tournamentsWon}</span>
-            <b>{c.peak}</b>
+      <Card title="Hall of Records">
+        <div className="chips scroll">
+          {ALL_RECORD_KEYS.map((k) => <button key={k} className={'chip' + (key === k ? ' on' : '')} onClick={() => setKey(k)}>{RECORD_LABELS[k]}</button>)}
+        </div>
+        {rows.map((r, i) => (
+          <div key={r.holder + i} className="leader" onClick={() => r.holder !== PLAYER_ID && s.world.competitors.some((c) => c.id === r.holder) && nav.open({ kind: 'competitor', id: r.holder })}>
+            <span className="pos">{i + 1}</span>
+            <span className="grow"><b>{r.name}</b>{r.retired ? <span className="muted small"> · retired</span> : null}{r.detail ? <div className="muted small">{r.detail}</div> : null}</span>
+            <b className="num">{r.value}</b>
           </div>
         ))}
       </Card>
@@ -293,16 +304,28 @@ function Hall() {
   );
 }
 
+const TAG_ICON: Record<string, () => React.ReactElement> = {
+  'new-champion': () => <IconCrown size={16} />, comeback: () => <IconCrown size={16} />, 'record-broken': () => <IconStar size={16} />,
+  'elite-upset': () => <IconArena size={16} />, 'tournament-upset': () => <IconTrophy size={16} />, 'rival-promoted': () => <IconShield size={16} />,
+  prodigy: () => <IconStar size={16} />, breakthrough: () => <IconStar size={16} />, 'fall-from-elite': () => <IconShield size={16} />, retirement: () => <IconLaurel size={16} />,
+};
+
 function Chronicle() {
   const s = useSave();
-  const items = [...s.world.chronicle].reverse().slice(0, 150);
+  const [all, setAll] = useState(false);
+  const items = [...s.world.chronicle].reverse().filter((e) => all || e.tag || e.kind === 'title' || e.kind === 'player').slice(0, 120);
   return (
     <Card title="Imperial Chronicle">
-      {items.map((e, i) => (
-        <div key={i} className={'chron ' + e.kind}>
-          <span className="muted">{dayLabel(e.day)}</span> {e.text}
-        </div>
-      ))}
+      <div className="chips"><button className={'chip' + (!all ? ' on' : '')} onClick={() => setAll(false)}>Headlines</button><button className={'chip' + (all ? ' on' : '')} onClick={() => setAll(true)}>Everything</button></div>
+      {items.map((e, i) => {
+        const Ico = TAG_ICON[e.tag ?? ''] ?? (() => (e.kind === 'title' ? <IconCrown size={16} /> : <IconTrophy size={16} />));
+        return (
+          <div key={i} className={'chron ' + e.kind}>
+            <span className="chron-ico"><Ico /></span>
+            <div className="grow"><div>{e.text}</div><div className="muted small">{dayLabel(e.day)}{e.arena !== undefined ? ` · ${ARENAS[e.arena].name}` : ''}</div></div>
+          </div>
+        );
+      })}
     </Card>
   );
 }
@@ -313,6 +336,8 @@ export function CompetitorSheet({ id, onClose }: { id: string; onClose: () => vo
   const c = s.world.competitors.find((x) => x.id === id);
   if (!c) return null;
   const h = s.player.h2h[c.id];
+  const hon = competitorHonours(s.world, c.id);
+  const prep = rivalPrep(s, c.id);
   const age = compAge(c, s.world.day);
   const traj = c.skill > c.rating + 40 ? 'Rising' : c.skill < c.rating - 40 ? 'Slipping' : age < c.peakAge ? 'Developing' : age > c.peakAge + 6 ? 'Veteran' : 'At their peak';
   const ambition = c.titles.length ? 'Defend the crown' : c.rating > RANKS[c.rank].floor + 150 ? 'Win promotion' : c.form > 0.2 ? 'Ride the hot streak' : c.form < -0.2 ? 'Rebuild confidence' : 'Climb the ladder';
@@ -329,17 +354,31 @@ export function CompetitorSheet({ id, onClose }: { id: string; onClose: () => vo
       </div>
       <div className="stats-row">
         <div><Record w={c.w} d={c.d} l={c.l} /><span className="muted"> record</span></div>
-        <div>🏆 {c.tournamentsWon}</div>
-        <div>👑 {c.championships}</div>
+        <div className="row" style={{ gap: 4 }}><IconTrophy size={16} /> {c.tournamentsWon}</div>
+        <div className="row" style={{ gap: 4 }}><IconCrown size={16} /> {c.championships}</div>
+        <div>Prestige {hon?.prestige ?? 0}</div>
         <div>Form {c.form > 0.15 ? '▲' : c.form < -0.15 ? '▼' : '◆'}</div>
       </div>
       <Sparkline values={c.ratingHistory.map((x) => x[1])} w={300} h={50} />
       <div className="muted small">Strengths: {c.strengths.join(', ')} · Weaknesses: {c.weaknesses.join(', ')}</div>
       {c.prep?.vsPlayerOpenings.length ? <div className="muted small">Has prepared against your {c.prep.vsPlayerOpenings[0]}.</div> : null}
       {h && <div>You vs {c.name.split(' ')[0]}: <Record {...h} /></div>}
-      {c.honours.length > 0 && <><h4>Honours</h4><div className="honours">{c.honours.slice(-8).reverse().map((x, i) => <span key={i} className="pill">{x}</span>)}</div></>}
+      {hon && hon.awards.length > 0 && (
+        <>
+          <h4>Trophies · {hon.victories} victories{hon.championships ? ` · ${hon.championships} titles` : ''}</h4>
+          <div className="shelf">
+            {[...hon.awards].sort((x, y) => y.day - x.day).slice(0, 8).map((aw) => (
+              <button key={aw.awardId} className={'shelf-item' + (aw.current ? ' current' : '')} onClick={() => nav.open({ kind: 'trophy', awardId: aw.awardId })}>
+                <TrophyImage defId={aw.defId} arena={aw.arena} size={64} />
+                <span>{TROPHY_BY_ID[aw.defId]?.name}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {prep.basis && <div className="muted small">Preparation vs you: {prep.basis}</div>}
       {c.retiredDay === null && !s.active && (
-        <button className="btn gold" onClick={() => { mutate((x) => startGame(x, c, { kind: 'challenge', tcId: x.settings.defaultTc })); onClose(); nav.play(); }}>⚔ Challenge (rated)</button>
+        <button className="btn crimson" onClick={() => { mutate((x) => startGame(x, c, { kind: 'challenge', tcId: x.settings.defaultTc })); onClose(); nav.play(); }}><IconArena size={18} /> Challenge</button>
       )}
       <div className="muted small">Ratings of simulated competitors come from real results — off-screen games are statistically resolved from hidden playing strength; broadcast and player games are played move by move.</div>
     </Sheet>

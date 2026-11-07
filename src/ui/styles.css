@@ -396,3 +396,25 @@ textarea.import { width: 100%; background: #fffaf0; color: var(--ink); border: 1
 html[data-motion='reduce'] *, html[data-motion='reduce'] *::before, html[data-motion='reduce'] *::after { animation: none !important; transition: none !important; }
 .arena-col { display: flex; flex-direction: column; min-width: 0; }
 .arena-col > .card:first-child, .arena-col > .hero:first-child { margin-top: 0; }
+.toasts { position: fixed; top: calc(76px + var(--safe-t)); left: 50%; transform: translateX(-50%); z-index: 70; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+.toast { background: linear-gradient(180deg, #fff6d8, #f0d898); border: 1px solid var(--gold-deep); color: #3b1d05; padding: 9px 16px; border-radius: 999px; font-weight: 700; box-shadow: 0 10px 24px -10px rgba(60,25,5,.6); animation: rise .35s; white-space: nowrap; }
+.trophy-img { display: block; }
+.hall { background: linear-gradient(180deg, #f8f2e6, #e9dcc2); border: 2px solid var(--gold); border-radius: 18px; padding: 14px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.hall::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 120px, rgba(154,106,28,.08) 120px 124px); pointer-events: none; }
+.hall-feature { display: flex; gap: 16px; align-items: center; padding: 10px; border-radius: 14px; background: radial-gradient(circle at 20% 50%, rgba(255,230,150,.6), transparent 60%); position: relative; }
+.shelf { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px 10px; padding: 8px 4px 18px; margin: 10px 0; }
+.shelf::after { content: ''; position: absolute; left: 0; right: 0; bottom: 6px; height: 12px; border-radius: 4px; background: linear-gradient(180deg, #d9c39a, #a8865a); box-shadow: 0 6px 10px -4px rgba(60,25,5,.6); }
+.shelf-item { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; font-size: .74rem; font-weight: 600; color: var(--ink-2); padding: 4px; border-radius: 10px; }
+.shelf-item:hover { background: rgba(255,255,255,.5); }
+.shelf-item .count { position: absolute; top: 4px; right: 10px; background: var(--crimson); color: #fff; border-radius: 9px; font-size: .66rem; padding: 0 6px; }
+.shelf-item.current::before { content: 'HELD'; position: absolute; top: 4px; left: 8px; font-size: .55rem; letter-spacing: .1em; background: var(--gold); color: #3b1d05; padding: 1px 5px; border-radius: 4px; font-weight: 800; }
+.rarity { font-size: .62rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 800; }
+.rarity.common { color: #8a7058; } .rarity.rare { color: var(--blue); } .rarity.epic { color: #7a2a8a; } .rarity.legendary { color: #c8641c; }
+.ach-cat { margin: 14px 0 6px; display: flex; justify-content: space-between; align-items: baseline; }
+.ach .meter { height: 5px; margin: 4px 0 0; }
+.timeline { position: relative; padding-left: 22px; }
+.timeline::before { content: ''; position: absolute; left: 8px; top: 4px; bottom: 4px; width: 2px; background: linear-gradient(180deg, var(--gold), var(--crimson)); }
+.tl-item { position: relative; padding: 6px 0; font-size: .9rem; }
+.tl-item::before { content: ''; position: absolute; left: -19px; top: 11px; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 3px #fffaf0; }
+.tl-item.trophy::before, .tl-item.title-won::before { background: var(--crimson); }
+.tl-item .muted { font-size: .74rem; }

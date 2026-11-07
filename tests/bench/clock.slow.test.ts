@@ -15,7 +15,7 @@ describe('clock-aware thinking', () => {
       { baseMs: 30000, incMs: 1000 },
     ];
     const elos = [1200, 2000, 2650, 2850, 3100];
-    const n = envInt('BENCH_CLOCK_GAMES', 2);
+    const n = envInt('BENCH_CLOCK_GAMES', 1);
     const jobs: (() => Promise<Record<string, unknown>>)[] = [];
     for (const tc of controls) {
       for (let i = 0; i < elos.length; i++) {

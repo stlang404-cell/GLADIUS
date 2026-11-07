@@ -19,7 +19,7 @@ type Sec = 'library' | 'coach' | 'puzzles' | 'endgames' | 'openings' | 'import';
 export function AcademyTab() {
   const [sec, setSec] = useState<Sec>('library');
   return (
-    <div className="tab-page">
+    <div className="page">
       <div className="seg">
         {(['library', 'coach', 'puzzles', 'endgames', 'openings', 'import'] as Sec[]).map((x) => (
           <button key={x} className={sec === x ? 'on' : ''} onClick={() => setSec(x)}>

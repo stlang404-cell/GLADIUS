@@ -15,6 +15,8 @@ import { PLAYER_ID } from '../world/calendar';
 import { queueAnalysis } from './analysisQueue';
 import { sfx } from './sound';
 import { PostGameSheet } from './PostGame';
+import { queueCeremonies, type CeremonyItem } from './Ceremony';
+import { objectives } from '../game/legacy';
 import { STYLE_LABEL } from '../engine/styles';
 import { IconFlag, IconHalf, IconUndo, IconRotate, IconPause, IconTrophy } from './components/icons';
 
@@ -78,6 +80,16 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
     setTimeout(() => {
       sfx(pg!.outcome === 'win' ? 'win' : pg!.outcome === 'loss' ? 'loss' : 'draw', getSave().settings);
       setPost({ pg: pg!, rec: record });
+      const P = pg!;
+      const items: CeremonyItem[] = [];
+      const next = objectives(getSave())[0]?.title ?? 'Play on';
+      if (P.rankAfter > P.rankBefore && !P.rankNote?.startsWith('Placement')) {
+        if (RANKS[P.rankAfter].arena > RANKS[P.rankBefore].arena) items.push({ kind: 'arena', arena: RANKS[P.rankAfter].arena, next });
+        items.push({ kind: 'promotion', rank: P.rankAfter, next });
+      }
+      for (const a of P.trophies ?? []) items.push({ kind: 'trophy', award: a });
+      if (P.seasonReport) items.push({ kind: 'season', report: P.seasonReport });
+      if (items.length) queueCeremonies(items);
     }, wait);
   }, []);
 

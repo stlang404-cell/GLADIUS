@@ -101,14 +101,19 @@ function create(role: EngineRole): UciEngine {
     priority: ROLE_PRIORITY[role],
     preemptible: role === 'analysis' || role === 'spectate',
     handshakeTimeoutMs: big ? 60000 : 20000,
-    idleTerminateMs: p.idleTerminateMs || (role === 'elite' && big ? 300000 : 0),
+    // Idle workers hold memory, not CPU: on mobile, background roles go after
+    // `idleTerminateMs`, the opponent's worker after 3 min (cold start ≈0.2–0.5 s);
+    // on desktop only the big-net worker (~0.5 GB) is released after 5 idle minutes.
+    idleTerminateMs: p.idleTerminateMs ? (role === 'play' || role === 'elite' ? Math.max(p.idleTerminateMs, 180000) : p.idleTerminateMs) : role === 'elite' && big ? 300000 : 0,
     initOptions: init,
-    // If the big net fails to start (download/memory), fall back to the lite build.
-    fallbackFactory: big ? () => workerTransport('lite-single') : undefined,
+    // If an optional build fails to start (not deployed, download/memory, no
+    // SharedArrayBuffer), fall back to the always-shipped lite single-threaded build.
+    fallbackFactory: slot.build !== 'lite-single' ? () => workerTransport('lite-single') : undefined,
     onEvent: (ev: EngineEvent) => {
       note(`${role}: ${ev.type}${'reason' in ev ? ' — ' + ev.reason : ''}${'name' in ev ? ' ' + ev.name + ' ' + ev.ms + 'ms' : ''}`);
       if (ev.type === 'fallback') {
-        bigNetBroken = true;
+        if (BUILDS[builtWith.get(role) ?? 'lite-single'].net === 'big') bigNetBroken = true;
+        builtWith.set(role, 'lite-single');
         e.setOption('Hash', Math.min(slot.hashMB, 64));
         e.setOption('Threads', 1);
       }
@@ -250,7 +255,12 @@ function replan() {
     builtWith.set(role, slot.build);
     e.setOption('Hash', slot.hashMB);
     e.setOption('Threads', slot.threads);
-    e.setFactory(() => workerTransport(slot.build), { restartNow: true });
+    const big = BUILDS[slot.build].net === 'big';
+    e.setFactory(() => workerTransport(slot.build), {
+      restartNow: true,
+      fallbackFactory: slot.build !== 'lite-single' ? () => workerTransport('lite-single') : undefined,
+      handshakeTimeoutMs: big ? 60000 : 20000,
+    });
     note(`${role}: switching to ${slot.build}`);
   }
 }
