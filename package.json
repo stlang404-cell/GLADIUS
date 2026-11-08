@@ -17,6 +17,7 @@
     "bake:pieces": "tsx scripts/bake-pieces.ts",
     "bake:trophies": "SET=trophies CELL=0.007 ERR=0.0012 tsx scripts/bake-pieces.ts",
     "bake:sprites": "node scripts/bake-sprites.mjs pieces && node scripts/bake-sprites.mjs trophies",
+    "test:anim": "node scripts/anim-check.mjs",
     "build:brand": "node scripts/build-wordmark.mjs && node scripts/build-brand.mjs && python3 scripts/make-ico.py"
   },
   "dependencies": {

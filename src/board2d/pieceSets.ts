@@ -25,7 +25,7 @@ export const PIECE_SETS: PieceSet[] = [
   {
     id: 'classical',
     name: 'Legio',
-    description: 'The official GLADIUS set: ivory and ebony with gilded trim — crested legionary pawns, a plumed warhorse, augur mitre, diadem queen and laurel-crowned king.',
+    description: 'The official GLADIUS set: ivory and ebony with gilded trim — crested legionary pawns, an SPQR tower, a plumed warhorse, augur mitre, a pearl coronet queen and the laurel-domed king under the cross-orb.',
     unlock: { always: true },
     folder: 'classical',
     materials: ['Ivory', 'Ebony'],
@@ -33,7 +33,7 @@ export const PIECE_SETS: PieceSet[] = [
   {
     id: 'marble',
     name: 'Senate Marble',
-    description: 'Carrara and Nero Marquina carved as Roman architecture: column-drum pawns, triumphal-arch rooks, a sculpted horse bust, Vestal-flame bishops, Ionic queen and Corinthian laurel king.',
+    description: 'Carrara and Nero Marquina carved as Roman architecture: column-drum pawns, crenellated Senate-gate rooks, a sculpted horse bust, Vestal-flame bishops, an Ionic queen with a pearl coronet and a Corinthian king under a laurel dome.',
     unlock: { arena: 4 },
     folder: 'marble',
     materials: ['Carrara marble', 'Nero marble'],
@@ -41,7 +41,7 @@ export const PIECE_SETS: PieceSet[] = [
   {
     id: 'imperial',
     name: 'Praetorian Guard',
-    description: 'Burnished steel against oxblood lacquer, gilded: shield-bearing legionaries, gate towers, an armoured warhorse, the flamen’s apex, a radiate-crowned queen and the aquila king.',
+    description: 'Burnished steel against oxblood lacquer, gilded: centurion-crested legionaries, gate towers with a shield boss, an armoured warhorse, the flamen’s apex, a radiate-crowned queen and the helm-crowned aquila king.',
     unlock: { arena: 10 },
     folder: 'imperial',
     materials: ['Steel', 'Oxblood'],

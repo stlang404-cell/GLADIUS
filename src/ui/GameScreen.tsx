@@ -7,7 +7,7 @@ import { chooseMove, humanDelay, type Persona } from '../engine/persona';
 import { createRng, mixSeed, hashString } from '../core/rng';
 import { identifyOpening } from '../chess/openings';
 import { getSave, mutate, archiveGame, useSave, pushToast } from './store';
-import { Board, animMs } from './components/Board';
+import { Board, animMs, landingMs } from './components/Board';
 import { Portrait, Emblem, Record as WDL } from './components/common';
 import { RANKS, ARENAS } from '../world/arenas';
 import { TIME_CONTROLS, CLOCKS_ENABLED, type GameRecord } from '../game/state';
@@ -46,7 +46,10 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
 
   if (active && !gameRef.current) gameRef.current = ChessGame.fromUci(active.record.moves, active.record.startFen);
   const game = gameRef.current;
-  const rec = active?.record;
+  // Keep the finished game's record while its decisive moment (mate topple / resignation) plays out.
+  const lastRec = useRef(active?.record);
+  if (active?.record) lastRec.current = active.record;
+  const rec = active?.record ?? (ending ? lastRec.current : undefined);
   const color = rec?.playerColor ?? 'w';
   const opp = useMemo(() => (active ? s.world.competitors.find((c) => c.id === active.opponentId) : undefined), [active?.opponentId]); // eslint-disable-line react-hooks/exhaustive-deps
   const tc = TIME_CONTROLS.find((t) => t.id === rec?.tc) ?? TIME_CONTROLS[2];
@@ -124,11 +127,11 @@ export function GameScreen({ onExit, onAnalyse, onRematch, onNext }: { onExit: (
     setFen(g.fen());
     const st = g.status();
     const sv = getSave();
-    if (st.inCheck) sfx('check', sv.settings);
-    else if (m.isKingsideCastle() || m.isQueensideCastle()) sfx('castle', sv.settings);
-    else if (m.captured) sfx('capture', sv.settings);
-    else if (m.promotion) sfx('promote', sv.settings);
-    else sfx('move', sv.settings);
+    // The opponent's move is pre-highlighted first: its sound plays when the piece lands.
+    const cue = st.inCheck ? 'check' : m.isKingsideCastle() || m.isQueensideCastle() ? 'castle' : m.captured ? 'capture' : m.promotion ? 'promote' : 'move';
+    const delay = mover !== (getSave().active?.record.playerColor ?? 'w') ? landingMs(sv.settings) : 0;
+    if (delay > 0) setTimeout(() => !cancelled.current && sfx(cue, getSave().settings), delay);
+    else sfx(cue, sv.settings);
     if (st.over) finish();
     return true;
   }, [finish, timed, tc.incSec]);

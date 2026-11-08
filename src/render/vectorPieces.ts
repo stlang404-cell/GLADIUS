@@ -1,11 +1,17 @@
 /**
- * GLADIUS v0.3 chess pieces — hand-authored 2D vector illustrations.
+ * GLADIUS chess pieces (v0.4) — hand-authored 2D vector illustrations.
  *
  * Every piece is a stack of flat-designed parts (body, gold trim, crest,
  * ink details) drawn into a 100×100 viewBox, lit from the upper left by
  * cylindrical gradients, with a firm outline so silhouettes survive at
  * 32–40 px. Designs (shapes) and materials (palettes) are independent, so a
  * collection is a design + a light material + a dark material.
+ *
+ * King / queen rule (v0.4, every set): the queen wears a WIDE open crown
+ * (pearl coronet or radiate fan, wider than her waisted body) and the king a
+ * CLOSED, domed crown under a single tall finial (cross-orb, or the aquila
+ * for the Praetorians) on a broader body — two different silhouettes that
+ * survive the 32 px "blink test" on every board.
  *
  * Bake-time only: `node scripts/bake-sprites.mjs pieces` rasterises these
  * SVGs in Chromium to public/pieces/<set>/<color><type>.webp. Nothing in the
@@ -30,7 +36,7 @@ export type Material = {
   vein?: string | null; // marble veining colour
 };
 
-type Mat = 'body' | 'gold' | 'crest' | 'ink' | 'line' | 'gline' | 'hi';
+type Mat = 'body' | 'gold' | 'crest' | 'ink' | 'line' | 'gline' | 'hi' | 'iline';
 type Part = { d: string; m: Mat; w?: number; noHalo?: boolean };
 type Design = Record<PieceType, () => Part[]>;
 
@@ -56,6 +62,11 @@ function lathe(start: [number, number], segs: Seg[]): string {
     else d += `C${f(mx(s[3]))} ${f(s[4])} ${f(mx(s[1]))} ${f(s[2])} ${f(mx(p[0]))} ${f(p[1])}`;
   }
   return d + 'Z';
+}
+/** Move an absolute-command path (M/L/Q/C only) down by dy. */
+function shiftY(d: string, dy: number): string {
+  let i = 0;
+  return d.replace(/-?[\d.]+/g, (n) => (i++ % 2 ? String(f(Number(n) + dy)) : n));
 }
 /** Rounded horizontal band centred on x = 50. */
 function band(y0: number, y1: number, hw: number, r = 1.6, hwBottom = hw): string {
@@ -86,6 +97,37 @@ function laurelBand(y: number, hw: number, n: number, len = 4.6, wid = 1.7): Par
 }
 
 // ---------------------------------------------------------------- shared parts
+
+/** "SPQR" as engraved strokes, letters 5 × 6 units, starting at (x, y). */
+function spqr(x: number, y: number, k = 1): string {
+  const L = (x0: number, y0: number, pts: string) => pts.replace(/(-?[\d.]+),(-?[\d.]+)/g, (_, a, b) => `${f(x0 + Number(a) * k)} ${f(y0 + Number(b) * k)}`);
+  const w = 6.4 * k;
+  return (
+    L(x, y, 'M4.4,0.9Q2.6,-0.3 1,0.9Q0,2.6 2.4,3Q4.9,3.4 4.4,5.1Q3,6.5 0.4,5.4') +
+    L(x + w, y, 'M0.8,6L0.8,0L3,0Q5,0 5,1.6Q5,3.2 3,3.2L0.8,3.2') +
+    L(x + 2 * w, y, 'M2.6,0Q0.2,0 0.2,3Q0.2,6 2.6,6Q5,6 5,3Q5,0 2.6,0M3.2,4.6L5.4,6.6') +
+    L(x + 3 * w, y, 'M0.8,6L0.8,0L3,0Q5,0 5,1.6Q5,3.2 3,3.2L0.8,3.2M2.6,3.2L5,6')
+  );
+}
+/** The king's mark in every set: an orb under a tall cross (top at y ≈ 2). */
+function crossOrb(orbY: number, m: Mat = 'gold'): Part[] {
+  return [
+    { d: circle(50, orbY, 3.3), m },
+    { d: `M47 ${f(orbY - 2.6)}L47 10L41.6 10L41.6 5.6L47 5.6L47 2L53 2L53 5.6L58.4 5.6L58.4 10L53 10L53 ${f(orbY - 2.6)}Z`, m },
+  ];
+}
+/** The queen's mark in every set: a wide five-point coronet (fan), pearl-tipped. */
+function coronet(baseY: number, hw: number, m: Mat = 'gold', pearl: Mat = 'hi'): Part[] {
+  const T: [number, number][] = [[50 - hw - 6, baseY - 19], [50 - hw * 0.55, baseY - 24], [50, baseY - 27], [50 + hw * 0.55, baseY - 24], [50 + hw + 6, baseY - 19]];
+  const D: [number, number][] = [[50 - hw * 0.62, baseY - 9], [50 - hw * 0.28, baseY - 11], [50 + hw * 0.28, baseY - 11], [50 + hw * 0.62, baseY - 9]];
+  let d = `M${f(50 - hw + 1)} ${f(baseY + 1)}`;
+  for (let i = 0; i < 5; i++) {
+    d += `L${f(T[i][0])} ${f(T[i][1])}`;
+    if (i < 4) d += `L${f(D[i][0])} ${f(D[i][1])}`;
+  }
+  d += `L${f(50 + hw - 1)} ${f(baseY + 1)}Z`;
+  return [{ d, m }, ...T.map(([x, y], i): Part => ({ d: circle(x, y - 1.2, i === 2 ? 3.3 : 2.9), m: i === 2 ? 'crest' : pearl, w: 1.1 }))];
+}
 
 /** Two-step plinth: wide foot + gold fillet. Returns parts and the top y. */
 function plinth(hw: number, opts: { fillet?: boolean; tall?: boolean } = {}): Part[] {
@@ -118,8 +160,11 @@ const legio: Design = {
       m: 'body',
     },
     { d: 'M44 82L44 75Q44 69.5 50 69.5Q56 69.5 56 75L56 82Z', m: 'ink', w: 1.2 },
-    { d: 'M33 49.5L67 49.5M33.5 58.5L66.5 58.5M42 40.5L42 49.5M58 49.5L58 58.5M42 58.5L42 66.5', m: 'line', w: 1 },
+    { d: 'M33 46.5L67 46.5M42 40.5L42 46.5M58 40.5L58 46.5M42 59L42 66.5M58 59L58 66.5', m: 'line', w: 1 },
     { d: 'M33 29.5L67 29.5', m: 'line', w: 1 },
+    // tabula with SPQR
+    { d: band(49, 58.6, 14.2, 1.2, 14.6), m: 'gold', w: 1.4 },
+    { d: spqr(38.4, 50.8, 1.08), m: 'iline', w: 1.15 },
   ],
   b: () => [
     { d: lathe([50, 58], [['C', 56, 58, 57, 62, 57.5, 66], ['C', 58.5, 73, 62, 78, 67, 82], ['L', 50, 82]]), m: 'body' },
@@ -153,42 +198,33 @@ const legio: Design = {
     { d: 'M60 22C66 31 69 43 68.5 55M44.5 51C47.5 46 47.5 40 44 36', m: 'line', w: 1.1 },
   ],
   q: () => [
-    { d: lathe([50, 48], [['C', 56, 48, 57, 52, 57.5, 56], ['C', 59, 68, 62.5, 76, 70, 82], ['L', 50, 82]]), m: 'body' },
-    ...plinth(25),
-    { d: band(46, 51.5, 13.6, 1.8, 12.5), m: 'gold' },
-    // cup
-    { d: lathe([50, 29], [['L', 64, 29], ['C', 61.5, 36, 58.5, 42, 57, 47.5], ['L', 50, 47.5]]), m: 'body' },
-    // diadem points
-    {
-      d: 'M33.5 31.5L30 15.5L40 25L44 11.5L50 23.5L56 11.5L60 25L70 15.5L66.5 31.5Z',
-      m: 'gold',
-    },
-    { d: band(29.5, 34.5, 16.6, 1.6, 15.5), m: 'gold' },
-    { d: circle(30, 14.2, 3), m: 'hi' },
-    { d: circle(44, 10.2, 3), m: 'hi' },
-    { d: circle(56, 10.2, 3), m: 'hi' },
-    { d: circle(70, 14.2, 3), m: 'hi' },
-    { d: circle(50, 20.6, 3.2), m: 'crest', w: 1 },
+    // slender, waisted body (the king is broader)
+    { d: lathe([50, 49], [['C', 55, 49, 55.6, 53, 55.6, 57], ['C', 56.4, 68, 61, 76, 69, 82], ['L', 50, 82]]), m: 'body' },
+    ...plinth(24),
+    { d: band(45.5, 50.5, 12.4, 1.8, 11.2), m: 'gold' },
+    { d: lathe([50, 33], [['L', 61.5, 33], ['C', 59, 38.5, 56.6, 42.5, 55.6, 46], ['L', 50, 46]]), m: 'body' },
+    ...coronet(34, 13.6),
+    { d: band(31.6, 36.4, 15.4, 1.6, 14.2), m: 'gold' },
+    { d: ellipse(50, 34, 2.2, 1.8), m: 'crest', w: 0.9 },
   ],
   k: () => [
-    { d: lathe([50, 48], [['C', 56.5, 48, 57.5, 52, 58, 56], ['C', 59.5, 68, 63, 76, 71, 82], ['L', 50, 82]]), m: 'body' },
-    ...plinth(26),
-    { d: band(46, 51.5, 14, 1.8, 13), m: 'gold' },
-    // crown body
-    { d: lathe([50, 21], [['C', 58, 21, 64.5, 24.5, 65.5, 31], ['C', 62.5, 38, 59, 43, 57.5, 47.5], ['L', 50, 47.5]]), m: 'body' },
-    // laurel corona
-    { d: band(29.2, 35.4, 17.2, 2, 15.6), m: 'gold' },
-    ...laurelBand(32.3, 16.4, 2, 7.4, 2.3),
-    { d: ellipse(50, 32.3, 2.6, 2.2), m: 'crest', w: 1 },
-    // orb and cross
-    { d: circle(50, 18.5, 3.6), m: 'gold' },
-    { d: 'M47.6 15.6L47.6 10.5L43 10.5L43 6.5L47.6 6.5L47.6 2L52.4 2L52.4 6.5L57 6.5L57 10.5L52.4 10.5L52.4 15.6Z', m: 'gold' },
+    { d: lathe([50, 50], [['C', 57, 50, 58.2, 54, 58.6, 58], ['C', 60, 69, 63.6, 76, 71.5, 82], ['L', 50, 82]]), m: 'body' },
+    ...plinth(26.5),
+    { d: band(47, 52.5, 14.8, 1.8, 13.6), m: 'gold' },
+    // closed imperial crown: dome, laurel corona, arches
+    { d: lathe([50, 19.6], [['C', 58.6, 19.6, 64.6, 24, 65.2, 31.6], ['C', 62.2, 39, 59.4, 44, 58.4, 48], ['L', 50, 48]]), m: 'body' },
+    { d: 'M37.2 31Q39.4 22.4 50 20.6Q60.6 22.4 62.8 31M50 20.6L50 31', m: 'gline', w: 1.9 },
+    { d: band(30.6, 37, 17.6, 2, 16), m: 'gold' },
+    ...laurelBand(33.8, 16.8, 2, 7.4, 2.3),
+    { d: ellipse(50, 33.8, 2.6, 2.2), m: 'crest', w: 1 },
+    ...crossOrb(17),
   ],
 };
 
 // ---------------------------------------------------------------- design: Castra (Praetorian guard)
-// Military forms: shield pawns, gate-tower rooks, armoured warhorse with an
-// upright plume, flamen's apex bishop, radiate-crown queen, aquila king.
+// Military forms: centurion-crested legionary pawns, gate-tower rooks with a
+// shield boss, armoured warhorse with an upright plume, flamen's apex bishop,
+// radiate-crown queen, helm-crowned king bearing the aquila.
 
 function radiate(cx: number, cy: number, r0: number, r1: number, n: number, from: number, to: number, w: number): string {
   let d = '';
@@ -205,17 +241,17 @@ function radiate(cx: number, cy: number, r0: number, r1: number, n: number, from
 
 const castra: Design = {
   p: () => [
+    // legionary in a galea with a transverse (centurion) crest, on a classic pawn body
+    { d: lathe([50, 54], [['C', 56, 54, 57.4, 57, 57, 59.5], ['C', 58.4, 67, 62, 74, 67.5, 82], ['L', 50, 82]]), m: 'body' },
     ...plinth(20),
-    // legionary behind his scutum: galea and crest above the shield rim
-    { d: 'M43.4 26.6C42.4 20.2 45 15.6 50 15.6C55 15.6 57.6 20.2 56.6 26.6Z', m: 'crest' },
-    { d: lathe([50, 23], [['C', 58.6, 23, 62.4, 28.4, 62.4, 35], ['L', 66, 38], ['Q', 66.6, 40.6, 63.6, 40.6], ['L', 50, 40.6]]), m: 'body' },
-    { d: 'M38.8 33Q50 30 61.2 33', m: 'gline', w: 2.2 },
-    // scutum: curved oblong shield, spine and umbo
-    { d: 'M39.5 40Q50 38 60.5 40Q66 40.6 66.2 45.2L66.6 76.6Q66.4 81.6 60.6 82.2Q50 84.2 39.4 82.2Q33.6 81.6 33.4 76.6L33.8 45.2Q34 40.6 39.5 40Z', m: 'body' },
-    { d: 'M40.2 43.4Q50 41.8 59.8 43.4Q62.8 43.8 62.9 46.4L63.2 75.8Q63.1 78.8 59.8 79.2Q50 80.8 40.2 79.2Q36.9 78.8 36.8 75.8L37.1 46.4Q37.2 43.8 40.2 43.4Z', m: 'gline', w: 1.3 },
-    { d: 'M50 44.6L50 55M50 68.4L50 78.2', m: 'gline', w: 2.6 },
-    { d: circle(50, 61.7, 6.6), m: 'gold' },
-    { d: circle(50, 61.7, 2.6), m: 'hi', w: 1 },
+    { d: band(51.4, 56, 11.2, 1.6, 10), m: 'gold' },
+    { d: 'M35.4 35.6C35.4 22.6 41.8 17.4 50 17.4C58.2 17.4 64.6 22.6 64.6 35.6C60 32.2 55.2 31 50 31C44.8 31 40 32.2 35.4 35.6Z', m: 'crest' },
+    { d: 'M41 22.6L43.6 31.4M46 19.4L47.2 31M54 19.4L52.8 31M59 22.6L56.4 31', m: 'line', w: 0.9 },
+    { d: lathe([50, 29.6], [['C', 57.8, 29.6, 61.6, 34.4, 61.6, 40.4], ['L', 62.8, 47.4], ['Q', 62.4, 51.8, 57.6, 51.8], ['L', 50, 51.8]]), m: 'body' },
+    { d: 'M38.6 40.4Q50 37.4 61.4 40.4', m: 'gline', w: 2.2 },
+    // cheek guards
+    { d: 'M42.4 43.4Q41.2 47.6 43.2 51.2M57.6 43.4Q58.8 47.6 56.8 51.2', m: 'gline', w: 1.6 },
+    { d: 'M47.2 44.6Q50 46.2 52.8 44.6', m: 'line', w: 1.1 },
   ],
   r: () => [
     { d: lathe([50, 36], [['L', 69, 36], ['L', 72, 81.5], ['L', 50, 81.5]]), m: 'body' },
@@ -228,7 +264,10 @@ const castra: Design = {
     // gate with portcullis
     { d: 'M41 81.5L41 66Q41 57.5 50 57.5Q59 57.5 59 66L59 81.5Z', m: 'ink', w: 1.4 },
     { d: 'M45 60L45 81M50 58.5L50 81M55 60L55 81M42 67L58 67M41.5 74L58.5 74', m: 'gline', w: 1.1 },
-    { d: 'M37.5 44.5L37.5 51.5M62.5 44.5L62.5 51.5', m: 'ink', w: 2.4 },
+    // shield boss (umbo) above the gate, flanked by arrow slits
+    { d: circle(50, 47.4, 4.4), m: 'gold', w: 1.3 },
+    { d: circle(50, 47.4, 1.6), m: 'hi', w: 0.8 },
+    { d: 'M36.5 43.5L36.5 51.5M63.5 43.5L63.5 51.5', m: 'ink', w: 2.4 },
     { d: 'M29.5 30.5L70.5 30.5', m: 'line', w: 1 },
   ],
   n: () => [
@@ -260,36 +299,39 @@ const castra: Design = {
     { d: band(50.6, 55.4, 11.6, 1.4, 9.8), m: 'gold' },
   ],
   q: () => [
-    { d: lathe([50, 49], [['C', 56, 49, 57, 53, 57.5, 57], ['C', 59, 69, 62.5, 76, 69.5, 82], ['L', 50, 82]]), m: 'body' },
-    ...plinth(25),
-    { d: band(46, 51.5, 13.6, 1.8, 12.5), m: 'gold' },
-    { d: lathe([50, 33], [['L', 61, 33], ['C', 59, 39.5, 57.4, 44, 56.6, 47.5], ['L', 50, 47.5]]), m: 'body' },
-    // corona radiata
-    { d: radiate(50, 35, 6, 25, 7, -Math.PI * 0.86, -Math.PI * 0.14, 2.9), m: 'body', w: 1.6 },
-    { d: band(31, 36.5, 14.6, 1.6, 13.4), m: 'gold' },
-    { d: circle(50, 26.6, 3.6), m: 'crest', w: 1.2 },
+    { d: lathe([50, 49], [['C', 55, 49, 55.6, 53, 55.6, 57], ['C', 56.4, 68, 61, 76, 69, 82], ['L', 50, 82]]), m: 'body' },
+    ...plinth(24),
+    { d: band(45.5, 50.5, 12.4, 1.8, 11.2), m: 'gold' },
+    { d: lathe([50, 34], [['L', 60, 34], ['C', 58, 39.5, 56.6, 43.5, 55.6, 46.5], ['L', 50, 46.5]]), m: 'body' },
+    // corona radiata: a wide fan of rays
+    { d: radiate(50, 37, 6, 29, 9, -Math.PI * 0.94, -Math.PI * 0.06, 2.6), m: 'body', w: 1.5 },
+    { d: radiate(50, 37, 6, 22, 9, -Math.PI * 0.94, -Math.PI * 0.06, 0.9), m: 'gold', w: 0.8 },
+    { d: band(32, 37.6, 15.6, 1.6, 14.2), m: 'gold' },
+    { d: circle(50, 27.6, 3.6), m: 'crest', w: 1.2 },
   ],
   k: () => [
-    { d: lathe([50, 48], [['C', 56.5, 48, 57.5, 52, 58, 56], ['C', 59.5, 68, 63, 76, 71, 82], ['L', 50, 82]]), m: 'body' },
-    ...plinth(26),
-    { d: band(45, 50.5, 14, 1.8, 13), m: 'gold' },
-    { d: lathe([50, 31], [['L', 62.5, 31], ['C', 60, 38, 58, 43, 57.2, 46.5], ['L', 50, 46.5]]), m: 'body' },
-    { d: band(28.4, 33.6, 15.4, 1.8, 14), m: 'gold' },
-    { d: ellipse(50, 31, 2.4, 2), m: 'crest', w: 1 },
-    // aquila: eagle with raised wings, head turned left
+    { d: lathe([50, 50], [['C', 57, 50, 58.2, 54, 58.6, 58], ['C', 60, 69, 63.6, 76, 71.5, 82], ['L', 50, 82]]), m: 'body' },
+    ...plinth(26.5),
+    { d: band(47, 52.5, 14.8, 1.8, 13.6), m: 'gold' },
+    { d: lathe([50, 34], [['L', 62.5, 34], ['C', 60, 40, 58.4, 44.4, 57.6, 48], ['L', 50, 48]]), m: 'body' },
+    // closed helm-crown with a ridge, carrying the aquila standard
+    { d: lathe([50, 17.6], [['C', 58.6, 17.6, 63.4, 23.6, 63.6, 32], ['L', 50, 32]]), m: 'body' },
+    { d: 'M50 18.4L50 30.4M42.2 21.6Q39.6 25.6 39.4 30.4M57.8 21.6Q60.4 25.6 60.6 30.4', m: 'gline', w: 1.5 },
+    { d: band(30.4, 36, 16.4, 1.8, 15), m: 'gold' },
+    { d: ellipse(50, 33.2, 2.4, 2), m: 'crest', w: 1 },
+    { d: 'M48.4 18.6L48.4 14.6L51.6 14.6L51.6 18.6Z', m: 'gold', w: 1.1 },
+    // aquila with wings raised (compact, so the king's top stays a single spire)
     {
-      d: 'M50 29.5L44.5 25.5C39 23.5 33.5 19.5 31 13L30.5 4L34.5 9L35.5 3.5L39 9.5L40.5 5L43.5 12.5C44.5 15.5 46 17.5 47.6 18.2L47.4 15.4L43.6 14.4L45.6 12.2C46.4 9.8 49.4 8.6 51.4 9.6C53.2 10.6 53.2 13.4 52.4 15.4L52.4 18.2C54 17.5 55.5 15.5 56.5 12.5L59.5 5L61 9.5L64.5 3.5L65.5 9L69.5 4L69 13C66.5 19.5 61 23.5 55.5 25.5Z',
-      m: 'gold', w: 1.5,
+      d: shiftY('M50 14.6L45.6 12.8C42 11.4 40 8 39.8 4.2L39.6 1.2L42.4 3.6L43 1L45.2 4.4L46.2 2.6L47.4 6.4C47.8 7.4 48.4 8 48.8 8.2L48.6 6.4L46.4 5.6L47.8 4.4C48.2 3 49.8 2.4 50.8 3C51.8 3.6 52 4.8 51.6 5.8L51.2 8.2C51.6 8 52.2 7.4 52.6 6.4L53.8 2.6L54.8 4.4L57 1L57.6 3.6L60.4 1.2L60.2 4.2C60 8 58 11.4 54.4 12.8Z', 2.4),
+      m: 'gold', w: 1.3,
     },
-    { d: circle(49.4, 11.8, 0.9), m: 'ink', w: 0.4 },
-    { d: 'M36 17.6Q40 19.6 44 19.8M64 17.6Q60 19.6 56 19.8M47.6 23.4L50 27.2L52.4 23.4', m: 'line', w: 0.9 },
   ],
 };
 
 // ---------------------------------------------------------------- design: Senate (architectural marble)
-// Column drums and capitals: drum-and-sphere pawn, triumphal-arch rook,
-// sculpted horse bust, Vestal-flame bishop, Ionic palmette queen,
-// Corinthian laurel-wreath king.
+// Column drums and capitals: drum-and-sphere pawn, crenellated Senate-gate
+// rook, sculpted horse bust, Vestal-flame bishop, Ionic queen with a pearl
+// coronet on a waisted shaft, Corinthian king under a laurel dome and cross-orb.
 
 function flutes(y0: number, y1: number, hw0: number, hw1: number, n: number): string {
   let d = '';
@@ -311,13 +353,16 @@ const senate: Design = {
   ],
   r: () => [
     ...plinth(27),
-    // triumphal arch with open passage
-    { d: 'M26 81.5L26 33L74 33L74 81.5L59 81.5L59 66Q59 57 50 57Q41 57 41 66L41 81.5Z', m: 'body' },
-    { d: band(28.5, 34, 25.5, 1.2, 25.5), m: 'gold' },
-    { d: 'M30 34L30 18.5L40 18.5L40 14.5L60 14.5L60 18.5L70 18.5L70 34Z', m: 'body' },
-    { d: 'M34 23.5L66 23.5', m: 'line', w: 1.2 },
-    { d: 'M32 38L32 79M68 38L68 79M36.2 38L36.2 79M63.8 38L63.8 79', m: 'line', w: 1.1 },
-    { d: 'M41 66Q41 57 50 57Q59 57 59 66', m: 'gline', w: 1.8 },
+    // gate of the Senate: an arch with a crenellated attic
+    { d: 'M26 81.5L26 36L74 36L74 81.5L59 81.5L59 67Q59 58 50 58Q41 58 41 67L41 81.5Z', m: 'body' },
+    { d: band(31.5, 37, 26, 1.2, 25), m: 'gold' },
+    {
+      d: 'M28 33L28 15.6Q28 14.4 29.2 14.4L35.6 14.4Q36.8 14.4 36.8 15.6L36.8 21L45.4 21L45.4 15.6Q45.4 14.4 46.6 14.4L53.4 14.4Q54.6 14.4 54.6 15.6L54.6 21L63.2 21L63.2 15.6Q63.2 14.4 64.4 14.4L70.8 14.4Q72 14.4 72 15.6L72 33Z',
+      m: 'body',
+    },
+    { d: 'M32 27L68 27', m: 'line', w: 1.1 },
+    { d: 'M32 40L32 79M68 40L68 79M36.2 40L36.2 79M63.8 40L63.8 79', m: 'line', w: 1.1 },
+    { d: 'M41 67Q41 58 50 58Q59 58 59 67', m: 'gline', w: 1.8 },
   ],
   n: () => [
     ...plinth(23),
@@ -346,33 +391,35 @@ const senate: Design = {
     { d: 'M50.8 26.4C53.6 30 55.6 33.4 54.4 37.6M45 33.6Q44.8 37 46.2 39.6', m: 'line', w: 1.3 },
   ],
   q: () => [
-    ...plinth(24),
-    { d: band(77.5, 81.5, 14, 1.6, 15), m: 'body' },
-    { d: lathe([50, 44], [['L', 56.4, 44], ['L', 58.6, 77.6], ['L', 50, 77.6]]), m: 'body' },
-    { d: flutes(46, 76.6, 6.4, 8.6, 5), m: 'line', w: 1.1 },
+    ...plinth(23),
+    // waisted shaft (the king's column is straight and heavier)
+    { d: band(77.5, 81.5, 13.4, 1.6, 14.4), m: 'body' },
+    { d: lathe([50, 47], [['L', 55, 47], ['C', 55, 60, 56.4, 70, 62.4, 77.6], ['L', 50, 77.6]]), m: 'body' },
+    { d: 'M47.4 50Q47.2 66 44.6 76.6M52.6 50Q52.8 66 55.4 76.6M50 50L50 76.6', m: 'line', w: 1 },
     // Ionic capital with volutes
-    { d: 'M33.4 38.6L66.6 38.6Q71.6 38.6 71.6 43.2Q71.6 47.6 67.2 47.6Q63.4 47.6 63.4 44.2L36.6 44.2Q36.6 47.6 32.8 47.6Q28.4 47.6 28.4 43.2Q28.4 38.6 33.4 38.6Z', m: 'gold' },
-    { d: circle(32.8, 43.4, 1.8), m: 'ink', w: 0.6 },
-    { d: circle(67.2, 43.4, 1.8), m: 'ink', w: 0.6 },
-    // cup and pearl diadem
-    { d: radiate(50, 37, 4, 22, 5, -Math.PI * 0.8, -Math.PI * 0.2, 1.4), m: 'gold', w: 1.2 },
-    ...[0, 1, 2, 3, 4].map((i): Part => { const a = -Math.PI * 0.8 + (Math.PI * 0.6 * i) / 4; return { d: circle(50 + Math.cos(a) * 22.5, 37 + Math.sin(a) * 22.5, 3.1), m: 'gold', w: 1.3 }; }),
-    { d: lathe([50, 26], [['L', 60.4, 26], ['C', 59, 31, 57.4, 35, 56.6, 38.6], ['L', 50, 38.6]]), m: 'body' },
-    { d: band(24, 28.6, 12, 1.4, 11), m: 'gold' },
+    { d: 'M34.4 39.4L65.6 39.4Q70.4 39.4 70.4 43.8Q70.4 48 66.2 48Q62.6 48 62.6 44.8L37.4 44.8Q37.4 48 33.8 48Q29.6 48 29.6 43.8Q29.6 39.4 34.4 39.4Z', m: 'gold' },
+    { d: circle(33.8, 43.9, 1.7), m: 'ink', w: 0.6 },
+    { d: circle(66.2, 43.9, 1.7), m: 'ink', w: 0.6 },
+    { d: lathe([50, 33], [['L', 59, 33], ['C', 57.6, 35.6, 56.6, 37.6, 56, 39.6], ['L', 50, 39.6]]), m: 'body' },
+    ...coronet(34, 12.4),
+    { d: band(31.4, 35.8, 13.6, 1.4, 12.6), m: 'gold' },
   ],
   k: () => [
-    ...plinth(25),
-    { d: band(77.5, 81.5, 14.4, 1.6, 15.4), m: 'body' },
-    { d: lathe([50, 44], [['L', 57, 44], ['L', 59.2, 77.6], ['L', 50, 77.6]]), m: 'body' },
-    { d: flutes(46, 76.6, 7, 9.2, 5), m: 'line', w: 1.1 },
+    ...plinth(26.5),
+    { d: band(77.5, 81.5, 15.4, 1.6, 16.4), m: 'body' },
+    { d: lathe([50, 46], [['L', 58.4, 46], ['L', 60.6, 77.6], ['L', 50, 77.6]]), m: 'body' },
+    { d: flutes(48, 76.6, 8.4, 10.6, 5), m: 'line', w: 1.1 },
     // Corinthian capital: acanthus bell and abacus
-    { d: 'M40 44.4L36.6 34Q41.6 36.6 43.6 33.6Q46 36.4 50 33.6Q54 36.4 56.4 33.6Q58.4 36.6 63.4 34L60 44.4Z', m: 'gold' },
-    { d: 'M43.6 34.6L45 43.6M50 34.6L50 43.6M56.4 34.6L55 43.6', m: 'line', w: 0.9 },
-    { d: band(29.6, 34, 16, 1.2, 15), m: 'body' },
-    // laurel wreath crown (open ring) with orb
-    { d: 'M50 3.4A13.4 13.4 0 1 1 49.99 3.4ZM50 10.4A6.4 6.4 0 1 0 50.01 10.4Z', m: 'gold', w: 1.7 },
-    { d: 'M50 6.6A11.2 11.2 0 1 1 49.99 6.6', m: 'line', w: 0.9 },
-    { d: circle(50, 26, 3.6), m: 'crest', w: 1.2 },
+    { d: 'M39.4 46.6L35 36Q41 38.8 43.4 35.4Q46 38.6 50 35.4Q54 38.6 56.6 35.4Q59 38.8 65 36L60.6 46.6Z', m: 'gold' },
+    { d: 'M43.4 36.4L45 45.6M50 36.4L50 45.6M56.6 36.4L55 45.6', m: 'line', w: 0.9 },
+    { d: band(31.4, 36, 17.4, 1.2, 16.4), m: 'body' },
+    // domed laurel crown under the cross-orb
+    { d: lathe([50, 17.6], [['C', 58.8, 17.6, 63.8, 23.4, 64, 32], ['L', 50, 32]]), m: 'body' },
+    { d: 'M50 18.6L50 27.4M42.4 21.4Q40.8 24.4 40.6 27.4M57.6 21.4Q59.2 24.4 59.4 27.4', m: 'line', w: 1.1 },
+    { d: band(27.4, 32.4, 15.4, 1.6, 15.8), m: 'gold' },
+    ...laurelBand(29.9, 14.8, 2, 6.6, 2),
+    { d: ellipse(50, 29.9, 2.3, 1.9), m: 'crest', w: 0.9 },
+    ...crossOrb(14.6),
   ],
 };
 
@@ -406,10 +453,10 @@ export const MATERIALS: Record<string, Material> = {
   },
   // Senate: Carrara vs Nero Marquina, silver fittings
   carrara: {
-    body: [[0, '#b9bcbd'], [0.14, '#f3f3f1'], [0.32, '#ffffff'], [0.6, '#eceae6'], [0.86, '#cfcdc8'], [1, '#aeaca6']],
+    body: [[0, '#b3b6b8'], [0.14, '#f3f3f1'], [0.32, '#ffffff'], [0.6, '#e8e6e1'], [0.86, '#c6c4be'], [1, '#a19f99']],
     gold: [[0, '#6f757c'], [0.2, '#e6eaee'], [0.38, '#ffffff'], [0.62, '#b5bcc3'], [1, '#666d74']],
     crest: [[0, '#7c1622'], [0.25, '#d34a5a'], [0.55, '#ae2f3d'], [1, '#6a1019']],
-    outline: '#2b2e33', goldOutline: '#3a4048', ink: '#2b2e33', line: 'rgba(60,64,70,0.45)', halo: null, vein: 'rgba(120,126,134,0.42)',
+    outline: '#25282d', goldOutline: '#353b43', ink: '#2b2e33', line: 'rgba(60,64,70,0.5)', halo: null, vein: 'rgba(120,126,134,0.42)',
   },
   nero: {
     body: [[0, '#1a1b1e'], [0.15, '#5a5c62'], [0.3, '#3a3c41'], [0.6, '#232428'], [1, '#0f1012']],
@@ -464,18 +511,18 @@ export function pieceSVG(setId: string, color: 'w' | 'b', type: PieceType, px = 
     `<linearGradient id="gL" x1="0" y1="0" x2="1" y2="0"><stop offset="0.12" stop-color="#fff" stop-opacity="0"/><stop offset="0.24" stop-color="#fff" stop-opacity="${color === 'w' ? 0.5 : 0.28}"/><stop offset="0.34" stop-color="#fff" stop-opacity="0"/></linearGradient>`,
     `<radialGradient id="gH" cx="0.35" cy="0.3" r="0.7"><stop offset="0" stop-color="#fff"/><stop offset="0.6" stop-color="#f4ecdc"/><stop offset="1" stop-color="#cdbb98"/></radialGradient>`,
   ];
-  const fills: Record<Mat, string> = { body: 'url(#gB)', gold: 'url(#gG)', crest: 'url(#gC)', ink: m.ink, hi: 'url(#gH)', line: 'none', gline: 'none' };
-  const strokes: Record<Mat, string> = { body: m.outline, gold: m.goldOutline, crest: m.outline, ink: m.outline, hi: m.goldOutline, line: m.line, gline: 'url(#gU)' };
+  const fills: Record<Mat, string> = { body: 'url(#gB)', gold: 'url(#gG)', crest: 'url(#gC)', ink: m.ink, hi: 'url(#gH)', line: 'none', gline: 'none', iline: 'none' };
+  const strokes: Record<Mat, string> = { body: m.outline, gold: m.goldOutline, crest: m.outline, ink: m.outline, hi: m.goldOutline, line: m.line, gline: 'url(#gU)', iline: m.goldOutline };
   let halo = '';
   if (m.halo) {
     halo = `<g fill="${m.halo}" stroke="${m.halo}" stroke-width="${OW + 2.6}" stroke-linejoin="round" opacity="1">` +
-      parts.filter((p) => !p.noHalo && p.m !== 'line' && p.m !== 'gline' && p.m !== 'ink').map((p) => `<path d="${p.d}"/>`).join('') + '</g>';
+      parts.filter((p) => !p.noHalo && p.m !== 'line' && p.m !== 'gline' && p.m !== 'iline' && p.m !== 'ink').map((p) => `<path d="${p.d}"/>`).join('') + '</g>';
   }
   let body = '';
   let vid = 0;
   for (const p of parts) {
     const w = p.w ?? OW;
-    if (p.m === 'line' || p.m === 'gline') {
+    if (p.m === 'line' || p.m === 'gline' || p.m === 'iline') {
       body += `<path d="${p.d}" fill="none" stroke="${strokes[p.m]}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
       continue;
     }
