@@ -1,3 +1,4 @@
+import { confidentCounts } from '../analysis/confidence';
 /**
  * Player ledger: authoritative counters for achievements, written as games
  * finish (finishPlayerGame) and as stored analyses arrive (onGameAnalysed).
@@ -173,7 +174,8 @@ export function analysisFacts(g: GameRecord): AnalysisFacts | null {
   const color = g.playerColor;
   const score = scoreOf(g);
   if (!a || !color || score === null) return null;
-  const cnts = a.counts[color] ?? {};
+  // Positive classes count only when confirmed (high confidence); errors always count (v0.4).
+  const cnts = confidentCounts(a as never, g.startFen)[color] ?? {};
   let minWin = 100;
   a.moves.forEach((m, i) => {
     if (i < 10) return;

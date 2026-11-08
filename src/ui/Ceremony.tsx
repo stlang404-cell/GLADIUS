@@ -89,7 +89,7 @@ export function CeremonyHost() {
         <div className="ceremony-card">
           <div className="kicker" style={{ color: '#f2cf6e' }}>Season {item.report.season + 1} closes</div>
           <h2>{item.report.ratingEnd} <small style={{ fontSize: '1rem' }}>{item.report.ratingEnd - item.report.ratingStart >= 0 ? '+' : ''}{item.report.ratingEnd - item.report.ratingStart}</small></h2>
-          <p>{item.report.w}–{item.report.d}–{item.report.l} · peak {item.report.peak}{item.report.trophies.length ? ` · ${item.report.trophies.length} trophies` : ''}</p>
+          <p>{item.report.w}–{item.report.d}–{item.report.l}{item.report.peak > 0 ? ` · peak ${item.report.peak}` : " · placement"}{item.report.trophies.length ? ` · ${item.report.trophies.length} trophies` : ''}</p>
           {item.report.bestWin && <p>Best win: {item.report.bestWin.oppName} ({item.report.bestWin.oppRating})</p>}
           {item.report.rival && <p>Rival: {item.report.rival.name} · {item.report.rival.w}–{item.report.rival.d}–{item.report.rival.l}</p>}
         </div>

@@ -1,5 +1,6 @@
 import { ChessPerformance, CareerHistory, HallOfFame, TournamentResults, GameHistory } from './legacyExtras';
 import { PROVISIONAL_GAMES } from '../../rating/elo';
+import { placementStatus } from '../../game/placement';
 import { sigDefFor } from '../../world/trophies';
 import { isPieceSetUnlocked, pieceSetById } from '../../board2d/pieceSets';
 import { useEffect, useMemo, useState } from 'react';
@@ -53,6 +54,8 @@ export function Profile() {
   const nav = useNav();
   const p = s.player;
   const r = careerRating(s);
+  const pl = placementStatus(s);
+  const prov = !!pl || r.games < PROVISIONAL_GAMES;
   const hist = p.ratingHistory.filter((h) => h.pool === s.settings.careerPool).map((h) => h.rating);
   const rivals = useMemo(() => rivalries(s, 5), [s.world.day]); // eslint-disable-line react-hooks/exhaustive-deps
   const recent = s.library.slice(-10).map((id) => s.libraryMeta[id]).filter((m) => m?.playerColor);
@@ -84,7 +87,7 @@ export function Profile() {
           )}
         </div>
         <div className="stats-grid">
-          <Stat label={r.games < PROVISIONAL_GAMES ? 'Elo · provisional' : 'Elo'} value={r.games < PROVISIONAL_GAMES ? `${r.rating}?` : r.rating} sub={r.games < PROVISIONAL_GAMES ? `placement ${r.games}/${PROVISIONAL_GAMES}` : `peak ${r.peak}`} />
+          <Stat label={prov ? 'Elo · provisional' : 'Elo'} value={prov ? `${r.rating}?` : r.rating} sub={pl ? `placement ${pl.games}/${pl.of}` : prov ? `${r.games}/${PROVISIONAL_GAMES} games` : r.peak > 0 ? `peak ${r.peak}` : 'peak —'} />
           <Stat label="Influence" value={p.influence} sub={`prestige ${p.prestige}`} />
           <Stat label="Games" value={p.w + p.d + p.l} sub={<Record w={p.w} d={p.d} l={p.l} />} />
           <Stat label="Score" value={`${pct(p.w, p.d, p.l)}%`} />
@@ -95,7 +98,7 @@ export function Profile() {
         </div>
         <div className="form-row">{form.map((f, i) => <span key={i} className={'form ' + f}>{f.toUpperCase()}</span>)}</div>
         <Sparkline values={hist.slice(-120)} w={320} h={60} color="#9c1f1a" />
-        <div className="muted small">{r.games < PROVISIONAL_GAMES ? `Provisional rating — ${PROVISIONAL_GAMES - r.games} more rated games to establish it. Peak Elo is recorded once established.` : `Best ever ${bestRating(s)} · peak ${r.peak}`}</div>
+        <div className="muted small">{pl ? `Placement: ${pl.games} of ${pl.of} rated games played${pl.performance !== null ? ` · performance ${Math.round(pl.performance)}` : ''}. Your rating and starting grade are set from these games (up to Decanus I).` : prov ? `Provisional rating — ${PROVISIONAL_GAMES - r.games} more rated games to establish it.` : r.peak > 0 ? `Best ever ${bestRating(s)} · peak ${r.peak}` : ''}</div>
       </Card>
       {rivals.length > 0 && (
         <Card title="Rivalries">

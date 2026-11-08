@@ -51,7 +51,7 @@ export function Onboarding({ onDone, notice, onCancel, currentName }: { onDone: 
               <button className={'chip' + (female ? ' on' : '')} onClick={() => setFemale(true)}>Portrait B</button>
             </div>
             {onCancel && <div className="notice small center">Starting a new career. {currentName}'s career stays in your backups — you can return to it now or restore it later.</div>}
-            <div className="muted small center">You start at the bottom: Arena I of 24, grade 1 of 72, no wins, no Influence, no honours. Your chess experience only sets a provisional rating — your first rated games place you, and strong results earn faster promotion.</div>
+            <div className="muted small center">You start at the bottom: Arena I of 24, grade 1 of 72, no wins, no Influence, no honours. Your chess experience only sets a starting guess: your first 10 rated games are placement games — your results set your rating and can lift you several grades at once (up to Decanus I). After that, every promotion is earned.</div>
             <div className="chips center wrap">
               {LEVELS.map((l, i) => <button key={l.r} className={'chip' + (level === i ? ' on' : '')} onClick={() => setLevel(i)}>{l.label}</button>)}
             </div>

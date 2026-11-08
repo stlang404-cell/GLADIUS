@@ -129,27 +129,8 @@ export const V3_TROPHY_IDS: string[] = [
  * existing sculpt (model + metal) until dedicated art is baked. The UI should
  * load `trophies/${trophyArt(defId)}.webp`.
  */
-export const TROPHY_ART: Record<string, string> = {
-  'lopen-lower': 'cup-open-t0', // bronze cup
-  'lopen-upper': 'cup-open-t1', // silver cup
-  'rcrown-latium': 'sig-2', // eagle (the Capitoline standard)
-  'rcrown-campania': 'cup-cup-t2', // gold cup
-  'rcrown-etruria': 'sig-7', // fasces (an Etruscan emblem)
-  'rcrown-gallia': 'defense-t2', // gold torque (torc)
-  'rcrown-hispania': 'cup-gauntlet-t1', // silver amphora
-  'rcrown-africa': 'sig-1', // bronze standard
-  'rcrown-aegyptus': 'sig-9', // imperial amphora (lamp)
-  'rcrown-achaea': 'laurel-t2', // gold laurel (olive wreath)
-  rdefense: 'defense-t1', // silver torque
-  rmedal: 'medal-t1',
-  'qual-t0': 'medal-t0', 'qual-t1': 'medal-t1', 'qual-t2': 'medal-t2', 'qual-t3': 'medal-t3',
-  masters: 'invit-t3', // imperial eagle
-  rlaurel: 'laurel-t1',
-  'hist-record': 'hist-perfect',
-  'hist-regional-dynasty': 'hist-dynasty',
-  'hist-giant-slayer': 'hist-upset-crown',
-  // Signature trophies of the v0.3 arenas (sig-a<index>) have their own baked sprites.
-};
+/** Every trophy def has its own baked art since v0.4; kept as an override hook. */
+export const TROPHY_ART: Record<string, string> = {};
 export function trophyArt(defId: string): string {
   return TROPHY_ART[defId] ?? defId;
 }
