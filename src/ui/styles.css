@@ -186,6 +186,17 @@ select.chip { appearance: none; padding-right: 26px; background-image: linear-gr
 .fx.promo { animation-name: fxpromo; }
 .fx.promo::before { content: ''; position: absolute; inset: -40%; border-radius: 50%; background: radial-gradient(circle, rgba(255, 228, 140, .95), rgba(255, 210, 100, 0) 65%); }
 @keyframes fxpromo { 0% { opacity: 0; scale: .3; } 35% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.3; } }
+.fx.pre { animation-name: fxpre; animation-timing-function: ease-in-out; }
+.fx.pre::before { content: ''; position: absolute; inset: 4%; border-radius: 50%; background: radial-gradient(circle, rgba(255, 226, 140, .55), rgba(255, 210, 100, 0) 70%); box-shadow: inset 0 0 0 2px rgba(205, 150, 40, .85), 0 0 12px rgba(240, 190, 80, .7); }
+@keyframes fxpre { 0% { opacity: 0; scale: .7; } 40% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.05; } }
+.fx.land { animation-name: fxland; }
+.fx.land::before { content: ''; position: absolute; inset: 6%; border-radius: 4px; box-shadow: inset 0 0 0 3px rgba(214, 160, 50, .9), 0 0 10px rgba(240, 190, 80, .6); }
+@keyframes fxland { 0% { opacity: 0; scale: 1.15; } 25% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: .96; } }
+.fx.win { animation-name: fxwin; }
+.fx.win::before { content: ''; position: absolute; inset: -60%; border-radius: 50%; background: radial-gradient(circle, rgba(255, 236, 160, .9), rgba(255, 214, 110, .35) 40%, rgba(255, 210, 100, 0) 68%); }
+.fx.win::after { content: ''; position: absolute; inset: -18%; border-radius: 50%; border: 3px dashed rgba(197, 154, 66, .95); }
+@keyframes fxwin { 0% { opacity: 0; scale: .3; rotate: -20deg; } 30% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.5; rotate: 20deg; } }
+.pc.dying { pointer-events: none; }
 .promo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(255, 255, 255, .7); z-index: 10; border-radius: 14px; backdrop-filter: blur(4px); }
 .promo button { width: 21%; aspect-ratio: 1; background: #fff; border: 2px solid var(--gold); border-radius: 18px; cursor: pointer; box-shadow: var(--shadow-lg); }
 .promo img { width: 90%; }
@@ -503,3 +514,9 @@ html[data-motion='reduce'] *, html[data-motion='reduce'] *::before, html[data-mo
 .leader.me { background: var(--crimson-soft); border-radius: 10px; }
 .rank-prog { display: flex; gap: 10px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 .rank-prog .meter { margin: 5px 0 3px; }
+.lx-counts { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 10px 0 4px; text-align: center; }
+.lx-counts > div { display: flex; flex-direction: column; align-items: center; }
+.lx-counts b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.lx-counts span { font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+@media (max-width: 420px) { .lx-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 8px; } }
+.lx-search { width: 100%; min-height: 42px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line-2, var(--line)); background: var(--white); font: inherit; margin-bottom: 8px; }

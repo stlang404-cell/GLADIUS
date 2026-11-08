@@ -1,0 +1,75 @@
+# Build, test and publish GLADIUS to GitHub Pages (official Pages Actions flow).
+# Runs on every push to main (i.e. after a merge) and on demand. Pull requests
+# into main run the same build + tests but never deploy.
+name: Deploy GLADIUS to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; never cancel a deployment that is in progress.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit -p .
+
+      - name: Test (rules, engine, world, persistence, analysis)
+        run: npx vitest run
+
+      - name: Build for GitHub Pages
+        env:
+          # Project site: https://<owner>.github.io/<repository>/
+          GLADIUS_BASE: /${{ github.event.repository.name }}/
+          # Pages cannot host the 99 MB single files: the app installs the chunked pack instead.
+          VITE_GLADIUS_STATIC_HOST: '1'
+        run: npx vite build
+
+      - name: Verify the site bundle
+        run: node scripts/check-pages-dist.mjs dist /${{ github.event.repository.name }}/
+
+      - name: Configure Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

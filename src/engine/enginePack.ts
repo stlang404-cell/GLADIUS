@@ -292,6 +292,8 @@ export async function probeBundled(baseUrl: string, name: string, bytes: number,
   const g = globalThis as { navigator?: { onLine?: boolean }; location?: { hostname?: string } };
   const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(g.location?.hostname ?? 'localhost');
   if (g.navigator?.onLine === false && !local) return false;
+  // Static-host builds (GitHub Pages) never bundle the 99 MB files: skip the probe (no 404 noise).
+  if ((import.meta as { env?: Record<string, string | undefined> }).env?.VITE_GLADIUS_STATIC_HOST) return false;
   try {
     const r = await f(wasmUrl(baseUrl, name), { method: 'HEAD', cache: 'no-cache' });
     const type = r.headers.get('content-type') ?? '';

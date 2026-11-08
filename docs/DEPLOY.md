@@ -44,18 +44,26 @@ Optional: in Edge or Chrome choose **Install GLADIUS** in the address bar. The i
 
 Saves live in the browser's storage for that origin (`localhost:47615`). Use **Legacy → Saves → Export backup** to keep a copy.
 
+## GitHub Pages (the permanent public website)
+
+GLADIUS is published by `.github/workflows/deploy.yml` (official Pages Actions flow: `configure-pages` → `upload-pages-artifact` → `deploy-pages`). On every push to `main` it installs, type-checks, runs the full test suite, builds with `GLADIUS_BASE=/<repository>/` (here `/GLADIUS/`), checks the bundle (`scripts/check-pages-dist.mjs`: every referenced asset and precache entry exists, engine chunks present, no file over 100 MB, site under 1 GB) and deploys. Pull requests into `main` run the same build and tests without deploying.
+
+**One-time setup (repository owner):**
+1. **Settings → Pages → Build and deployment → Source: "GitHub Actions".** (Pages is off until this is chosen; the workflow cannot switch it on with the default token.)
+2. Merge the development branch into `main` (or run the workflow from the Actions tab after the workflow file is on `main`). The `github-pages` environment that GitHub creates only accepts deployments from the default branch — that is why the deploy runs from `main`.
+3. Address: **https://stlang404-cell.github.io/GLADIUS/**
+
+What the site contains: the whole game (24 arenas, 72 ranks, the 25,000-competitor world generated on your device, art, analysis, career), the Lite engine precached (~5.7 MB precache in total) and the 79 MB full-strength engine pack as 4 checksummed chunks, downloaded only when you ask (or automatically on desktop the first time an opponent ≥ 2700 appears). GitHub Pages cannot send COOP/COEP headers, so engines run single-threaded there.
+
 ## iPhone (installable PWA)
 
-`localhost` on your PC is **not** reachable from your phone over the internet, and Safari only installs service-worker PWAs from **HTTPS** origins. So host the `dist/` folder on any free static HTTPS host once; afterwards the phone needs neither your PC nor a network.
+1. Open **https://stlang404-cell.github.io/GLADIUS/** in **Safari** (iOS 16.4+ recommended) and wait for the first load to finish (≈ 6 MB including the Lite engine; creating your world takes a few seconds).
+2. **Share → Add to Home Screen.** Launch GLADIUS from the home screen once while online so the service worker caches everything. From then on it runs fully offline; your computer is never needed.
+3. Your career is saved on the phone (IndexedDB) after every move and survives closing the app. **Legacy → Saves → Export backup** downloads a file you can keep in Files/iCloud; **Import backup** restores it on any device. **Legacy → Saves → Career** starts a new zero-progress career after snapshotting the current one.
 
-1. `npm run build`
-2. Upload `dist/` to a static host. Any of these work (free tiers, no server code; every file in `dist/` is ≤ 20 MiB):
-   - **GitHub Pages**: push `dist/` to a `gh-pages` branch (the build uses relative paths, so project sub-paths work).
-   - **Netlify / Cloudflare Pages**: drag-and-drop the `dist/` folder in their dashboard.
-3. On the iPhone open the HTTPS URL in **Safari**, wait for the first load to finish (≈ 5 MB including the Lite engine), then **Share → Add to Home Screen**.
-4. Launch GLADIUS from the home screen once while online so the service worker caches everything. From then on it runs fully offline.
+Engine on iPhone: the Lite engine (precached) is used for everything; Settings shows "Stockfish 19 Lite (small net, 1 thread)". The 79 MB full-strength pack is **never** downloaded on phones automatically. You can opt in under **Legacy → Settings → Chess engine → Install full-strength engine** (while online; stored in Cache Storage, verified with SHA-256, works offline afterwards). On phones it is experimental: it needs ~0.5 GB of memory while an elite opponent plays; if iOS kills the page because of it, GLADIUS notices at the next start and switches back to Lite. **Verify** re-checks the stored files; **Remove** frees the space.
 
-Engine on iPhone: the Lite engine (precached) is used for everything; Settings shows "Stockfish 19 Lite (small net, 1 thread)". The 79 MB full-strength pack is **never** downloaded on phones automatically. You can opt in under **Legacy → Settings → Chess engine → Install full-strength engine** (while online; it is stored in the browser's Cache Storage, verified with SHA-256, and works offline afterwards). On phones it is experimental: it needs ~0.5 GB of memory while an elite opponent plays; if iOS kills the page because of it, GLADIUS notices at the next start and switches back to Lite (the button re-enables it). **Verify** re-checks the stored files; **Remove** frees the space.
+Other static hosts (Netlify, Cloudflare Pages) work the same with a plain `npm run build` (relative base); every file in `dist/` is ≤ 20 MiB.
 
 ## Engine pack on a desktop browser (hosted PWA)
 

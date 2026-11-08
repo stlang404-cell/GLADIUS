@@ -54,10 +54,14 @@ const coiHeaders = process.env.GLADIUS_COI
   ? { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp' }
   : undefined;
 
-// Relative base so the build works from any static host sub-path
-// (GitHub Pages project sites, Netlify, a local launcher, etc.).
+// Base path. Relative by default so the build works from any static host sub-path
+// (local launcher, Windows package, Netlify…). The GitHub Pages workflow sets
+// GLADIUS_BASE=/<repository>/ (e.g. /GLADIUS/) so the service worker scope,
+// manifest and every asset URL are absolute under the project site.
+const base = process.env.GLADIUS_BASE ? `/${process.env.GLADIUS_BASE.replace(/^\/+|\/+$/g, '')}/` : './';
+
 export default defineConfig({
-  base: './',
+  base,
   plugins: [
     react(),
     enginePack(),
@@ -95,7 +99,16 @@ export default defineConfig({
         globIgnores: ['**/engine/pack/**', '**/engine/stockfish-19-single.wasm', '**/engine/stockfish-19.wasm', '**/engine/stockfish-19-lite.wasm'],
         runtimeCaching: [
           {
-            urlPattern: /\/engine\/stockfish-19(?:-single|-lite)?\.(?:wasm|js)$/,
+            // The installed engine pack lives in its own cache (written by the app after SHA-256
+            // verification, key = canonical engine/<file>.wasm URL). Workers whose script is served
+            // from the precache lose the "#blob:" hash, so the Stockfish glue then fetches the wasm
+            // by path: answer it from the pack cache (no network; GitHub Pages does not host it).
+            urlPattern: /\/engine\/stockfish-19(?:-single)?\.wasm$/,
+            // Pack cache first; otherwise the network (Windows package / bundled hosts serve the file).
+            handler: async ({ request }) => (await (await caches.open('gladius-engine-pack-v1')).match(request.url)) ?? fetch(request),
+          },
+          {
+            urlPattern: /\/engine\/stockfish-19(?:-single|-lite)?\.js$|\/engine\/stockfish-19-lite\.wasm$/,
             handler: 'CacheFirst',
             options: { cacheName: 'gladius-engine-bignet', cacheableResponse: { statuses: [200] }, expiration: { maxEntries: 8 } },
           },
