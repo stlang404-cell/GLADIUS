@@ -100,6 +100,25 @@ export type PlayerState = {
   region?: RegionId;
   /** Rank layout of rank / peakRank / rankHistory / trial / unlockedSets: 24 arenas (v0.3). Absent = v0.2 (12 arenas), remapped by ensureSaveV2. */
   rankLayout?: number;
+  // ---- v0.4 (optional) ----
+  /**
+   * Placement of a career started in v0.4 (see career.PLACEMENT_GAMES): the first rated
+   * games keep the rank at Tiro III and are summarised here; the verdict sets the
+   * rating to the placement performance and may lift the rank several grades at once.
+   * Absent on older saves, which keep the v0.3 provisional rule.
+   */
+  placement?: PlacementState;
+};
+
+export type PlacementState = {
+  /** Placement games played so far (rated, career pool). */
+  games: number;
+  /** Points scored in them. */
+  score: number;
+  /** Opponents' ratings at the start of each placement game. */
+  opp: number[];
+  /** Set by the verdict. */
+  done?: { day: number; rating: number; performance: number; rank: number };
 };
 
 export type PlayerLedger = {

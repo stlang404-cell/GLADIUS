@@ -18,12 +18,15 @@ import { ACHIEVEMENTS, achievementProgress } from './achievements';
 import { hostCost } from './influence';
 import { PLAYER_ID, playerPairing } from '../world/calendar';
 import { DAYS_PER_SEASON } from '../world/types';
+import { careerMilestones, PLACEMENT_GAMES } from './placement';
 
 export const RIVAL_GAMES_CAP = 12;
 export const RIVALS_CAP = 60;
 export const TIMELINE_CAP = 3000;
 
 const careerRatingOf = (s: Save) => s.player.ratings[s.settings.careerPool].rating;
+/** v0.4 careers: placement games still to play (no peak is recorded until the verdict). */
+const placementPending = (s: Save) => !!s.player.placement && !s.player.placement.done;
 
 // ---------------------------------------------------------------- migration
 
@@ -235,7 +238,8 @@ export function rivalPrep(s: Save, competitorId: string): RivalPrep {
 export function newTracker(s: Save): SeasonTracker {
   const r = careerRatingOf(s);
   return {
-    season: s.world.season, startDay: s.world.day, ratingStart: r, peak: r, rankStart: s.player.rank,
+    // v0.4: no peak before the first rated game (the start rating is only a provisional seed).
+    season: s.world.season, startDay: s.world.day, ratingStart: r, peak: s.player.ratedGames > 0 && !placementPending(s) ? r : 0, rankStart: s.player.rank,
     games: 0, w: 0, d: 0, l: 0, awardsStart: awardsFor(s.world, PLAYER_ID).length, vs: {},
   };
 }
@@ -247,7 +251,7 @@ export function trackSeasonGame(s: Save, g: GameRecord, score: number, oppId: st
   if (score === 1) t.w++;
   else if (score === 0) t.l++;
   else t.d++;
-  t.peak = Math.max(t.peak, careerRatingOf(s));
+  if (!placementPending(s)) t.peak = Math.max(t.peak, careerRatingOf(s)); // (v0.4: the placement verdict sets it)
   if (oppId) {
     const v = (t.vs[oppId] ??= [0, 0, 0]);
     v[score === 1 ? 0 : score === 0 ? 2 : 1]++;
@@ -268,7 +272,7 @@ export function closeSeason(s: Save): SeasonReport {
   const rivalName = rivalId ? (getCompetitor(s.world, rivalId)?.name ?? s.player.rivals?.[rivalId]?.name ?? rivalId) : '';
   const report: SeasonReport = {
     season: t.season, startDay: t.startDay, endDay,
-    ratingStart: t.ratingStart, ratingEnd: careerRatingOf(s), peak: Math.max(t.peak, careerRatingOf(s)),
+    ratingStart: t.ratingStart, ratingEnd: careerRatingOf(s), peak: s.player.ratedGames > 0 && !placementPending(s) ? Math.max(t.peak, careerRatingOf(s)) : t.peak,
     games: t.games, w: t.w, d: t.d, l: t.l,
     tournaments: s.world.history.filter((h) => h.playerPlace !== undefined && h.endDay >= t.startDay && h.endDay <= endDay).map((h) => ({ id: h.id, name: h.name, place: h.playerPlace ?? null, arena: h.arena })),
     trophies: mine.slice(t.awardsStart).map((a) => a.awardId),
@@ -317,7 +321,9 @@ export type ObjectiveKind =
   | 'trial' | 'tournament-round' | 'defend-title' | 'title-challenge' | 'enter-tournament' | 'next-rank'
   | 'beat-rival' | 'peak-record' | 'achievement' | 'training' | 'play'
   // v0.3
-  | 'regional-crown';
+  | 'regional-crown'
+  // v0.4: early-career milestones (see game/placement.careerMilestones)
+  | 'milestone';
 export type Objective = {
   id: string;
   kind: ObjectiveKind;
@@ -403,8 +409,16 @@ export function objectives(s: Save): Objective[] {
   const pool = p.ratings[s.settings.careerPool];
   if (pool.games >= 20 && pool.peak - pool.rating <= 60 && pool.peak > 0) {
     out.push({ id: 'peak', kind: 'peak-record', title: `Set a new personal best (peak ${pool.peak})`, detail: pool.rating >= pool.peak ? 'You are at your peak — every win sets a new record.' : `${pool.peak - pool.rating + 1} points from a new peak.`, priority: 50, progress: { current: pool.rating, target: pool.peak + 1 } });
-  } else if (!est.length) {
+  } else if (p.placement && !p.placement.done) {
+    const pl = p.placement;
+    out.push({ id: 'placement', kind: 'play', title: 'Complete your placement games', detail: `${PLACEMENT_GAMES - pl.games} placement game(s) left (${pl.score}/${pl.games} so far): your performance sets your rating and may lift you several grades at once.`, priority: 75, progress: { current: pl.games, target: PLACEMENT_GAMES } });
+  } else if (!est.length && !p.placement) {
     out.push({ id: 'placement', kind: 'play', title: 'Complete your placement games', detail: `${Math.max(0, 20 - pool.games)} rated games until your rating is established.`, priority: 58, progress: { current: pool.games, target: 20 } });
+  }
+  // v0.4: the next early-career milestone (placement first; then first win, promotion, tournament, regional event, trial, trophy, arena).
+  if (p.placement) {
+    const m = careerMilestones(s).find((x) => !x.done && x.id !== 'placement');
+    if (m && p.placement.done) out.push({ id: `milestone-${m.id}`, kind: 'milestone', title: m.title, detail: m.detail, priority: 62, ref: m.id });
   }
   // Achievement closest to completion (counters only).
   const near = achievementProgress(s, { progressOnly: true }).filter((a) => a.unlockedDay === null && a.def.progress && a.fraction >= 0.6 && a.fraction < 1).sort((a, b) => b.fraction - a.fraction || (a.def.id < b.def.id ? -1 : 1))[0];

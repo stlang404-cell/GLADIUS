@@ -69,7 +69,23 @@ Season calendar: per arena League (d0), Open (d1), Cup/Gauntlet (d8), Invitation
 ## Migration (`world/migrate.ts`)
 `ensureWorldV3(w)`, `migrateWorldArenas(w)`, `growPopulation(w, target)`, `initRegionTitles(w)`; `ensureSaveV2(save)` runs all of them (idempotent) — the UI's existing call in `store.ts` is enough.
 
+## v0.4 additions
+| Export | Meaning |
+|---|---|
+| `game/placement.ts`: `PLACEMENT_GAMES` (10), `PLACEMENT_MAX_RANK` (17), `placementStatus(save)` → `{ games, of, score, performance } \| null`, `placementPerformance(oppRatings, score)`, `careerMilestones(save)` → `CareerMilestone[]` (`id, title, detail, done, day?`; ids `placement, first-win, first-promotion, first-tournament, first-regional, first-trial, first-trophy, first-arena`) | re-exported by `game/career.ts` |
+| `PlayerState.placement?: { games, score, opp[], done?: { day, rating, performance, rank } }` | present on careers created from v0.4 only |
+| `ObjectiveKind` `'milestone'` (`ref` = milestone id) | next early-career milestone in `objectives()` |
+| `world/sim.ts`: `censusCorrection(competitors)`, `CENSUS_BANDS`, `CENSUS_MIN_BAND`, `ditherRound`, `competitorK`, `DRAW_SHARE_CAP`, `setRatingProbe / newRatingProbe` (measurement only; null in the game) | rating stability (WORLD.md "v0.4") |
+| `world/population.ts`: `potentialToZ`, `potentialStep`, `BREAKTHROUGH_RHO` | stationary breakthroughs |
+| `world/calendar.ts`: `championshipChallenger(w, arena, holder, player?)`, `CHALLENGER_WINDOW_SEASONS` (2), `CHALLENGER_TOP_CONTENDERS` (3) | title challenger rule |
+
+New careers: `ratings[*].peak` is 0 and `ratingHistory` is empty until the first rated game (`bestRating(save)` is 0).
+
 ## UI notes (not done here; the UI is owned elsewhere)
+- v0.4 placement: `LegacyTab` shows `placement ${r.games}/${PROVISIONAL_GAMES}` (20) — for careers with `player.placement`, show `placementStatus(save)` (`games/of`, 10) until the verdict; after it the rating is still provisional until 20 games. A peak of 0 means "no peak yet" (show "—"); `Ceremony` season reports can carry `peak: 0` for a season without rated games.
+- Rating charts (`LegacyTab`, `legacyExtras`) must accept an empty `ratingHistory` (a new career has none).
+- `ArenaTab` objectives: an objective of kind `'milestone'` can be rendered like any other (title/detail); `careerMilestones(save)` can feed an onboarding checklist.
+- The Onboarding text is already accurate (placement by first rated games); it could name the 10 placement games and the Decanus I cap.
 - `TrophyImage` must load `trophyArt(defId)`, not `defId` (v0.3 defs `lopen-*, rcrown-*, rdefense, rmedal, qual-t*, masters, rlaurel, hist-record, hist-regional-dynasty, hist-giant-slayer` have no file of their own).
 - `EmpireTab` maps tournament kinds to trophy ids by hand (`sig-${t.arena}` is wrong for 24 arenas): use `tournamentInfo(w, t).trophy` / `sigDefFor(arena)`.
 - Hard-coded 12 arenas: `Ceremony.tsx` (Roman numerals I–XII for `item.arena`), `art/emblems.ts`, `art/portraits.ts`, `art/arenaCrest.ts` (`% 12`, `Math.min(11, …)`), `LegacyTab.tsx` collection grid (`t.id === 'laurel' ? 'Eternal Throne'`). Rank emblems exist for 36 ranks only.

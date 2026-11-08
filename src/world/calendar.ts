@@ -204,7 +204,7 @@ export function qualificationText(w: WorldState, t: Pick<WorldTournament, 'kind'
     case 'cup': return `The top ${t.size} of ${A} by standing; the reigning champion is always invited and seeded first.`;
     case 'gauntlet': return `Open draw: ${t.size} established competitors of ${A}.`;
     case 'invitational': return `By standing: the top ${t.size} of ${A}; the reigning champion and the winner of the ${short(t.arena)} Qualifier are guaranteed places.`;
-    case 'championship': return `Title match: the Champion of ${short(t.arena)} against the challenger (the latest League winner of the arena, else the latest Open / Cup / Gauntlet winner, else the top contender).`;
+    case 'championship': return `Title match: the Champion of ${short(t.arena)} against the challenger — the highest-standing of the arena's League / Open / Cup / Gauntlet / Invitational winners of the last two seasons and its top three contenders (or a player holding a title-challenge invitation).`;
     case 'hosted': return `Hosted invitational: competitors of ${A} drawn by the host.`;
     case 'local-open': return `Open registration for competitors of ${R?.name ?? 'the region'} in arenas ${t.band?.[0] ?? 0}–${t.band?.[1] ?? TOP_ARENA}; ${t.size} are drawn.`;
     case 'regional': return `The top ${t.size} of ${R?.name ?? 'the region'} by standing; the reigning ${R?.crown ?? 'crown holder'} and the last two Upper Division Open winners of the region are guaranteed places.`;
@@ -358,7 +358,15 @@ function startTournament(w: WorldState, t: WorldTournament, hooks: PlayerHooks |
     } else if (title.holder === PLAYER_ID && hooks && Math.abs(hooks.playerArena() - t.arena) > TITLE_ARENA_TOLERANCE) {
       vacateTitle(w, title, `${hooks.playerName} now competes in ${ARENAS[hooks.playerArena()].name} and relinquishes the title ${title.name}.`, hooks);
     }
-    const challenger = championshipChallenger(w, t.arena, title.holder);
+    // v0.4: the player's automatic entry as defender lapses with the title (v0.3 kept it, so a player who had
+    // relinquished a title was drafted as challenger for it and won it back — a title ping-pong between arenas);
+    // and a player holding this or a higher arena title is never a challenger for another one.
+    if (t.playerEntered && title.holder !== PLAYER_ID) {
+      const holdsOther = w.titles.some((x) => x.holder === PLAYER_ID && x.id !== title.id && x.arena >= t.arena);
+      const far = !!hooks && Math.abs(hooks.playerArena() - t.arena) > TITLE_ARENA_TOLERANCE;
+      if (!t.invitedPlayer || holdsOther || far) t.playerEntered = false;
+    }
+    const challenger = championshipChallenger(w, t.arena, title.holder, hooks ? { rating: hooks.playerRating(), arena: hooks.playerArena() } : undefined);
     let holder = title.holder;
     if (!holder) {
       // Vacant title: the two top contenders contest it.
@@ -371,12 +379,15 @@ function startTournament(w: WorldState, t: WorldTournament, hooks: PlayerHooks |
       return;
     }
     entrants = [holder, ch];
+    // v0.4: a player chosen as challenger (or defending) is entered, so the event counts in their record.
+    if (entrants.includes(PLAYER_ID)) t.playerEntered = true;
   } else if (t.kind === 'regional-defense') {
     const region = t.region as RegionId;
     const title = regionTitle(w, region)!;
     if (title.holder && title.holder !== PLAYER_ID && getCompetitor(w, title.holder)?.retiredDay !== null) vacateTitle(w, title, `The ${title.name} is vacated.`, hooks);
     let holder = title.holder;
     if (holder === PLAYER_ID && !hooks) holder = null; // no player session: cannot defend (never happens in a career)
+    if (t.playerEntered && !t.invitedPlayer && holder !== PLAYER_ID) t.playerEntered = false; // v0.4: an automatic defender's entry lapses with the crown
     let ch = t.playerEntered && holder !== PLAYER_ID ? PLAYER_ID : regionalChallenger(w, region, holder);
     if (!holder) {
       // Vacant crown: the two top contenders contest it.
@@ -484,27 +495,45 @@ export function markFeatured(t: WorldTournament) {
   t.featured = pend.slice(0, n).map((p) => p.id);
 }
 
-const ARENA_CHALLENGE_KINDS = new Set(['league', 'open', 'cup', 'gauntlet']);
-export function championshipChallenger(w: WorldState, arena: number, holder: string | null): string | null {
-  // Most recent League winner of this arena, else most recent Open/Cup winner, else top-rated contender.
-  let league: TournamentSummary | undefined;
-  let other: TournamentSummary | undefined;
-  for (let i = w.history.length - 1; i >= 0 && !league; i--) {
+const ARENA_CHALLENGE_KINDS = new Set(['league', 'open', 'cup', 'gauntlet', 'invitational']);
+/** Seasons an arena event victory keeps its winner in the challenger race. */
+export const CHALLENGER_WINDOW_SEASONS = 2;
+/** The arena's top contenders by standing who are always in the challenger race. */
+export const CHALLENGER_TOP_CONTENDERS = 3;
+
+/**
+ * Challenger for an arena title match (v0.4). Candidates: the winners of the
+ * arena's League, Open, Cup / Gauntlet and Invitational in the current and
+ * previous season (still active, within one arena of the title), plus the
+ * arena's top three by standing; the candidate with the highest standing
+ * (rating + form + capped prestige; the player: rating + capped prestige)
+ * challenges. v0.3 took the most recent League winner however old (a holder
+ * who won every League faced a stale winner from years before; measured:
+ * challengers were the arena's 4th–5th strongest by median, 60 below the
+ * strongest contender, and 5+-defence holders faced challengers ~190 weaker).
+ */
+export function championshipChallenger(w: WorldState, arena: number, holder: string | null, player?: { rating: number; arena: number }): string | null {
+  const cands = new Map<string, number>();
+  const minSeason = w.season - (CHALLENGER_WINDOW_SEASONS - 1);
+  // Holders of this or a higher arena title are never drafted as challengers (winning would cost them their title).
+  const holdsHigher = (id: string) => w.titles.some((t) => t.holder === id && t.arena >= arena);
+  for (let i = w.history.length - 1; i >= 0; i--) {
     const h = w.history[i];
-    if (h.arena !== arena || !h.winner || h.winner === holder || !ARENA_CHALLENGE_KINDS.has(h.kind)) continue;
-    if (h.kind === 'league') league = h;
-    else other ??= h;
+    if (h.season < minSeason - 1) break; // history is in completion order; late events of older seasons are rare
+    if (h.season < minSeason || h.arena !== arena || !h.winner || h.winner === holder || !ARENA_CHALLENGE_KINDS.has(h.kind) || (h.region && h.region !== IMPERIAL)) continue;
+    if (holdsHigher(h.winner)) continue;
+    if (h.winner === PLAYER_ID) {
+      if (player && Math.abs(player.arena - arena) <= TITLE_ARENA_TOLERANCE) cands.set(PLAYER_ID, player.rating);
+      continue;
+    }
+    const c = getCompetitor(w, h.winner);
+    if (c && c.retiredDay === null && Math.abs(RANKS[c.rank].arena - arena) <= TITLE_ARENA_TOLERANCE) cands.set(c.id, standingKey(w, c));
   }
-  const cand = league ?? other;
-  if (cand?.winner) {
-    if (cand.winner === PLAYER_ID) return PLAYER_ID;
-    const c = getCompetitor(w, cand.winner);
-    if (c && c.retiredDay === null && Math.abs(RANKS[c.rank].arena - arena) <= 2) return c.id;
-  }
-  const pool = arenaPool(w, arena).filter((c) => c.id !== holder);
-  const key = new Map(pool.map((c) => [c.id, c.rating + Math.min(300, competitorPrestige(w, c)) * 0.3]));
-  pool.sort((a, b) => key.get(b.id)! - key.get(a.id)! || (a.id < b.id ? -1 : 1));
-  return pool[0]?.id ?? null;
+  for (const c of topByStanding(w, arenaPool(w, arena).filter((x) => x.id !== holder && !holdsHigher(x.id)), CHALLENGER_TOP_CONTENDERS)) cands.set(c.id, standingKey(w, c));
+  let best: string | null = null;
+  let bestKey = -Infinity;
+  for (const [id, k] of cands) if (k > bestKey || (k === bestKey && best !== null && id < best)) { best = id; bestKey = k; }
+  return best;
 }
 
 /** Resolve a pairing statistically (AI vs AI). */

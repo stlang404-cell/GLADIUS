@@ -1,5 +1,5 @@
 import { createRng, mixSeed, clamp } from '../core/rng';
-import { applyResult, isProvisional, previewStakes, DEFAULT_RATING, POOLS, type TimeControlPool, type RatingState } from '../rating/elo';
+import { applyResult, isProvisional, previewStakes, DEFAULT_RATING, RATING_FLOOR, POOLS, type TimeControlPool, type RatingState } from '../rating/elo';
 import { ARENAS, RANKS, decideRank, naturalRank, TOP_ARENA } from '../world/arenas';
 import { DAYS_PER_SEASON, type Competitor } from '../world/types';
 import { recordCompetitorResult, pushChronicle } from '../world/sim';
@@ -16,6 +16,7 @@ import {
 } from './state';
 import * as INF from './influence';
 import { checkAchievements } from './achievements';
+import { PLACEMENT_GAMES, PLACEMENT_MAX_RANK, placementPerformance } from './placement';
 import type { ResultCode } from '../chess/rules';
 import type { AwardRecord } from '../world/types';
 import { TROPHY_BY_ID, awardsFor, trophyPrestige } from '../world/trophies';
@@ -26,18 +27,23 @@ import {
 } from './legacy';
 import type { SeasonReport } from './state';
 
+export { PLACEMENT_GAMES, PLACEMENT_MAX_RANK, placementPerformance, placementStatus, careerMilestones } from './placement';
+
 export function newPlayer(name: string, female: boolean, day: number, startRating = DEFAULT_RATING): PlayerState {
   const ratings = {} as Record<TimeControlPool, RatingState>;
-  for (const p of POOLS) ratings[p] = { rating: startRating, games: 0, peak: startRating };
-  const rank = 0; // everyone enlists as Tiro; placement games lift you quickly
+  // Unrated: the start rating is only a provisional seed for matchmaking; no peak before a rated game (v0.4).
+  for (const p of POOLS) ratings[p] = { rating: startRating, games: 0, peak: 0 };
+  const rank = 0; // everyone enlists as Tiro III; the placement verdict may lift you several grades at once
   return {
     name, female, portraitSeed: mixSeed(name, day), createdDay: day, ratings, rank, peakRank: rank,
     rankHistory: [{ day, rank, reason: 'Enlisted' }], trial: null, influence: 0, prestige: 0,
     w: 0, d: 0, l: 0, ratedGames: 0, tournamentsPlayed: 0, tournamentsWon: 0, championships: 0, titles: [],
-    achievements: {}, unlockedSets: [0], h2h: {}, rivalId: null, ratingHistory: [{ day, pool: 'rapid', rating: startRating }],
+    // unlockedSets [0]: the Dust Pits' own board and pieces are the equipment every recruit plays with (not an honour).
+    achievements: {}, unlockedSets: [0], h2h: {}, rivalId: null, ratingHistory: [],
     openingsPlayed: {}, streak: 0, bestWinRating: 0,
     ledger: newLedger(day), rivals: {}, seasonReports: [], rankLayout: 24,
     timeline: [{ day, kind: 'enlisted', text: `Enlisted as ${RANKS[rank].name} in ${ARENAS[0].name}.` }],
+    placement: { games: 0, score: 0, opp: [] },
   };
 }
 
@@ -363,7 +369,70 @@ export function finishPlayerGame(s: Save, rec: GameRecord): PostGame {
       rankNote = 'Trial failed. Two more rated games until you may try again.';
     }
   }
-  if (rec.rated && pool === s.settings.careerPool) {
+  const pl = p.placement;
+  if (rec.rated && pool === s.settings.careerPool && pl && !pl.done) {
+    // v0.4 placement: the rank waits for the verdict.
+    pl.games++;
+    pl.score += score;
+    pl.opp.push(oppRating);
+    if (pl.games < PLACEMENT_GAMES) {
+      rankNote = `Placement game ${pl.games} of ${PLACEMENT_GAMES}`;
+    } else {
+      const perf = placementPerformance(pl.opp, pl.score);
+      const cr = p.ratings[pool];
+      const placed = Math.max(RATING_FLOOR, perf);
+      // The peak starts at the verdict: provisional ratings during placement depend on the seed, not on results.
+      p.ratings[pool] = { ...cr, rating: placed, peak: placed };
+      if (L.season) L.season.peak = Math.max(L.season.peak, placed);
+      delta = placed - before.rating;
+      rec.eloDelta = delta;
+      const last = p.ratingHistory[p.ratingHistory.length - 1];
+      if (last && last.day === s.world.day) last.rating = placed;
+      const to = Math.min(naturalRank(placed), PLACEMENT_MAX_RANK);
+      pl.done = { day: s.world.day, rating: placed, performance: perf, rank: to };
+      if (to !== p.rank) {
+        const fromArena = RANKS[p.rank].arena;
+        setRank(s, to, 'Placement');
+        for (let a = fromArena + 1; a <= RANKS[to].arena; a++) unlockSet(s, a, events);
+      }
+      rankNote = `Placement complete: ${pl.score}/${pl.games}, performance ${perf} — ${RANKS[to].name} (${ARENAS[RANKS[to].arena].name})`;
+      events.push(rankNote);
+      // (setRank already writes a timeline entry when the verdict changes arena.)
+      if (RANKS[to].arena === RANKS[rankBefore].arena) pushTimeline(s, { day: s.world.day, kind: 'promotion', text: `Placement complete (${pl.score}/${pl.games}, performance ${perf}): ${RANKS[to].name}`, ref: 'placement', arena: RANKS[to].arena });
+    }
+  } else if (rec.rated && pool === s.settings.careerPool && pl?.done) {
+    // v0.4: after placement, the standard rules; at most one grade up per rated game
+    // (a game that already moved the rank — a won Promotion Trial — makes no second move).
+    const cr = p.ratings[pool];
+    const dec = p.rank === rankBefore ? decideRank(p.rank, cr.rating, false) : ({ kind: 'stay' } as const);
+    switch (dec.kind) {
+      case 'grade-up':
+      case 'arena-up': {
+        const to = Math.min(dec.to, p.rank + 1);
+        if (dec.kind === 'arena-up' && RANKS[to].arena > RANKS[p.rank].arena) inc(L, 'dominancePromotions');
+        const reason = dec.kind === 'arena-up' && RANKS[to].arena > RANKS[p.rank].arena ? 'Dominance promotion' : 'Promotion';
+        setRank(s, to, reason);
+        rankNote = `Promoted to ${RANKS[to].name}`;
+        if (RANKS[to].arena > RANKS[rankBefore].arena) unlockSet(s, RANKS[to].arena, events);
+        p.trial = null;
+        break;
+      }
+      case 'grade-down':
+      case 'arena-down':
+        setRank(s, dec.to, 'Demotion');
+        rankNote = `Demoted to ${RANKS[dec.to].name}`;
+        p.trial = null;
+        break;
+      case 'trial-available':
+        if (!p.trial) {
+          p.trial = { toRank: dec.to, availableSinceGames: p.ratedGames, attempts: 0, cooldownUntilGames: p.ratedGames };
+          events.push(`Promotion trial unlocked: ${ARENAS[RANKS[dec.to].arena].name}`);
+        }
+        break;
+      default:
+        if (p.trial && naturalRank(cr.rating) <= p.rank) p.trial = null;
+    }
+  } else if (rec.rated && pool === s.settings.careerPool) {
     const cr = p.ratings[pool];
     const dec = decideRank(p.rank, cr.rating, isProvisional(cr));
     switch (dec.kind) {
@@ -505,12 +574,24 @@ function updateRival(s: Save, events: string[]) {
  * Significant invitations (regional crown / defence, Masters, title challenge, elite
  * invitational) are written to the Chronicle (tag 'invitation') when issued.
  */
+const ARENA_EVENT_KINDS = new Set(['open', 'league', 'cup', 'gauntlet', 'invitational', 'qualifier', 'championship']);
 export function refreshInvitations(s: Save) {
   const w = s.world;
   const day = w.day;
-  w.invitations = w.invitations.filter((i) => i.expiresDay >= day && (!i.tournamentId || w.tournaments.some((t) => t.id === i.tournamentId && t.status === 'scheduled' && !t.playerEntered)));
-  const rng = createRng(mixSeed(s.seed, 'inv', day));
   const arena = playerArena(s);
+  // v0.4: invitations follow the player's current standing — a trial invitation lives only while its trial is
+  // pending, and an arena event's invitation lapses when the player changes arena (or leaves a Local Open's band).
+  const stillEligible = (i: Invitation): boolean => {
+    if (i.kind === 'trial') return !!s.player.trial;
+    if (!i.tournamentId) return true;
+    const t = w.tournaments.find((x) => x.id === i.tournamentId);
+    if (!t || t.status !== 'scheduled' || t.playerEntered) return false;
+    if (t.kind === 'local-open') return arena >= (t.band?.[0] ?? 0) && arena <= (t.band?.[1] ?? TOP_ARENA);
+    if ((!t.region || t.region === 'imperial') && ARENA_EVENT_KINDS.has(t.kind)) return t.arena === arena;
+    return true;
+  };
+  w.invitations = w.invitations.filter((i) => i.expiresDay >= day && stillEligible(i));
+  const rng = createRng(mixSeed(s.seed, 'inv', day));
   const region = playerRegion(s);
   const r = careerRating(s).rating;
   const has = (k: string, t?: string) => w.invitations.some((i) => i.kind === k && (!t || i.tournamentId === t));

@@ -332,7 +332,8 @@ export type RankDecision =
  *  - Within an arena, grades follow rating, with a 30-point demotion buffer.
  *  - Crossing INTO a higher arena requires winning a Promotion Trial, unless
  *    the rating exceeds the next arena floor by ≥100 (dominance bypass), so a
- *    strong player is never artificially held back.
+ *    strong player is never artificially held back. Arenas are entered one at
+ *    a time (v0.4): a dominance promotion lands in the next arena.
  *  - Falling more than 60 below the current arena floor demotes to the lower arena.
  *  - While provisional, rank follows rating directly (placement).
  */
@@ -352,7 +353,9 @@ export function decideRank(current: number, rating: number, provisional: boolean
     // natural rank lies in a higher arena
     const nextArena = cur.arena + 1;
     const nextFloor = ARENAS[nextArena].floor;
-    if (rating >= nextFloor + TRIAL_BYPASS_MARGIN) return { kind: 'arena-up', to: natural, bypass: true };
+    // v0.4: dominance promotes into the NEXT arena only (v0.3 jumped straight to the natural
+    // rank, so a rating far above the next floor could skip whole arenas); the next game continues.
+    if (rating >= nextFloor + TRIAL_BYPASS_MARGIN) return { kind: 'arena-up', to: Math.min(natural, nextArena * 3 + 2), bypass: true };
     const topOfArena = cur.arena * 3 + 2;
     if (current < topOfArena) return { kind: 'grade-up', to: topOfArena };
     return { kind: 'trial-available', to: nextArena * 3 };

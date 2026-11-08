@@ -1,7 +1,7 @@
 import { createRng, mixSeed, clamp, type Rng } from '../core/rng';
 import { expectedScore, PROVISIONAL_GAMES, RATING_FLOOR } from '../rating/elo';
 import { ARENAS, RANKS, decideRank } from './arenas';
-import { ageYears, createCompetitor, skillCurve, MIN_SKILL, MAX_SKILL } from './population';
+import { ageYears, createCompetitor, skillCurve, potentialStep, MIN_SKILL, MAX_SKILL } from './population';
 import { DAYS_PER_SEASON, type Competitor, type ChronicleEntry, type HallOfRecords, type H2H } from './types';
 import { archiveLegends, snapshotRivalries } from './records';
 import { activeInArena, nameSet, invalidateNames, regionOf } from './indexes';
@@ -42,12 +42,18 @@ export const RETIRED_PRUNE_SLACK = 500;
 
 export const DAILY_ACTIVITY = 0.3;
 
+/**
+ * Largest share of the underdog's expected score that draws may take (v0.4: 0.7, v0.3: 0.95).
+ * At 0.95 a 2900-level underdog 150 below won 2.2% of games (≈ 1 title match in 107);
+ * at 0.7 it wins ≈ 9% (top-level classical statistics: 8–10%), the expected score is unchanged.
+ */
+export const DRAW_SHARE_CAP = 0.7;
 /** Draw probability rises with playing strength and with closeness of the match. */
 export function drawProbability(sa: number, sb: number): number {
   const avg = (sa + sb) / 2;
   const base = clamp(0.04 + (avg - 500) / 4200, 0.03, 0.55);
   const e = expectedScore(sa, sb);
-  return Math.min(base, 2 * Math.min(e, 1 - e) * 0.95);
+  return Math.min(base, 2 * Math.min(e, 1 - e) * DRAW_SHARE_CAP);
 }
 
 /** Returns A's score: 1, 0.5 or 0. Uses true skills (+ small form noise). */
@@ -102,10 +108,31 @@ const EXP_TABLE = (() => {
 function expGap(d: number): number {
   return (d | 0) === d && d >= -EXP_RANGE && d <= EXP_RANGE ? EXP_TABLE[d + EXP_RANGE] : 1 / (1 + Math.pow(10, d / 400));
 }
+/**
+ * Optional measurement probe (soak scripts / tests only; null in the game).
+ * Accumulates rating points by mechanism, in the units of Σ(rating − skill):
+ * `exchange` Σ rating deltas from rated games (`exchangeElite`: the part of competitors rated ≥ 2400),
+ * `debut` Σ (rating − skill) of debutants, `retire` −Σ (rating − skill) of retirees,
+ * `census` Σ calibration shifts, `skillDev` −Σ Δskill from development.
+ */
+export type RatingProbe = { exchange: number; exchangeElite: number; debut: number; retire: number; census: number; skillDev: number; games: number };
+export let ratingProbe: RatingProbe | null = null;
+export function setRatingProbe(p: RatingProbe | null) {
+  ratingProbe = p;
+}
+export function newRatingProbe(): RatingProbe {
+  return { exchange: 0, exchangeElite: 0, debut: 0, retire: 0, census: 0, skillDev: 0, games: 0 };
+}
+
 export function recordCompetitorResult(c: Competitor, oppId: string, oppRating: number, score: number) {
   const exp = expGap(oppRating - c.rating);
-  const k = c.games < PROVISIONAL_GAMES ? 40 : c.rating >= 2400 || c.peak >= 2400 ? 10 : 20;
-  const rating = Math.max(RATING_FLOOR, c.rating + Math.round(k * (score - exp)));
+  const k = competitorK(c);
+  const rating = Math.max(RATING_FLOOR, c.rating + ditherRound(k * (score - exp), c.portraitSeed, c.games));
+  if (ratingProbe) {
+    ratingProbe.exchange += rating - c.rating;
+    if (c.rating >= 2400) ratingProbe.exchangeElite += rating - c.rating;
+    ratingProbe.games++;
+  }
   c.rating = rating;
   c.games++;
   if (rating > c.peak) c.peak = rating;
@@ -116,6 +143,28 @@ export function recordCompetitorResult(c: Competitor, oppId: string, oppRating: 
   c.streak = score === 1 ? Math.max(1, c.streak + 1) : score === 0 ? Math.min(-1, c.streak - 1) : 0;
   c.last = (((c.last ?? 0) << 2) | (score === 1 ? 3 : score === 0 ? 1 : 2)) & 0xfffff;
   bumpH2H(c, oppId, score);
+}
+
+/**
+ * Unbiased integer rounding of a rating change (v0.4): floor(x + u) with a
+ * deterministic per-game dither u ∈ [0, 1) from (portrait seed, games played),
+ * so E[change] = x exactly. v0.3 used Math.round, whose bias favours big
+ * favourites: at K = 10 a 95% favourite gained round(0.5) = +1 per win but lost
+ * only round(−4.5) = −4 per draw, ≈ +0.5 points per game — the source of the
+ * elite's residual over-rating (the strongest competitors play mostly weaker
+ * fields). Ratings stay integers; nothing extra is stored.
+ */
+export function ditherRound(x: number, seed: number, n: number): number {
+  let h = (seed ^ Math.imul(n + 1, 0x9e3779b1)) | 0;
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  const u = ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  return Math.floor(x + u);
+}
+
+/** K-factor of an AI competitor (same policy as rating/elo.kFactor). */
+export function competitorK(c: Pick<Competitor, 'games' | 'rating' | 'peak'>): number {
+  return c.games < PROVISIONAL_GAMES ? 40 : c.rating >= 2400 || c.peak >= 2400 ? 10 : 20;
 }
 
 /** Recent results, newest first ('W' | 'D' | 'L'), from the packed `last` field (up to 10). */
@@ -222,11 +271,13 @@ export function pushChronicle(ctx: { chronicle: ChronicleEntry[]; chronicleArchi
 /** Daily skill development: mean-reverting walk around the age curve. */
 export function developSkill(c: Competitor, day: number, rng: Rng, steps = 1) {
   const age = ageYears(c, day);
-  if (rng.chance(0.0008 * steps)) c.potential = clamp(c.potential + rng.normal(10, 70), 500, MAX_SKILL); // breakthroughs & setbacks
+  if (rng.chance(0.0008 * steps)) c.potential = potentialStep(c.potential, rng); // breakthroughs & setbacks (stationary pyramid, v0.4)
   const target = skillCurve(c.potential, age, c.peakAge);
   // `steps` days at once: same mean reversion (1 − 0.98^steps) and variance (σ√steps) as daily steps.
   const k = steps === 1 ? 0.02 : 1 - Math.pow(0.98, steps);
+  const s0 = c.skill;
   c.skill = clamp(c.skill + (target - c.skill) * k + rng.normal(0, 3.5 * Math.sqrt(steps)), MIN_SKILL, MAX_SKILL);
+  if (ratingProbe) ratingProbe.skillDev -= c.skill - s0;
 }
 
 export function retirementHazard(age: number): number {
@@ -283,6 +334,7 @@ export function simulateDay(ctx: SimContext, opts: DayOptions = {}) {
     if (!rng.chance(1 - Math.pow(1 - h, RETIRE_EVERY))) continue;
     c.retiredDay = ctx.day;
     ctx.stats.retirements++;
+    if (ratingProbe) ratingProbe.retire -= c.rating - c.skill;
     retirementChronicle(ctx, c, age);
     const n = createCompetitor(ctx.nextSerial++, ctx.seed, ctx.day, nameSet(ctx), {
       ageYears: clamp(rng.normal(18, 3), 14, 30),
@@ -296,6 +348,7 @@ export function simulateDay(ctx: SimContext, opts: DayOptions = {}) {
     n.ratingHistory = [[ctx.day, n.rating]];
     ctx.competitors.push(n);
     ctx.stats.debuts++;
+    if (ratingProbe) ratingProbe.debut += n.rating - n.skill;
     // (v0.2) Debuts are no longer announced from hidden potential; prodigies
     // are chronicled when their results carry them into the elite arenas.
   }
@@ -359,29 +412,78 @@ export function styleDrift(ctx: SimContext, rng: Rng): number {
 }
 
 /**
- * Season boundary: rating history sample, and the Imperial Census —
- * a transparent anti-drift calibration. Closed Elo pools drift (improving
- * juniors drain points; retirees remove points). Because AI ratings are
- * meant to measure engine-calibrated strength, the census shifts all active
- * AI ratings so the established-pool mean of (rating − skill) returns to 0.
+ * Imperial Census bands (v0.4), by hidden playing strength. Each band needs at
+ * least CENSUS_MIN_BAND established members; thinner bands are merged into
+ * their lower neighbour.
+ */
+export const CENSUS_BANDS = [0, 800, 1100, 1400, 1700, 2000, 2300, 2600];
+export const CENSUS_MIN_BAND = 20;
+
+/**
+ * The census calibration as a function of skill: −(mean rating − skill) of the
+ * established members of each band, linearly interpolated between the bands'
+ * mean skills (flat beyond the outer bands). Pure; returns null when nothing
+ * is measurable.
+ */
+export function censusCorrection(competitors: readonly Competitor[]): ((skill: number) => number) | null {
+  const nb = CENSUS_BANDS.length;
+  const sum = new Float64Array(nb);
+  const sk = new Float64Array(nb);
+  const cnt = new Float64Array(nb);
+  for (const c of competitors) {
+    if (c.retiredDay !== null || c.games < PROVISIONAL_GAMES) continue;
+    let b = nb - 1;
+    while (b > 0 && c.skill < CENSUS_BANDS[b]) b--;
+    sum[b] += c.rating - c.skill;
+    sk[b] += c.skill;
+    cnt[b]++;
+  }
+  // Merge thin bands downwards (from the top), so the elite band is never measured on a handful of players.
+  for (let b = nb - 1; b > 0; b--) {
+    if (cnt[b] >= CENSUS_MIN_BAND) continue;
+    sum[b - 1] += sum[b]; sk[b - 1] += sk[b]; cnt[b - 1] += cnt[b];
+    sum[b] = sk[b] = cnt[b] = 0;
+  }
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (let b = 0; b < nb; b++) if (cnt[b] > 0) { xs.push(sk[b] / cnt[b]); ys.push(-sum[b] / cnt[b]); }
+  if (!xs.length) return null;
+  return (skill: number) => {
+    if (skill <= xs[0]) return ys[0];
+    for (let i = 1; i < xs.length; i++) if (skill <= xs[i]) return ys[i - 1] + ((skill - xs[i - 1]) / (xs[i] - xs[i - 1])) * (ys[i] - ys[i - 1]);
+    return ys[ys.length - 1];
+  };
+}
+
+/**
+ * Season boundary: rating history sample, and the Imperial Census — a
+ * transparent anti-drift calibration. Closed Elo pools drift: competitors
+ * enter weak and leave strong, so the pool's true strength rises by ≈ 36,000–42,000
+ * skill points a season (25k competitors) while rated games only move points
+ * around. v0.3 returned the missing points with one uniform shift; but the
+ * drain happens where improving players are (the lower and middle bands),
+ * while the elite mostly play each other, so the uniform shift accumulated at
+ * the top (elite bands +30 … +50 over skill after 40 seasons, bottom bands
+ * −5 … −10). v0.4 calibrates each strength band separately
+ * (`censusCorrection`): every active AI rating moves by the interpolated band
+ * correction (a few points, the same for everyone of similar strength, so
+ * legitimate differences and the order within a band are kept).
  */
 export function seasonBoundary(ctx: SimContext) {
-  let sum = 0;
-  let n = 0;
-  for (const c of ctx.competitors) {
-    if (c.retiredDay !== null || c.games < PROVISIONAL_GAMES) continue;
-    sum += c.rating - c.skill;
-    n++;
-  }
-  const bias = n ? sum / n : 0;
-  if (Math.abs(bias) >= 5) {
-    const shift = Math.round(-bias);
+  const corr = censusCorrection(ctx.competitors);
+  if (corr) {
+    let moved = 0;
     for (const c of ctx.competitors) {
       if (c.retiredDay !== null) continue;
-      c.rating = Math.max(100, c.rating + shift);
+      const shift = Math.round(corr(c.skill));
+      if (!shift) continue;
+      const r = Math.max(RATING_FLOOR, c.rating + shift);
+      if (ratingProbe) ratingProbe.census += r - c.rating;
+      c.rating = r;
       if (c.rating > c.peak) c.peak = c.rating; // v0.3 fix: a peak is never below the current rating
+      moved++;
     }
-    ctx.stats.calibrations++;
+    if (moved) ctx.stats.calibrations++;
   }
   // Breakthroughs: the season's largest real rating jumps into the upper arenas.
   const jumps: { c: Competitor; d: number }[] = [];

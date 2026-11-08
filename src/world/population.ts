@@ -39,6 +39,33 @@ export function potentialFromZ(z: number): number {
   }
   return MAX_SKILL;
 }
+/** Inverse of `potentialFromZ` on the knot range (monotone piecewise-linear). */
+export function potentialToZ(p: number): number {
+  const k = POT_KNOTS;
+  if (p <= k[0][1]) return k[0][0];
+  for (let i = 1; i < k.length; i++) {
+    if (p <= k[i][1]) {
+      const [z0, p0] = k[i - 1];
+      const [z1, p1] = k[i];
+      return z0 + ((p - p0) / (p1 - p0)) * (z1 - z0);
+    }
+  }
+  return k[k.length - 1][0];
+}
+/**
+ * v0.4 breakthroughs & setbacks: an AR(1) step in the normal space of the
+ * potential pyramid, z' = ρ·z + √(1 − ρ²)·ε. It keeps the marginal N(0, 1),
+ * so the competitive pyramid is stationary (v0.3 added N(+10, 70) points per
+ * event: zero mean-reversion and a positive mean fattened the elite tail over
+ * the decades — 2 → 4 potentials above 3000 and 5 → 10 skills above 2800 in
+ * 40 seasons). One event moves a mid-table potential by ≈ ±70 points, as before.
+ */
+export const BREAKTHROUGH_RHO = 0.985;
+export function potentialStep(potential: number, rng: Rng): number {
+  const z = potentialToZ(potential);
+  const z2 = BREAKTHROUGH_RHO * z + Math.sqrt(1 - BREAKTHROUGH_RHO * BREAKTHROUGH_RHO) * rng.normal();
+  return clamp(potentialFromZ(z2), 500, MAX_SKILL);
+}
 export function samplePotential(rng: Rng): number {
   return clamp(potentialFromZ(rng.normal()), 500, MAX_SKILL);
 }
