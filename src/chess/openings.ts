@@ -474,23 +474,48 @@ function moreSpecific(a: OpeningLine, b: OpeningLine): boolean {
   return a.weight > b.weight;
 }
 
+function indexLine(ix: BookIndex, line: OpeningLine, li: number) {
+  const chess = new Chess(START_FEN);
+  for (const uci of line.uci) {
+    const key = positionKey(chess.fen());
+    if (!applyUci(chess, uci)) return; // malformed line: ignore the rest
+    let list = ix.next.get(key);
+    if (!list) ix.next.set(key, (list = []));
+    if (!list.some((c) => c.uci === uci && c.line === li)) list.push({ uci, line: li });
+  }
+  const end = positionKey(chess.fen());
+  const prev = ix.named.get(end);
+  if (prev === undefined || moreSpecific(line, OPENINGS[prev])) ix.named.set(end, li);
+}
+
 function buildIndex(): BookIndex {
-  const named = new Map<string, number>();
-  const next = new Map<string, Continuation[]>();
-  OPENINGS.forEach((line, li) => {
-    const chess = new Chess(START_FEN);
-    for (const uci of line.uci) {
-      const key = positionKey(chess.fen());
-      if (!applyUci(chess, uci)) return; // malformed line: ignore the rest
-      let list = next.get(key);
-      if (!list) next.set(key, (list = []));
-      if (!list.some((c) => c.uci === uci && c.line === li)) list.push({ uci, line: li });
-    }
-    const end = positionKey(chess.fen());
-    const prev = named.get(end);
-    if (prev === undefined || moreSpecific(line, OPENINGS[prev])) named.set(end, li);
+  const ix: BookIndex = { named: new Map(), next: new Map() };
+  OPENINGS.forEach((line, li) => indexLine(ix, line, li));
+  return ix;
+}
+
+/**
+ * Build the book index in small idle-time slices (≈ 300 ms of chess.js work in
+ * total), so the first opponent reply never pays for it in one long task.
+ * Safe to call repeatedly; getIndex() still builds synchronously if needed first.
+ */
+export function warmOpeningBook(sliceMs = 8): Promise<void> {
+  if (index) return Promise.resolve();
+  const ix: BookIndex = { named: new Map(), next: new Map() };
+  let li = 0;
+  return new Promise((resolve) => {
+    const step = () => {
+      if (index) return resolve();
+      const t = performance.now();
+      while (li < OPENINGS.length && performance.now() - t < sliceMs) indexLine(ix, OPENINGS[li], li++);
+      if (li < OPENINGS.length) setTimeout(step, 0);
+      else {
+        index ??= ix;
+        resolve();
+      }
+    };
+    setTimeout(step, 0);
   });
-  return { named, next };
 }
 
 function getIndex(): BookIndex {

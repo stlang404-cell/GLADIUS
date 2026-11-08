@@ -1,64 +1,65 @@
-# Implementation status — GLADIUS v0.3 "The Imperial Ascension"
+# Implementation status — GLADIUS v0.4 "Rise of the Legion"
 
-Only items verified in this repository are marked done. Baseline audit: [AUDIT_v0.3.md](AUDIT_v0.3.md). Screenshots: `docs/screenshots/` (desktop 1440×900 `desktop-*`, iPhone 13 emulation `phone-*`, 320 px and landscape phone, art sheets).
+Only items verified in this repository are marked done. Every result below was produced in **emulation** (headless Chromium desktop/iPhone 13 profiles, Node); **nothing was tested on physical hardware** (no iPhone, no Windows PC available). Screenshots: `docs/screenshots/`.
 
-## How to run
-`npm install && npm run dev` · production: `npm run build && npm run preview` · Windows: `npm run package:win` (bundles the full-strength engine) · iPhone PWA: see [DEPLOY.md](DEPLOY.md) · benchmarks: `npm run bench` · world soak: `npx tsx scripts/soak-world.ts 40 20260 25000` · career soak: `npm run soak`.
+## How to run / where to play
+- Public site (after the one-time Pages setup in [DEPLOY.md](DEPLOY.md)): **https://stlang404-cell.github.io/GLADIUS/**
+- Local: `npm install && npm run dev` · production: `npm run build && npm run preview` · Windows: `npm run package:win` · tests: `npm test` · animation suite: `npm run test:anim` · world soak: `npx tsx scripts/soak-world.ts 40 20260 25000` · career + journey soak: `npm run soak`.
 
-## Release gates
+## v0.4 release gates
 | Gate | State | Evidence |
 |---|---|---|
-| Classical chess rules | ✅ | perft and rules suites (castling, e.p., promotion, repetition, 50/75-move, insufficient material, PGN/FEN) |
-| All player games untimed; save & resume | ✅ | `tests/untimed.test.ts` (game left 30 days, reloaded, finished); offline reload → RESUME restores the position |
-| Five tabs only | ✅ | Arena · Empire · Academy · Spectate · Legacy; new depth lives in segments (Empire → Regions, Legacy → Hall of Fame) |
-| White UI consistent, phones usable | ✅ | Every tab captured desktop + iPhone 13; 320×568, 375, 390, 430, tablet and landscape measured: 0 px horizontal overflow, PLAY and Draw/Resign/Pause above the tab bar at every size, landscape puts the board left |
-| Pieces readable | ✅ | New hand-drawn vector "Legio" primary set + Senate Marble + Praetorian Guard; contact sheets on all 24 boards at 40 px and 90 px, grayscale and deuteranopia checks |
-| Animations converge to the authoritative position | ✅ | Frame sampling (Majestic): normal moves arrive 730–880 ms; promotion (Q, N), capture-promotion, en passant, O-O-O, check, mate topple; 20 moves 40 ms apart → 28/28 pieces correct, 0 duplicates; reset mid-animation → correct; unmount mid-animation → no errors |
-| 24 arenas, 72 ranks | ✅ | 12 new illustrated arenas + crests, 72 rank emblems; ranks = 24 titles × grades III–I in four families; transparent `rankProgress` |
-| Save migration (12/36 → 24/72) | ✅ | `tests/migrate.v03.test.ts` uses a real v0.2 save: old arena i → 2i, Eternal Throne → 23, ranks, titles, reigns, awards, records, player history; a season then runs and the save round-trips |
-| 25,000 persistent competitors | ✅ | Pyramid at creation: 28 above 2600, 4 above 2800, 0 above 3000; 50,000 unique names tested |
-| Careers evolve coherently | ✅ (40-season soak) | Mean rating 1143–1154, rating−skill gap −5…+1, population exactly 25,000, ~221 retirements/season, no promotion loops, no double title holders (bug found & fixed) |
-| Tournaments, trophies exactly once | ✅ | Format fuzz tests, deterministic award ids, soak invariants |
-| Achievements from verified events | ✅ | 148 achievements; analysis-based ones need complete analysis |
-| Hall of Fame persists | ✅ | Legends archive keeps retired competitors; ten lists with stated criteria |
-| Engine strength represented accurately | ✅ | `activeEngineInfo` labels only big-net builds "full"; test: phone without pack never claims full strength |
-| Full-strength distribution | ✅ (code + Node/HTTP verification) | 4 gzip chunks ≤ 20 MiB + 259 KB delta in git; SHA-256 verified install into Cache Storage; bundled in the Windows package. **Not run in a real browser on a phone.** |
-| Offline | ✅ | Production build, SW controlling, offline reload → resume, all 32 pieces loaded |
-| Automated tests | ✅ | **402 passing, 26 files** (`npx vitest run`); `tsc --noEmit` clean |
-| Production build | ✅ | `vite build`, precache 199 entries / 5.7 MB (engine pack deployed but not precached) |
+| Zero-progress new career | ✅ | Browser: new career shows Tiro III, Arena I, 0–0–0, 0 Influence, 0 trophies, 0/148 achievements, no peak, provisional rating with "placement 0/10". Journey test asserts no honours/history/peak at start |
+| Placement & early progression | ✅ | 10 placement games set rating to the performance rating and grade up to Decanus I (a strong newcomer was lifted 7+ grades in the test); afterwards ≤ 1 grade per game; career milestones guide the first steps |
+| New Career / Continue Career | ✅ | Legacy → Saves → Career: snapshot + optional backup download first; onboarding offers "Continue <name>'s career" (browser-tested) |
+| Zero-to-emperor journey | ✅ | `tests/journey.test.ts` (8k competitors, real rules, outcomes from the world's own game model): all 24 arenas entered in order, all 72 grades held, Eternal Throne won and defended, awards exactly once, achievements match metrics, profile stats equal stored records, save survives reload and v0.2 migration, no clock. 25k soak variant: 898 / 1006 games |
+| Pieces | ✅ | Legio, Senate Marble, Praetorian Guard refined; king (closed crown + spire) vs queen (open coronet) checked at 32 px on 25 boards, grayscale and deuteranopia |
+| Followable animations | ✅ | Majestic 950 ms for opponent moves (190 ms pre-highlight, glide, landing highlight); player taps 713 ms, drags 60–140 ms; any input skips instantly. `npm run test:anim`: 36/36 board-lab + 13/13 production scenarios (promotions Q/R/B/N, both castles, e.p., mate, resign, rapid moves, undo/unmount/reload mid-animation, speed change, touch) |
+| Trustworthy analysis | ✅ | Deep verification of claims/sacrifices/errors; confidence levels with "Unclear"; Opera Game 15.Bxd7+ fixed (Blunder → Best, verified at depth 19); Analyse deeper on any move; confidence-aware PGN, puzzles, achievements ([ANALYSIS.md](ANALYSIS.md)) |
+| Player profile | ✅ | Provisional status, Elo/peak, rank, W/D/L, score, move-class counts, accuracy trend, skill estimates with sample sizes, opening results, colour split, results vs rating bands, strongest wins, tournament results, reigns, upsets, all-time standing, searchable game history |
+| Save performance | ✅ | See table below; integrity tests incl. crash during commit/compaction, damaged journal/base, v0.3 layout fixture |
+| Rating stability | ✅ (3 seeds × 40 seasons) | See table below |
+| Unique trophy art | ✅ | All 93 trophy definitions have their own baked image (21 new); old files checksum-identical |
+| Art refinement | ✅ | 7 arenas reworked, legible crest numerals and rank pips, portrait refinements |
+| No human clocks | ✅ | `CLOCKS_ENABLED = false`; journey asserts every game untimed even when a clock is requested |
+| Automated tests | ✅ | **461 passing, 32 files**; `tsc --noEmit` clean |
+| GitHub Pages build | ✅ | `.github/workflows/deploy.yml`; `/GLADIUS/` build passes `scripts/check-pages-dist.mjs` (83 MB, largest file 20 MB, 221 precached files) |
+| Offline + engine verification (Pages layout, emulated) | ✅ | Service worker scoped to `/GLADIUS/`; game vs engine, reload → resume, offline reload with all pieces; engine pack (79 MB) installs with SHA-256 verification and runs **full-strength offline** ("Stockfish 19 full net") |
+| Live public URL | ⏳ | Waiting for Pages to be enabled and the branch merged into `main` (DEPLOY.md) |
 
-## Engine benchmarks (see ENGINE.md for configs, nps, depth, memory)
-v0.3 top configuration vs v0.2 as shipped (Lite), 40 balanced openings, both colours, fixed movetime, loaded 4-vCPU box:
+## Measured improvements
+**Saves** (25k world, headless Chromium with real IndexedDB; shared 4-vCPU box — rough):
+| | v0.3 | v0.4 |
+|---|---|---|
+| Post-game commit, longest main-thread task | 108–113 ms | no task ≥ 50 ms (longest slice ~12 ms) |
+| Written per game | 4.7 MB | ~1.1 MB median |
+| Season-end commit | longest task ~680 ms | no long task |
+| Backup | 1.3 s on main thread | 0.8 s in a worker |
+| Stored size | 37.6 MB | 21.2 MB |
+| Cold load | 0.43–0.50 s (one long task) | 0.32–0.44 s, no long task |
+| First opponent reply | ~300 ms task (opening-book index) | none (index built in idle slices at start-up) |
 
-| Platform | Budget | Games | W/D/L | Elo [95% CI] |
-|---|---|---|---|---|
-| PWA, full-single vs lite-single | 100 ms | 160 | +70 =80 −10 | +137 [+101, +176] |
-| PWA, same | 400 ms | 80 | +25 =50 −5 | +89 [+45, +136] |
-| Windows, full-mt T3 vs lite-mt T3 | 200 ms | 60 | +18 =41 −1 | +101 [+56, +150] |
+**Ratings** (25k, 8-season burn-in + 40 seasons, seeds 20260 / 4242 / 777):
+| | v0.3 | v0.4 |
+|---|---|---|
+| Top-1 rating at end | 3150 / 3154 / 2970 | 3028 / 3045 / 2943 |
+| Rating − skill gap, 2400+ band | +46 / +17 / +37 | −8 / −5 / −10 |
+| Record consecutive defences | 34 / 39 / 14 | 21 / 16 / 21 (holders 120–150 stronger than the best contender) |
+| Mean rating | 1150–1159 | 1146–1152 |
+Causes fixed: uniform census shift piled points onto the elite (now per skill band), biased rating rounding, unbounded potential drift, weak challenger selection and a 0.95 draw cap that hid upsets; plus three rule bugs found by the journey test.
 
-Relative engine-vs-engine numbers only; no Elo-vs-humans claim. Playing styles now measurably change move choice (e.g. attacker +5.6 ± 2.3 pp checks at 1600) with no measurable strength cost; technician and counterattacker remain weak in the middlegame.
+**Analysis**: Opera Game accuracy W 89.5 → 97.4 after verification (false blunder removed); verification costs ~1–2.5× analysis time on sharp games.
 
-## Performance (measured)
-| Metric | Result |
-|---|---|
-| New world (25k, 8 burn-in seasons), browser onboarding → ready | 4.6–5.4 s (desktop Chromium, loaded box) |
-| `createWorld` in Node | 5.2–7.6 s wall |
-| One simulated season | ~0.75 s |
-| Save size | 29 MB JSON in 957 parts (5.5 MB gzipped backup) |
-| Commit during a game / after a game / season end | 1 ms / ~130 ms / ~320 ms |
-| Load | ~580 ms |
-| Analysis (MultiPV 3, depth 13, 100 plies) | ~30 s headless |
-| Full engine start | 0.75–1.04 s (lite 0.16–0.19 s) |
-Frame rate and battery on real phones were **not measured** (no device available).
+**Engine** (unchanged from v0.3; see ENGINE.md): full net vs Lite +137 [+101, +176] (160 games, 100 ms), +89 [+45, +136] (80 games, 400 ms).
 
-## Known limitations (honest)
-- No physical iPhone or Windows PC was available: Safari's handling of the 99 MB wasm, real frame rate, memory and battery are unverified.
-- After each game ~4 MB of competitor chunks are rewritten (~130 ms on the main thread); a per-row journal or worker would cut it.
-- Elite ratings drift slowly upward (max 3002 → ~3150 over 40 seasons; 0–2 players above 3000); one 34-defence dynasty appeared in the soak.
-- Lite Stockfish at analysis depth 11–14 can mislabel deep sacrifices (reliability tag shown); strict puzzle margins yield few puzzles.
-- Senate Marble queen/king are the closest pair at 32 px; the check highlight relies on its pulse for red-green colour-blind players.
-- Trophy art: the 21 new non-signature trophy kinds reuse existing sprites.
-- Regional balance for a human career has not been play-tested over many seasons.
+## Tested in emulation vs on hardware
+- **Emulation (done):** desktop 1440×900 and iPhone 13 / 320 / 375 / 390 / 430 / tablet / landscape viewports in headless Chromium; touch input via Playwright; offline mode; Cache Storage engine pack; Node unit/integration/soak tests.
+- **Physical hardware (not done):** iPhone Safari PWA install, real frame rate, memory with the 99 MB full engine, battery; Windows launcher on a real PC.
 
-## Next recommended milestone
-Real-device pass (iPhone PWA + Windows) for frame rate, memory and the engine pack; move post-game commits to a worker; dedicated art for the 21 new trophy kinds; long human play-test of regional circuits.
+## Known limitations
+- Total commit work is still ~60–90 ms per game (spread over ~10 slices); compactions write 4.5–15 MB about every 10 games.
+- Analysis verification is budgeted (12 moves per game); hidden deep ideas in stable "Best" moves are not re-searched; confidence thresholds are judgement calls.
+- Dark Praetorian pieces on the darkest boards rely on their halo; undo has no reverse animation.
+- Portrait byte budget leaves little headroom; qualifier tokens share one shape.
+- Swiss events produced 26–50 repeat pairings over 40 seasons.
+- GitHub Pages cannot send COOP/COEP headers: engines run single-threaded on the website (threads only in the Windows package).

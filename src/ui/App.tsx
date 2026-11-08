@@ -9,6 +9,7 @@ import { ArenaTab } from './tabs/ArenaTab';
 import { EmpireTab, ArenaSheet, TournamentSheet, CompetitorSheet } from './tabs/EmpireTab';
 import { AcademyTab } from './tabs/AcademyTab';
 import { resumePendingAnalysis } from './analysisQueue';
+import { warmOpeningBook } from '../chess/openings';
 import { SpectateTab } from './tabs/SpectateTab';
 import { LegacyTab, PassportSheet, TrophySheet } from './tabs/LegacyTab';
 import { GameScreen } from './GameScreen';
@@ -45,6 +46,8 @@ export function App() {
       }
     });
     void requestPersistence();
+    // Build the opening book in idle slices (avoids a ~300 ms task on the opponent's first reply).
+    setTimeout(() => void warmOpeningBook(), 1500);
     // Warm up the opponent engine so the first move is fast.
     setTimeout(() => void getEngine('play').whenReady(), 800);
   }, []);

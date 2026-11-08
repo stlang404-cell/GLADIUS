@@ -90,7 +90,7 @@ export function Profile() {
           <Stat label={prov ? 'Elo · provisional' : 'Elo'} value={prov ? `${r.rating}?` : r.rating} sub={pl ? `placement ${pl.games}/${pl.of}` : prov ? `${r.games}/${PROVISIONAL_GAMES} games` : r.peak > 0 ? `peak ${r.peak}` : 'peak —'} />
           <Stat label="Influence" value={p.influence} sub={`prestige ${p.prestige}`} />
           <Stat label="Games" value={p.w + p.d + p.l} sub={<Record w={p.w} d={p.d} l={p.l} />} />
-          <Stat label="Score" value={`${pct(p.w, p.d, p.l)}%`} />
+          <Stat label="Score" value={p.w + p.d + p.l ? `${pct(p.w, p.d, p.l)}%` : "—"} />
           <Stat label="Titles" value={p.championships} />
           <Stat label="Trophies" value={trophies.length} />
           <Stat label="Achievements" value={`${got}/${ach.length}`} />
