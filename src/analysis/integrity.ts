@@ -60,6 +60,21 @@ export function importBlockReason(s: Pick<Save, 'active'>, imp: { startFen: stri
 }
 
 /**
+ * Deeper analysis of one move (player request, v0.4): only for a finished,
+ * already analysed game, and never while ANY game is in progress (the
+ * engine must not run study searches during play). Re-checked when the job
+ * starts.
+ */
+export function deepenBlockReason(s: Pick<Save, 'active'>, g: Pick<GameRecord, 'id' | 'result' | 'analysis'> | null | undefined): string | null {
+  if (!g) return 'Game not found.';
+  const r = analysisBlockReason(s, g);
+  if (r) return r;
+  if (s.active && s.active.record.result === '*') return 'Deeper analysis is paused while a game is in progress.';
+  if (!g.analysis) return 'Analyse the game first.';
+  return null;
+}
+
+/**
  * Analysis-gated achievements may only use a COMPLETE analysis of a finished
  * game: every move analysed, at the recorded depth.
  */

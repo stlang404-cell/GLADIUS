@@ -4,19 +4,19 @@ import type { GameRecord, MoveClass } from '../game/state';
 import { getGame } from '../persist/save';
 import { useSave } from './store';
 import { Board } from './components/Board';
-import { CLASS_META } from '../analysis/classify';
-import { explainMove } from '../analysis/analyzer';
+import { CLASS_META, displayClass, UNCLEAR_META } from '../analysis/classify';
+import { explainMove, provenanceText } from '../analysis/analyzer';
 import { winPercent } from '../engine/uci';
-import { queueAnalysis, onAnalysisProgress, progress, cancelAnalysis } from './analysisQueue';
+import { queueAnalysis, onAnalysisProgress, progress, cancelAnalysis, requestDeeperAnalysis, cancelDeeperAnalysis, deepStatus, onDeeperAnalysis } from './analysisQueue';
 import { getEngine } from '../engine/browserEngine';
 import { playVariation, evaluatePosition, type PositionEval } from '../analysis/explore';
-import { annotatedPgn, biggestMistakes, gameRecommendations, missedTactics, plyAtGraphX, graphValue, reliability } from '../analysis/report';
-import { parseUci, START_FEN } from '../chess/rules';
+import { annotatedPgn, biggestMistakes, gameRecommendations, missedTactics, plyAtGraphX, graphValue, reliability, openingReview, endgameSummary, displayCounts } from '../analysis/report';
+import { parseUci } from '../chess/rules';
 import { Sheet } from './components/common';
-import { analysisBlockReason } from '../analysis/integrity';
+import { analysisBlockReason, deepenBlockReason } from '../analysis/integrity';
+import { isUnclear } from '../analysis/confidence';
 import { ANALYSIS_VERSION, PHASES, asX, type GameAnalysisX, type MoveAnalysisX } from '../analysis/types';
-import { bookMoves } from '../chess/openings';
-import { endgameFeedback, ENDGAME_DRILLS, ENDGAME_GUIDE } from '../chess/endgames';
+import { ENDGAME_DRILLS, ENDGAME_GUIDE } from '../chess/endgames';
 import { useWidth } from './components/academy/charts';
 import './academy.css';
 
@@ -40,7 +40,12 @@ export function EvalBar({ e, orientation }: { e: { cp?: number; mate?: number } 
 
 const MARK: MoveClass[] = ['brilliant', 'great', 'inaccuracy', 'mistake', 'blunder', 'miss'];
 
-/** Win-probability graph (White's win% over the game); tap to jump. */
+/**
+ * Win-probability graph (White's win% over the game); tap to jump. Classified
+ * moves are dots in their class colour; low-confidence points are hollow
+ * dashed rings (grey for an "Unclear" claim), so an unstable evaluation never
+ * looks like a certain swing.
+ */
 export function EvalGraph({ moves, ply, onPick, height = 96 }: { moves: MoveAnalysisX[]; ply: number; onPick: (p: number) => void; height?: number }) {
   const [ref, W] = useWidth<HTMLDivElement>();
   const H = height;
@@ -52,16 +57,28 @@ export function EvalGraph({ moves, ply, onPick, height = 96 }: { moves: MoveAnal
     const r = el.getBoundingClientRect();
     onPick(plyAtGraphX((clientX - r.left) / r.width, moves.length));
   };
+  const low = moves.filter((m) => m.conf === 'low').length;
   return (
     <div className="ac-evalgraph" ref={ref}>
-      <svg width={W} height={H} onClick={(e) => pick(e.clientX, e.currentTarget)} role="img" aria-label="Evaluation graph">
+      <svg width={W} height={H} onClick={(e) => pick(e.clientX, e.currentTarget)} role="img" aria-label={`Evaluation graph${low ? `, ${low} uncertain points` : ''}`}>
         <rect width={W} height={H} fill="#3A3631" rx="0" />
         <path d={`${line} L${W},${H} L0,${H} Z`} fill="#FFFFFF" />
         <line x1="0" x2={W} y1={H / 2} y2={H / 2} stroke="#C59A42" strokeOpacity=".55" strokeWidth="1" />
         <path d={line} fill="none" stroke="#C59A42" strokeWidth="1.5" strokeLinejoin="round" />
-        {moves.map((m, i) => (MARK.includes(m.cls) ? <circle key={i} cx={(i + 1) * step} cy={yy(graphValue(m.evalAfter))} r="4" fill={CLASS_META[m.cls].color} stroke="#fff" strokeWidth="1.5" /> : null))}
+        {moves.map((m, i) => {
+          const cx = (i + 1) * step;
+          const cy = yy(graphValue(m.evalAfter));
+          if (m.conf === 'low') {
+            const col = isUnclear(m) ? UNCLEAR_META.color : '#A39C8E';
+            return <circle key={i} className="ac-eg-unclear" cx={cx} cy={cy} r="4.5" fill="#fff" fillOpacity=".85" stroke={col} strokeWidth="2" strokeDasharray="2 1.6" />;
+          }
+          return MARK.includes(m.cls) ? <circle key={i} cx={cx} cy={cy} r="4" fill={CLASS_META[m.cls].color} stroke="#fff" strokeWidth="1.5" /> : null;
+        })}
         <line x1={ply * step} x2={ply * step} y1="0" y2={H} stroke="#A92D3A" strokeWidth="2" />
       </svg>
+      {low > 0 && (
+        <div className="ac-eg-legend"><i /> {low} uncertain {low === 1 ? 'point' : 'points'}: the engine's evaluation was unstable there</div>
+      )}
     </div>
   );
 }
@@ -93,6 +110,8 @@ export function AnalysisPanel({ gameId, record, onTrainDrill }: { gameId?: strin
   }, [gameId, meta?.analysed, meta?.accuracy]);
   useEffect(() => { setPly(0); setVari(null); }, [gameId]);
   useEffect(() => (gameId ? onAnalysisProgress((id, d, t) => id === gameId && setProg(d >= t ? 0 : d / t)) : undefined), [gameId]);
+  // A finished deeper search of one move updates the record in place (it is already stored).
+  useEffect(() => (gameId ? onDeeperAnalysis((id, _p, st, info) => { if (id === gameId && st === 'done' && info?.record) setG({ ...info.record }); }) : undefined), [gameId]);
   useEffect(() => {
     if (!auto || !g) return;
     const iv = setInterval(() => setPly((p) => (p >= g.moves.length ? (setAuto(false), p) : p + 1)), 900);
@@ -202,7 +221,7 @@ export function AnalysisPanel({ gameId, record, onTrainDrill }: { gameId?: strin
         ) : (
           <>
             <Summary g={g} a={a} />
-            {m ? <MoveCard m={m} no={moveNo(P - 1, startBlack)} active={viewingBest ? showBest : null} onAlt={(k) => setShowBest(k === showBest ? null : k)} /> : (
+            {m ? <MoveCard m={m} no={moveNo(P - 1, startBlack)} active={viewingBest ? showBest : null} onAlt={(k) => setShowBest(k === showBest ? null : k)} gameId={gameId} g={g} /> : (
               <div className="ac-card ac-move"><div className="muted small">Start position. Step through the moves or tap the graph.</div></div>
             )}
             <EvalGraph moves={a.moves} ply={P} onPick={setPly} />
@@ -212,18 +231,18 @@ export function AnalysisPanel({ gameId, record, onTrainDrill }: { gameId?: strin
               <div className="ac-chips scroll" aria-label="Key moments">
                 {a.critical.map((c) => {
                   const cm = a.moves[c];
-                  return <button key={c} className={'ac-chip' + (P === c + 1 ? ' on' : '')} onClick={() => setPly(c + 1)}><i style={{ background: CLASS_META[cm.cls].color }} />{moveNo(c, startBlack)} {cm.san}</button>;
+                  return <button key={c} className={'ac-chip' + (P === c + 1 ? ' on' : '')} onClick={() => setPly(c + 1)}><i style={{ background: displayClass(cm).color }} />{moveNo(c, startBlack)} {cm.san}</button>;
                 })}
               </div>
               </div>
             )}
             <ReportCard g={g} onJump={setPly} startBlack={startBlack} />
             {a.phases && <Phases a={a} side={side} />}
-            <OpeningNote g={g} a={a} onJump={setPly} />
-            {a.endgameReview && <EndgameNote g={g} a={a} onJump={setPly} onTrainDrill={onTrainDrill} />}
+            <OpeningNote g={g} onJump={setPly} />
+            {a.endgameReview && <EndgameNote g={g} onJump={setPly} onTrainDrill={onTrainDrill} />}
             {stale && gameId && (
               <div className="ac-card ac-row">
-                <span className="grow muted small">{prog > 0 ? `Re-analysing · ${Math.round(prog * 100)}%` : 'Older analysis: no alternatives or motifs.'}</span>
+                <span className="grow muted small">{prog > 0 ? `Re-analysing · ${Math.round(prog * 100)}%` : (a.version ?? 0) >= 3 ? 'Older analysis: no verification or confidence ratings.' : 'Older analysis: no alternatives or motifs.'}</span>
                 {prog === 0 && <button className="btn small" onClick={() => queueAnalysis(gameId, true, true)}>Re-analyse</button>}
               </div>
             )}
@@ -233,11 +252,12 @@ export function AnalysisPanel({ gameId, record, onTrainDrill }: { gameId?: strin
           {g.san.map((san, i) => {
             const ma = a?.moves[i];
             const white = (i + (startBlack ? 1 : 0)) % 2 === 0;
+            const dc = ma ? displayClass(ma) : null;
             return (
               <button key={i} className={'ac-mv' + (P === i + 1 ? ' on' : '')} onClick={() => setPly(i + 1)}>
                 {(white || i === 0) && <i>{moveNo(i, startBlack)}</i>}
                 {san}
-                {ma && MARK.includes(ma.cls) && <sup style={{ color: CLASS_META[ma.cls].color }}>{CLASS_META[ma.cls].glyph}</sup>}
+                {ma && dc && MARK.includes(ma.cls) && <sup style={{ color: dc.color }} title={dc.label}>{dc.glyph}</sup>}
               </button>
             );
           })}
@@ -265,7 +285,7 @@ function ReportCard({ g, onJump, startBlack }: { g: GameRecord; onJump: (p: numb
         <div className="ac-chips">
           {worst.map((m) => (
             <button key={m.ply} className="ac-chip" onClick={() => onJump(m.ply + 1)}>
-              <i style={{ background: CLASS_META[m.cls].color }} />{moveNo(m.ply, startBlack)} {m.san} <span className="muted">−{m.winLoss.toFixed(0)}%</span>
+              <i style={{ background: displayClass(m).color }} />{moveNo(m.ply, startBlack)} {m.san} <span className="muted">−{m.winLoss.toFixed(0)}%</span>
             </button>
           ))}
         </div>
@@ -279,11 +299,13 @@ function ReportCard({ g, onJump, startBlack }: { g: GameRecord; onJump: (p: numb
 function Summary({ g, a }: { g: GameRecord; a: GameAnalysisX }) {
   const sides: ('w' | 'b')[] = g.playerColor ? [g.playerColor, g.playerColor === 'w' ? 'b' : 'w'] : ['w', 'b'];
   const show: MoveClass[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'blunder', 'miss'];
+  const rel = reliability(a);
+  const shown = displayCounts(g, a); // "Unclear" moves get their own chip instead of the class they were not confirmed as
   return (
     <div className="ac-card ac-sum">
       {sides.map((sd, k) => {
-        const cnt = a.counts[sd] ?? {};
         const name = sd === 'w' ? g.white.name : g.black.name;
+        const { counts: cnt, unclear } = shown[sd];
         return (
           <div key={sd} className={'ac-sum-side' + (k === 0 ? ' me' : '')}>
             <div className="ac-sum-head">
@@ -295,27 +317,31 @@ function Summary({ g, a }: { g: GameRecord; a: GameAnalysisX }) {
               {show.filter((c) => cnt[c]).map((c) => (
                 <span key={c} title={CLASS_META[c].label}><i style={{ background: CLASS_META[c].color }}>{CLASS_META[c].glyph}</i>{cnt[c]}</span>
               ))}
+              {unclear > 0 && <span title="Unclear: the engine's evaluation was unstable"><i className="unclear" style={{ background: UNCLEAR_META.color }}>{UNCLEAR_META.glyph}</i>{unclear}</span>}
             </div>
           </div>
         );
       })}
-      <div className={'ac-rel ' + reliability(a).level} title="Accuracy is an estimate: Lichess-style win% model on Stockfish at a fixed depth.">
-        <span>{reliability(a).level === 'high' ? 'High' : reliability(a).level === 'medium' ? 'Medium' : 'Low'} reliability</span> · {reliability(a).note}
+      <div className={'ac-rel ' + rel.level} title="Accuracy is an estimate: Lichess-style win% model on Stockfish at a fixed depth. Brilliant/Great moves and errors are re-searched deeper before they are shown as certain.">
+        <span>{rel.level === 'high' ? 'High' : rel.level === 'medium' ? 'Medium' : 'Low'} reliability</span> · {rel.note}
+        {rel.engine && <div className="ac-rel-eng">{rel.engine}</div>}
       </div>
     </div>
   );
 }
 
-function MoveCard({ m, no, active, onAlt }: { m: MoveAnalysisX; no: string; active: number | null; onAlt: (k: number) => void }) {
-  const meta = CLASS_META[m.cls];
+function MoveCard({ m, no, active, onAlt, gameId, g }: { m: MoveAnalysisX; no: string; active: number | null; onAlt: (k: number) => void; gameId?: string; g: GameRecord }) {
+  const meta = displayClass(m);
   const alts = m.alts ?? (m.pv.length ? [{ uci: m.bestUci, san: m.bestSan, eval: m.evalBefore, line: m.pv }] : []);
   const quiet = m.cls === 'book' || m.cls === 'forced';
+  const prov = provenanceText(m, (c) => CLASS_META[c].label);
   return (
-    <div className="ac-card ac-move" style={{ borderLeftColor: meta.color }}>
+    <div className={'ac-card ac-move' + (meta.unclear ? ' unclear' : '')} style={{ borderLeftColor: meta.color }}>
       <div className="ac-move-head">
-        <span className="ac-badge" style={{ background: meta.color }}>{meta.glyph}</span>
+        <span className={'ac-badge' + (meta.unclear ? ' unclear' : '')} style={{ background: meta.color }}>{meta.glyph}</span>
         <b>{no} {m.san}</b>
         <span className="ac-move-cls" style={{ color: meta.color }}>{meta.label}</span>
+        {!quiet && (m.conf === 'low' || (m.conf === 'medium' && MARK.includes(m.cls))) && <span className={'ac-conf ' + m.conf}>{m.conf === 'low' ? 'low confidence' : 'unverified'}</span>}
         <span className="grow" />
         <span className="ac-eval">{m.san.endsWith('#') ? '#' : evalText(m.evalAfter)}</span>
       </div>
@@ -337,6 +363,43 @@ function MoveCard({ m, no, active, onAlt }: { m: MoveAnalysisX; no: string; acti
         </div>
       )}
       {!quiet && <div className="muted small">{m.winLoss > 0 ? `−${m.winLoss.toFixed(1)}% win chance · ` : ''}move accuracy {m.accuracy.toFixed(0)}%</div>}
+      {prov && <div className="ac-prov">{prov}{m.verified?.engine ? ` · ${m.verified.engine}` : ''}</div>}
+      {gameId && !quiet && <DeeperButton gameId={gameId} ply={m.ply} g={g} />}
+    </div>
+  );
+}
+
+/** "Analyse deeper": queued deeper search of this move (finished games only; refused while any game is in progress). */
+function DeeperButton({ gameId, ply, g }: { gameId: string; ply: number; g: GameRecord }) {
+  const s = useSave();
+  const [st, setSt] = useState<'queued' | 'running' | null>(() => deepStatus(gameId, ply));
+  const [msg, setMsg] = useState<{ t: string; bad?: boolean } | null>(null);
+  useEffect(() => {
+    setSt(deepStatus(gameId, ply));
+    setMsg(null);
+    return onDeeperAnalysis((id, p, state, info) => {
+      if (id !== gameId || p !== ply) return;
+      setSt(state === 'queued' || state === 'running' ? state : null);
+      if (state === 'failed') setMsg({ t: info?.error ?? 'The deeper search failed.', bad: true });
+      else if (state === 'done') setMsg({ t: 'Updated with the deeper search.' });
+      else if (state === 'cancelled') setMsg(null);
+    });
+  }, [gameId, ply]);
+  const blocked = deepenBlockReason(s, g);
+  if (st)
+    return (
+      <div className="ac-deep busy" aria-live="polite">
+        <span className="ac-spin" aria-hidden="true" />
+        <span className="grow small">{st === 'running' ? 'Searching deeper…' : 'Queued for a deeper search…'}</span>
+        <button className="ac-link" onClick={() => cancelDeeperAnalysis(gameId, ply)}>Cancel</button>
+      </div>
+    );
+  return (
+    <div className="ac-deep">
+      <button className="btn small" disabled={!!blocked} title={blocked ?? 'Search this position and the played move deeper'} onClick={() => void requestDeeperAnalysis(gameId, ply).then((why) => why && setMsg({ t: why, bad: true }))}>
+        Analyse deeper
+      </button>
+      {(msg || blocked) && <span className={'small ' + (msg?.bad || blocked ? 'ac-deep-why' : 'muted')}>{msg?.t ?? blocked}</span>}
     </div>
   );
 }
@@ -367,38 +430,38 @@ function Phases({ a, side }: { a: GameAnalysisX; side: 'w' | 'b' | null }) {
   );
 }
 
-function OpeningNote({ g, a, onJump }: { g: GameRecord; a: GameAnalysisX; onJump: (p: number) => void }) {
-  if (g.startFen !== START_FEN) return null;
-  const op = a.opening ?? g.opening;
-  const me = g.playerColor;
-  const exit = me && a.bookExit ? a.bookExit[me] : null;
-  const book = exit !== null && exit !== undefined ? bookMoves(g.moves.slice(0, exit)).slice(0, 3) : [];
-  const bookSan = book.map((b) => { try { const c = new Chess(); for (const u of g.moves.slice(0, exit!)) c.move(parseUci(u)); return c.move(parseUci(b.uci)).san; } catch { return null; } }).filter(Boolean);
-  const exitMove = exit !== null && exit !== undefined ? a.moves[exit] : null;
+function OpeningNote({ g, onJump }: { g: GameRecord; onJump: (p: number) => void }) {
+  const r = openingReview(g);
+  if (!r) return null;
   return (
     <div className="ac-card ac-note">
       <span className="ac-k">Opening</span>
-      <div><b>{op ? op.name : 'Unnamed opening'}</b> {op && <span className="muted small">{op.eco}</span>}</div>
-      {exitMove && (
-        <button className="ac-link" onClick={() => onJump(exit! + 1)}>
-          Left the book with {exitMove.san}{bookSan.length ? ` · theory: ${bookSan.join(', ')}` : ''}
-        </button>
+      <div><b>{r.name ?? 'Unnamed opening'}</b> {r.eco && <span className="muted small">{r.eco}</span>}</div>
+      {r.exit ? (
+        <>
+          <button className="ac-link" onClick={() => onJump(r.exit!.ply + 1)}>
+            Left the book with {r.exit.san}{r.theory.length ? ` · theory: ${r.theory.join(', ')}` : ''}
+          </button>
+          <div className="muted small">
+            {r.exit.unclear ? 'The engine could not judge the book exit reliably.' : r.costly ? `Leaving the book cost ${r.exit.loss.toFixed(0)}% win chance (${r.exit.label.toLowerCase()}).` : 'A playable way to leave theory.'}
+          </div>
+        </>
+      ) : (
+        <div className="muted small">{r.leftBy === 'opponent' ? 'Your opponent left the book first.' : r.leftBy === 'end' ? 'Followed theory to the end of the book line.' : 'Stayed in the book throughout.'}</div>
       )}
     </div>
   );
 }
 
-function EndgameNote({ g, a, onJump, onTrainDrill }: { g: GameRecord; a: GameAnalysisX; onJump: (p: number) => void; onTrainDrill?: (id: string) => void }) {
-  const r = a.endgameReview!;
-  const me = g.playerColor ?? 'w';
-  const score = g.result === '1/2-1/2' ? 0.5 : (g.result === '1-0') === (me === 'w') ? 1 : 0;
-  const errors = a.phases?.endgame[me].errors ?? 0;
+function EndgameNote({ g, onJump, onTrainDrill }: { g: GameRecord; onJump: (p: number) => void; onTrainDrill?: (id: string) => void }) {
+  const r = endgameSummary(g);
+  if (!r) return null;
   const drill = ENDGAME_DRILLS.find((d) => d.id === ENDGAME_GUIDE[r.type]?.drills[0]);
   return (
     <div className="ac-card ac-note">
       <span className="ac-k">Endgame</span>
-      <div className="ac-row"><b className="grow">{r.type}</b><button className="ac-link" onClick={() => onJump(r.ply)}>from move {Math.floor(r.ply / 2) + 1} · {r.winAtEntry[me]}%</button></div>
-      <div className="muted small">{endgameFeedback(r.type, r.winAtEntry[me], score, errors)}</div>
+      <div className="ac-row"><b className="grow">{r.type}</b><button className="ac-link" onClick={() => onJump(r.ply)}>from move {Math.floor(r.ply / 2) + 1} · {r.winAtEntry}%</button></div>
+      <div className="muted small">{r.text}</div>
       {drill && onTrainDrill && <button className="btn small ac-mt" onClick={() => onTrainDrill(drill.id)}>Drill: {drill.name}</button>}
     </div>
   );

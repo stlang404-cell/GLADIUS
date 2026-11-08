@@ -87,7 +87,7 @@ export type ClassifyInput = {
   prevCaptureTo?: string | null;
 };
 
-export type Classified = { cls: MoveClass; loss: number; sacrificed: number; recapture: boolean; onlyMove: boolean };
+export type Classified = { cls: MoveClass; loss: number; sacrificed: number; recapture: boolean; onlyMove: boolean; isBest: boolean };
 
 export function classifyMove(i: ClassifyInput): MoveClass {
   return classifyDetailed(i).cls;
@@ -95,11 +95,11 @@ export function classifyMove(i: ClassifyInput): MoveClass {
 
 export function classifyDetailed(i: ClassifyInput): Classified {
   const loss = Math.max(0, i.winBefore - i.winAfter);
-  const out = (cls: MoveClass, extra: Partial<Classified> = {}): Classified => ({ cls, loss, sacrificed: 0, recapture, onlyMove: false, ...extra });
+  const isBest = i.uci === i.bestUci || !!i.playedIsTop;
+  const out = (cls: MoveClass, extra: Partial<Classified> = {}): Classified => ({ cls, loss, sacrificed: 0, recapture, onlyMove: false, isBest, ...extra });
   const recapture = !!i.prevCaptureTo && i.uci.slice(2, 4) === i.prevCaptureTo;
   if (i.legalCount === 1) return out('forced');
   if (i.inBook && loss < THRESHOLDS.good) return out('book');
-  const isBest = i.uci === i.bestUci || !!i.playedIsTop;
   const sac = isBest || loss <= THRESHOLDS.brilliantNear ? verifiedSacrifice(i.fenBefore, i.uci, i.line) : 0;
   if (
     sac >= THRESHOLDS.brilliantMinOffer &&
@@ -223,6 +223,16 @@ export const CLASS_META: Record<MoveClass, { label: string; color: string; glyph
   blunder: { label: 'Blunder', color: '#C0392B', glyph: '??' },
   miss: { label: 'Missed win', color: '#A92D3A', glyph: '✗' },
 };
+
+/** Shown instead of the class when a claim is low confidence (see confidence.ts). ∞ is the standard "unclear" symbol. */
+export const UNCLEAR_META = { label: 'Unclear', color: '#8A8478', glyph: '∞' };
+
+/** Label/colour/glyph to SHOW for a move: low-confidence claims are "Unclear", never presented as certain. */
+export function displayClass(m: { cls: MoveClass; conf?: 'high' | 'medium' | 'low' }): { label: string; color: string; glyph: string; unclear: boolean } {
+  const unclear = m.conf === 'low' && UNCLEAR_CLASSES.includes(m.cls);
+  return unclear ? { ...UNCLEAR_META, unclear } : { ...CLASS_META[m.cls], unclear };
+}
+const UNCLEAR_CLASSES: MoveClass[] = ['brilliant', 'great', 'inaccuracy', 'mistake', 'blunder', 'miss'];
 
 /** Display order for summaries. */
 export const CLASS_ORDER: MoveClass[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'forced', 'inaccuracy', 'mistake', 'blunder', 'miss'];

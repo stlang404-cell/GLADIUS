@@ -7,7 +7,7 @@ import { Emblem } from './components/common';
 import { RANKS } from '../world/arenas';
 import { CLASS_META } from '../analysis/classify';
 import { getGame } from '../persist/save';
-import { postGameReport } from '../analysis/report';
+import { postGameReport, displayCounts } from '../analysis/report';
 import { analysisStatus } from './analysisQueue';
 
 const TERM: Record<string, string> = {
@@ -45,7 +45,8 @@ export function PostGameSheet({ pg, rec, onAnalyse, onRematch, onNext }: { pg: P
   }, [meta?.analysed, rec.id]);
   const title = pg.outcome === 'win' ? 'VICTORIA' : pg.outcome === 'loss' ? 'DEFEAT' : 'DRAW';
   const promoted = pg.rankAfter > pg.rankBefore;
-  const counts = full?.analysis && rec.playerColor ? (full.analysis.counts[rec.playerColor] as Record<string, number>) : null;
+  const shown = full?.analysis && rec.playerColor ? displayCounts(full, full.analysis as never)[rec.playerColor] : null;
+  const counts = shown ? (shown.counts as Record<string, number>) : null;
   const report = full ? postGameReport(full, analysisStatus(rec.id)) : null;
   const insight = report?.critical ? `Critical move — ${report.critical.san} (${report.critical.label}): ${report.critical.text}` : full?.analysis && rec.playerColor ? keyInsight(full.analysis.moves, rec.playerColor, full.startFen) : null;
   return (
@@ -79,6 +80,7 @@ export function PostGameSheet({ pg, rec, onAnalyse, onRematch, onNext }: { pg: P
           ))}
         </div>
       )}
+      {shown && shown.unclear > 0 && <div className="muted small">{shown.unclear} unclear move{shown.unclear > 1 ? 's' : ''} — open Full analysis and use “Analyse deeper”.</div>}
       {insight && <div className="pg-insight"><b>Insight</b><span>{insight}</span></div>}
       {report?.recommendation && <div className="pg-insight"><b>Next</b><span>{report.recommendation}</span></div>}
       {pg.rankNote && (

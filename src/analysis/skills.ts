@@ -3,6 +3,7 @@ import { winPercent } from '../engine/uci';
 import { asX, type MoveAnalysisX } from './types';
 import { gameStat, scoreOf, type GameStat } from './weakness';
 import { sideOf } from './report';
+import { isTrusted } from './confidence';
 
 /**
  * Personal skill profile from REAL analysed games only (pure; no engine).
@@ -36,6 +37,9 @@ import { sideOf } from './report';
  *   blunders     raw = 100 · e^(−blunders per 40 moves / 0.9)                    (K = 120 moves)
  *   consistency  raw = 100 − 2.5 · stdev(move accuracy), non-book moves          (K = 80 moves)
  * Accuracy is also broken down by opponent Elo band (200-point bands).
+ * v0.4: classifications (blunders, tactical chances found/missed) come only
+ * from trusted moves — high confidence, or pre-v0.4 analyses; "Unclear" moves
+ * are not counted. Accuracies still use every move.
  */
 
 export type SkillKey = 'opening' | 'tactics' | 'positional' | 'endgame' | 'defence' | 'conversion' | 'recovery' | 'blunders' | 'consistency';
@@ -122,14 +126,15 @@ function perGame(g: GameRecord): PerGame | null {
     const ph = phaseOf(m, i);
     if (i >= 10 && wb >= 80) r.winning = true;
     if (i >= 10 && wb <= 30) r.worse = true;
-    if (m.cls === 'blunder' || m.cls === 'miss') r.blunders++;
+    const trusted = isTrusted(m);
+    if ((m.cls === 'blunder' || m.cls === 'miss') && trusted) r.blunders++;
     if (m.cls !== 'book' && m.cls !== 'forced') push(r.all, m.accuracy);
     if (ph === 'opening') push(r.opening, m.accuracy);
     if (ph === 'endgame') push(r.endgame, m.accuracy);
     if (wb < 40 && m.cls !== 'forced') push(r.defence, m.accuracy);
     const tags = new Set(m.tags ?? []);
     const tactical = tags.has('onlyMove') || tags.has('missedWin') || tags.has('missedMate') || m.cls === 'brilliant' || m.cls === 'great';
-    if (tactical && m.cls !== 'forced' && !tags.has('recapture')) {
+    if (tactical && trusted && m.cls !== 'forced' && !tags.has('recapture')) {
       r.tacticChances++;
       if (m.cls === 'brilliant' || m.cls === 'great' || m.cls === 'best') r.tacticFound++;
     }

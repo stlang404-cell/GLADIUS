@@ -31,7 +31,21 @@ describe('analyser with Stockfish (MultiPV 3)', () => {
       expect(p.margin).toBeGreaterThanOrEqual(10);
       expect(p.fen.split(' ')[1]).toBe('w');
     }
-    expect((a.puzzles ?? []).length).toBeGreaterThan(0);
+    // v0.4: puzzles come only from high-confidence mistakes whose solution stays unique after the
+    // deeper verification. Nxf7?? is a confirmed blunder, but at depth 14 the refutation is no longer
+    // unique (O-O and Bxf7+ are close), so no puzzle is made from it.
+    for (const p of a.puzzles ?? []) expect(a.moves[p.ply].conf).toBe('high');
+  }, 120000);
+
+  it('a missed mate in one becomes a verified, high-confidence puzzle', async () => {
+    const g = importPgn('1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. d3 Nxh5 0-1');
+    const a = (await analyseGame(eng, g.moves, g.startFen, { depth: 10, trainSide: 'w' }))!;
+    const d3 = a.moves[6];
+    expect(d3.san).toBe('d3');
+    expect(['miss', 'blunder']).toContain(d3.cls);
+    expect(d3.conf).toBe('high');
+    expect(d3.verified?.by).toBe('auto');
+    expect(a.puzzles?.map((p) => p.line[0])).toContain('h5f7');
   }, 120000);
 
   it('Opera Game: few brilliancies, decisive finish recognised', async () => {

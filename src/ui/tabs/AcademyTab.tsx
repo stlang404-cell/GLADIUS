@@ -83,13 +83,14 @@ export { CLASS_META };
 
 // ------------------------------------------------------------------ dev helper (?debug only)
 /**
- * `window.__gladiusAcademy.importGames([{ moves, result, color, daysAgo }])`
+ * `window.__gladiusAcademy.importGames([{ moves, result, color, daysAgo, analysis? }])`
  * archives UNRATED casual games for the player (so no Elo, no achievement
- * eligibility) and queues them for analysis. Only installed with ?debug.
+ * eligibility) and queues them for analysis — or, with `analysis`, stores that
+ * precomputed analysis as-is (screenshots / UI checks). Only installed with ?debug.
  */
 if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('debug')) {
   (window as unknown as Record<string, unknown>).__gladiusAcademy = {
-    async importGames(list: { moves: string[]; result: GameRecord['result']; color: 'w' | 'b'; daysAgo?: number; oppRating?: number }[]) {
+    async importGames(list: { moves: string[]; result: GameRecord['result']; color: 'w' | 'b'; daysAgo?: number; oppRating?: number; analysis?: GameRecord['analysis'] }[]) {
       const s = getSave();
       const ids: string[] = [];
       for (let k = 0; k < list.length; k++) {
@@ -104,9 +105,10 @@ if (typeof location !== 'undefined' && new URLSearchParams(location.search).has(
           date: new Date(Date.now() - (x.daysAgo ?? 0) * 864e5).toISOString(), white: x.color === 'w' ? me : them, black: x.color === 'w' ? them : me,
           playerColor: x.color, startFen: START_FEN, moves: x.moves, san, result: x.result, termination: 'agreement', arena: k % 3, source: 'player',
           opening: identifyOpening(x.moves),
+          ...(x.analysis ? { analysis: x.analysis } : {}),
         };
         await archiveGame(g);
-        queueAnalysis(g.id);
+        if (!x.analysis) queueAnalysis(g.id);
         ids.push(g.id);
       }
       return ids;

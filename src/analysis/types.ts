@@ -1,4 +1,4 @@
-import type { GameAnalysis, MoveAnalysis, TrainingPosition } from '../game/state';
+import type { GameAnalysis, MoveAnalysis, MoveClass, TrainingPosition } from '../game/state';
 
 /**
  * v3 analysis extensions. These are OPTIONAL fields stored alongside the
@@ -6,7 +6,7 @@ import type { GameAnalysis, MoveAnalysis, TrainingPosition } from '../game/state
  * in game/state.ts (records are plain JSON, so extra fields persist as-is and
  * old analyses simply lack them). Readers must treat every field as optional.
  */
-export const ANALYSIS_VERSION = 3;
+export const ANALYSIS_VERSION = 4;
 
 export type Phase = 'opening' | 'middlegame' | 'endgame';
 export const PHASES: Phase[] = ['opening', 'middlegame', 'endgame'];
@@ -35,6 +35,30 @@ export type MoveAnalysisX = MoveAnalysis & {
   sacrificed?: number;
   /** Mate distance for tags allowsMate / missedMate. */
   mateIn?: number;
+  // ---- v4 (confidence; see confidence.ts). All optional: older analyses lack them.
+  /** Depth of the searches that judged this move (shallower of before/after; finished positions are exact). */
+  depth?: number;
+  /** Nodes searched for the positions before and after the move. */
+  nodes?: number;
+  /** Instability in win% (depth volatility or root-vs-after inconsistency, whichever is larger). */
+  instab?: number;
+  conf?: 'high' | 'medium' | 'low';
+  /** Original claim of a low-confidence Brilliant/Great move that was demoted (see confidence.ts). */
+  claim?: MoveClass;
+  /** Provenance of a deeper search of this move (automatic verification or the player's request). */
+  verified?: Verification;
+};
+
+export type Verification = {
+  by: 'auto' | 'user';
+  depth: number;
+  nodes: number;
+  /** Class before the deeper search, when it changed. */
+  from?: MoveClass;
+  /** Engine label (e.g. "Stockfish 19 Lite …") when known. */
+  engine?: string;
+  /** Timestamp (ms) of a player-requested search. */
+  at?: number;
 };
 
 export type PhaseStat = { acc: number | null; moves: number; errors: number /* mistakes + blunders + misses */; inaccuracies: number };
@@ -65,6 +89,8 @@ export type GameAnalysisX = Omit<GameAnalysis, 'moves'> & {
   puzzles?: PuzzleCandidate[];
   /** Ply index at which each side first left the opening book (or null). */
   bookExit?: { w: number | null; b: number | null };
+  /** v4: summary of the verification pass. */
+  verification?: { moves: number; positions: number; maxDepth: number; unclear: number; engine?: string; fullNet?: boolean };
 };
 
 export type Attempt = { t: number; ok: boolean };

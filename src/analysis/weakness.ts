@@ -6,6 +6,7 @@ import { openingFamily } from '../chess/openings';
 import { phaseSeries } from './phase';
 import { PHASES, type GameAnalysisX, type MoveAnalysisX, type Phase } from './types';
 import { endgameVerdict } from '../chess/endgames';
+import { isTrusted } from './confidence';
 
 /**
  * Personal weakness tracking and improvement history, derived ONLY from the
@@ -26,6 +27,8 @@ import { endgameVerdict } from '../chess/endgames';
  *   defence     mistakes or worse played while already worse (< 40 win%)
  * Rates are per relevant game; `severity` divides by a reference rate (what a
  * solid club player typically shows) so categories are comparable.
+ * v0.4: only trusted (high-confidence, or pre-v0.4) classifications count as
+ * errors or brilliancies; "Unclear" moves are left out (confidence.ts).
  */
 
 export type WeaknessKey = 'tactics' | 'safety' | 'opening' | 'endgame' | 'conversion' | 'defence';
@@ -62,7 +65,8 @@ export type GameStat = {
   cat: Record<WeaknessKey, number>;
 };
 
-const isErr = (c: MoveClass) => c === 'mistake' || c === 'blunder' || c === 'miss';
+const isErrCls = (c: MoveClass) => c === 'mistake' || c === 'blunder' || c === 'miss';
+const isErr = (m: MoveAnalysisX) => isErrCls(m.cls) && isTrusted(m);
 
 function fensOf(g: GameRecord): string[] {
   const c = new Chess(g.startFen);
@@ -106,7 +110,7 @@ export function gameStat(g: GameRecord): GameStat | null {
   for (const p of PHASES) {
     const ms = mine.filter((x) => x.phase === p);
     phaseAcc[p] = ms.length ? Math.round((ms.reduce((s, x) => s + x.m.accuracy, 0) / ms.length) * 10) / 10 : null;
-    phaseErrors[p] = ms.filter((x) => isErr(x.m.cls)).length;
+    phaseErrors[p] = ms.filter((x) => isErr(x.m)).length;
   }
   let reachedWinning = false;
   for (const { m, phase, i } of mine) {
@@ -114,10 +118,10 @@ export function gameStat(g: GameRecord): GameStat | null {
     const legacy = !m.tags;
     const winBefore = color === 'w' ? winPercent(m.evalBefore) : 100 - winPercent(m.evalBefore);
     if (i >= 10 && winBefore >= 80) reachedWinning = true;
-    const err = isErr(m.cls);
+    const err = isErr(m);
     if (err && (tags.has('missedWin') || tags.has('missedMate') || (legacy && /[x+#]/.test(m.bestSan)))) cat.tactics++;
     if (err && (tags.has('hangs') || tags.has('allowsMate'))) cat.safety++;
-    if (phase === 'opening' && (err || m.cls === 'inaccuracy')) cat.opening++;
+    if (phase === 'opening' && (err || (m.cls === 'inaccuracy' && isTrusted(m)))) cat.opening++;
     if (phase === 'endgame' && err) cat.endgame++;
     if (err && winBefore < 40) cat.defence++;
   }
@@ -127,7 +131,8 @@ export function gameStat(g: GameRecord): GameStat | null {
     const v = endgameVerdict(a.endgameReview.winAtEntry[color], score);
     if (v === 'spoiled' && a.endgameReview.winAtEntry[color] >= 70) cat.endgame++;
   }
-  const cnt = a.counts[color] ?? {};
+  const cnt: Partial<Record<MoveClass, number>> = {};
+  for (const { m } of mine) if (isTrusted(m)) cnt[m.cls] = (cnt[m.cls] ?? 0) + 1;
   return {
     id: g.id,
     date: g.date,
