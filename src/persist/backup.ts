@@ -1,7 +1,9 @@
 import { sumString } from './layout';
 
 /**
- * Rolling snapshots of the whole Save (format 2). Stored gzip-compressed when
+ * Rolling snapshots. Format 2 (v0.2–v0.3, still read and used as a fallback):
+ * the whole Save as JSON. Format 3 (v0.4, see offload.ts): the committed parts
+ * of one generation in a binary container, built off the main thread. Stored gzip-compressed when
  * CompressionStream exists (all current browsers, Node ≥ 18), otherwise as a
  * plain JSON string. The checksum is over the uncompressed JSON.
  */
@@ -40,6 +42,25 @@ export async function decompressText(enc: string, data: ArrayBuffer | string): P
   if (!hasCompression()) throw new Error('This browser cannot read compressed backups');
   const stream = new Blob([data as ArrayBuffer]).stream().pipeThrough(new DecompressionStream('gzip'));
   return await new Response(stream).text();
+}
+
+/** gzip bytes (v0.4 backups); stored raw when CompressionStream is unavailable. */
+export async function compressBytes(u: Uint8Array): Promise<{ enc: 'gzip' | 'raw'; data: ArrayBuffer }> {
+  if (hasCompression()) {
+    try {
+      const stream = new Blob([u as BlobPart]).stream().pipeThrough(new CompressionStream('gzip'));
+      return { enc: 'gzip', data: await new Response(stream).arrayBuffer() };
+    } catch {
+      /* fall through */
+    }
+  }
+  return { enc: 'raw', data: u.slice().buffer as ArrayBuffer };
+}
+
+export async function decompressBytes(data: ArrayBuffer): Promise<Uint8Array> {
+  if (!hasCompression()) throw new Error('This browser cannot read compressed backups');
+  const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
 export function gamesOf(save: { player?: { w?: number; d?: number; l?: number } }): number {

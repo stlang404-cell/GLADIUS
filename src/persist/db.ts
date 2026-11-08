@@ -61,10 +61,18 @@ export const idb = {
   clear: (store: StoreName) => tx(store, 'readwrite', (s) => s.clear()),
 };
 
-export type Op = { store: StoreName; key: string; value?: unknown; del?: boolean };
+/** `n`: approximate size in bytes (used to spread large commits over several tasks). */
+export type Op = { store: StoreName; key: string; value?: unknown; del?: boolean; n?: number };
+/**
+ * v0.4: puts are issued in batches of about this many bytes; the next batch is
+ * issued from the success callback of the previous one (same transaction), so
+ * the browser's synchronous structured-clone of a large commit is split over
+ * several tasks instead of one long one.
+ */
+export const PUT_BATCH_BYTES = 1 << 20;
 
 /** Test instrumentation: counts and an optional fault (abort after N puts). */
-export const dbStats = { txs: 0, puts: 0, dels: 0, putKeys: [] as string[] };
+export const dbStats = { txs: 0, puts: 0, dels: 0, batches: 0, putKeys: [] as string[] };
 export const dbFaults: { abortAfterPuts: number | null; crash: boolean; dead: boolean } = { abortAfterPuts: null, crash: false, dead: false };
 
 export class CommitConflict extends Error {
@@ -108,32 +116,44 @@ export function commitOps(
           t.abort();
         };
         function apply() {
+          let i = 0;
           let puts = 0;
-          for (const o of ops) {
-            const s = t.objectStore(o.store);
-            if (o.del) {
-              s.delete(o.key);
-              dbStats.dels++;
-              continue;
+          const step = () => {
+            let budget = 0;
+            while (i < ops.length) {
+              const o = ops[i++];
+              const s = t.objectStore(o.store);
+              if (o.del) {
+                s.delete(o.key);
+                dbStats.dels++;
+                continue;
+              }
+              if (dbFaults.abortAfterPuts !== null && puts >= dbFaults.abortAfterPuts) {
+                dbFaults.abortAfterPuts = null;
+                if (dbFaults.crash) dbFaults.dead = true;
+                t.abort(); // simulated crash: nothing of this transaction survives
+                return;
+              }
+              const r = s.put(o.value, o.key);
+              puts++;
+              dbStats.puts++;
+              dbStats.putKeys.push(o.key);
+              budget += o.n ?? 0;
+              if (budget >= PUT_BATCH_BYTES && i < ops.length) {
+                dbStats.batches++;
+                r.onsuccess = step;
+                return;
+              }
             }
-            if (dbFaults.abortAfterPuts !== null && puts >= dbFaults.abortAfterPuts) {
-              dbFaults.abortAfterPuts = null;
-              if (dbFaults.crash) dbFaults.dead = true;
-              t.abort(); // simulated crash: nothing of this transaction survives
-              return;
+            if (gc) {
+              const s = t.objectStore(gc.store);
+              const r = s.getAllKeys();
+              r.onsuccess = () => {
+                for (const k of r.result as string[]) if (!gc.keep.has(k)) s.delete(k);
+              };
             }
-            s.put(o.value, o.key);
-            puts++;
-            dbStats.puts++;
-            dbStats.putKeys.push(o.key);
-          }
-          if (gc) {
-            const s = t.objectStore(gc.store);
-            const r = s.getAllKeys();
-            r.onsuccess = () => {
-              for (const k of r.result as string[]) if (!gc.keep.has(k)) s.delete(k);
-            };
-          }
+          };
+          step();
         }
       }),
   );

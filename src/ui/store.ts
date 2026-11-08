@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { Save, GameRecord, LibraryMeta } from '../game/state';
-import { persistSave, storeGame } from '../persist/save';
+import { persistSave, storeGame, noteMutation } from '../persist/save';
 import { ensureSaveV2 } from '../game/legacy';
 
 /**
@@ -12,6 +12,11 @@ import { ensureSaveV2 } from '../game/legacy';
  * writes only the active game; a finished game writes only changed parts of the
  * world. Rolling backups are requested after every archived game and taken when
  * the backup policy says one is due (every ~10 games or at a new season).
+ *
+ * v0.4: commits are prepared in slices that yield to the main thread; every
+ * mutation is reported with `noteMutation()` so a commit being prepared while
+ * the save changes starts again on the new state (a commit is always one
+ * consistent moment).
  */
 let save: Save | null = null;
 let version = 0;
@@ -27,6 +32,7 @@ export function hasSave() {
 }
 
 export function setSave(s: Save | null) {
+  noteMutation();
   save = s ? ensureSaveV2(s) : null; // idempotent v2 world/career upgrade for any loaded or imported save
   bump();
 }
@@ -53,6 +59,7 @@ function bump() {
 
 export function mutate(fn: (s: Save) => void, opts: { immediate?: boolean; backup?: boolean } = {}) {
   if (!save) return;
+  noteMutation();
   fn(save);
   bump();
   scheduleSave(opts);
@@ -60,6 +67,7 @@ export function mutate(fn: (s: Save) => void, opts: { immediate?: boolean; backu
 
 export function scheduleSave(opts: { immediate?: boolean; backup?: boolean } = {}) {
   if (!save) return;
+  noteMutation(); // callers mutate the save before asking for a save
   if (timer) clearTimeout(timer);
   const run = () => {
     timer = null;

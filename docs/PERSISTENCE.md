@@ -1,4 +1,4 @@
-# Persistence (save format 2; layout v3 in GLADIUS v0.3 — see the last section)
+# Persistence (save format 2; layout v3 in GLADIUS v0.3, layout v4 in v0.4 — see the last two sections)
 
 GLADIUS keeps everything on the device in IndexedDB (database `gladius`, version 2).
 Until v0.1 the whole career + world was one JSON document (~6 MB after a few seasons)
@@ -253,3 +253,89 @@ Long run (`scripts/soak-world.ts`, 40 seasons): JSON grows ≈ 220 KB / season (
 - Post-game prep (~130 ms here) is main-thread work; on a phone expect 2–3× more.
 - Backups and exports are whole-save JSON (~30 MB, ~5.5 MB gzipped); a backup is taken at most every 10 games / per season.
 - The award registry grows without bound by design (permanent honours); at ~300 awards per season it adds ~0.2 MB per season.
+
+---
+
+## v0.4: layout version 4 (journal, mirror, sliced commits, worker backups)
+
+Goal: no long main-thread task when saving (target: no single task above ~50 ms), far fewer bytes per game, without giving up atomicity, recovery, backups, export/import or old saves.
+
+Code: `src/persist/layout4.ts` (population layout v4: mirror, scan, journal, base parts, assembly), `src/persist/tj.ts` (tabular JSON), `src/persist/offload.ts` (backup container, export from the committed parts), `src/persist/persist.worker.ts` (module worker), `src/persist/save.ts` (commit pipeline, load, recovery), `src/persist/db.ts` (put batching). `src/persist/layout.ts` is unchanged and still reads (and, for tests, writes) layouts 2 and 3. Tests: `tests/persist.journal.test.ts` (new), `tests/migrate.v04.test.ts` (new, genuine v0.3 fixture), `tests/persist.split.test.ts` (updated to v4 semantics), `tests/persist.perf.test.ts` (rewritten).
+
+### Profile of v0.3 (measured before changing anything)
+
+Node CPU profiles of the post-game commit on the 25k world, plus headless Chromium with real IndexedDB:
+
+- The whole commit preparation was **one synchronous task of ~110–150 ms**: the hot-column pass (17 passes over 26,700 objects through per-key getter closures), re-encoding every h2h chunk (2.7 MB, all 27 chunks change every day), re-serialising ~1.6 MB of cold / rh / warm chunks for the rolling verification, the cold / warm / rh signatures, JSON of 338 tournaments and 2.2 MB of world arrays, and checksums of the 4.7 MB written.
+- After a reload it was worse than after a fresh start: **competitor objects assembled by the loader were in V8 dictionary mode** (more than ~16 properties added with keyed stores), so every property access — the simulation's and the next commit's — was 2–3× slower until the objects were recreated.
+- In Chromium the IndexedDB put of ~4.7 MB is serialised in the same task, a backup (whole-save `JSON.stringify` + checksum + gzip) was a **650–700 ms task** every ~10 games, an export a 300–400 ms task, a load a 350–500 ms task.
+
+### What changed
+
+1. **Mirror + journal for the population.** The persistence layer keeps a mirror of what is persisted: hot fields as typed arrays indexed by competitor serial, h2h / rating-history words per serial (plus the h2h opponent id strings, so an unchanged list is recognised by identity without re-parsing ids), per-member signatures and content hashes for the JSON families. A full commit compares the live population with the mirror and writes one **journal part `jr/<gen>`** with only what differs: appended index entries, hot cells (rows shared by the columns that change a lot, `R`, or per-column rows), blob patches (`SET` / `SPLICE prefix,suffix,middle` / `DELETE` in Int32 words: an h2h result is usually one word) and family rows (tabular JSON). A day touches ~8,000 competitors; the journal is ~0.6–0.7 MB instead of ~4 MB of columns and chunks.
+2. **Generation rule.** Every manifest entry records the generation `g` that wrote the part. On load the journals are applied in generation order, each only to base parts older than itself (journal `J` applies to base `B` iff `J > B`). A base rewritten after a journal is therefore never overwritten by it, and a journal is dropped once every base it touches is newer. Journals, bases and the manifest flip are still one IndexedDB transaction.
+3. **Compaction.** When the live journals exceed 4 MB or 48 records (`persistTuning`), the commit folds them into new base parts instead of writing a journal: hot columns (dense by serial), h2h / rh chunks (Int32 `[serial, len, words…]`), and the cold / warm chunks the journals touched, plus chunks where more than half the stored members are no longer indexed. About one commit in ten compacts (~4.5 MB). Chunks with no indexed member are deleted; pruned competitors no longer force cold chunk rewrites (a chunk may hold stale members until it is next rebuilt).
+4. **Encodings.** Rating histories are binary (Int32 pairs; a season sample is a 7-word `SPLICE`). Cold / warm chunks and the world arrays (awards, history, chronicle, feuds, …) are **tabular JSON** (`tj.ts`: key lists once per shape, dictionary columns for repeated strings; lossless, key order kept, plain JSON fallback): cold 15.9 → 7.6 MB, awards 2.3 → 1.1 MB (UTF-16 bytes). The award registry therefore grows about half as fast as in v0.3 (~0.11 MB / season instead of ~0.22 MB, estimated from the chunk sizes; not re-measured over 40 seasons). Change detection for arrays still compares plain JSON with the last written text (fast, exact); only changed chunks are re-encoded.
+5. **Sliced preparation.** Commit preparation is a generator run in slices of `sliceMs` (8 ms) with `scheduler.yield()` (MessageChannel / `setTimeout` fallback) in between. Nothing in the tracker or mirror changes before the final synchronous section (apply the scan to the mirror, assemble puts and manifest), so a restart is free. **Mutation guard:** `noteMutation()` (called by the UI store on every `mutate`, `scheduleSave`, `setSave`) and every `persistSave` bump an epoch; if it moved during a yield, the preparation starts again on the latest state (merged with a waiting request). The cheap probe of world / player scalars is re-checked before the final section as a second guard. After two restarts the preparation runs without yielding, so a stream of edits cannot starve the save. Base parts for a compaction are built (sliced) as the mirror will be once the scan is applied.
+6. **Put batching.** `commitOps` issues puts in ~1 MB batches, the next batch from the success callback of the previous one — same transaction, but the browser's structured-clone work is spread over several tasks.
+7. **Worker.** Backups and exports no longer touch the live Save: `persist.worker.ts` (a Vite module worker) reads the committed generation (manifest + parts, one read-only transaction) and builds a **backup v3** (binary container of the parts — JSON as UTF-8, buffers as they are — gzip, checksum over the container) or the **export file** (unchanged format version 2: it assembles the Save from the parts and stringifies it there). `exportAll` first commits the live save. Without a usable worker (tests, very old browsers, a worker error) the same functions run inline; if that fails too, v0.3's JSON backup / live-object export is used.
+8. **Load.** Reading, checksum verification, decoding and assembly are sliced. Competitors are rebuilt on a clone of a template with the creation-order keys, so they keep fast properties (and the same hidden classes as fresh ones) — this also speeds up the simulation after a reload. The mirror is filled from what was just read (warm verification baselines included); cold baselines are computed in background slices.
+9. **Verification windows.** Hot columns, h2h, rating histories (exact comparison on the verification turn; first / last sample otherwise), world, tournaments and arrays are compared exactly on every full commit. Cold / warm records use signatures (now also the competitor's key count, so added / deleted fields are seen at once) plus a rolling content-hash verification: 1/16 of warm records and 1/64 of cold records per full commit (v0.3: 1/8 of chunks). An edit no signature can see (a value of an unknown field changed in place, a "never changes" cold field) is saved within 16 (warm) / 64 (cold) full commits.
+
+### Layout v4 parts
+
+`layoutSizes()` stays for v3; v4 manifests record `sizes: { cold: 250, warm: 100, h2h: 1024, rh: 1024, v: 4 }` and `g` in every part entry.
+
+| Part | Contents |
+|---|---|
+| `meta`, `active`, `player`, `world`, `tour/index`, `tour/<id>` | as before (JSON) |
+| `wa/<key>/index`, `wa/<key>/<n>` | world arrays, 128 per chunk, tabular JSON |
+| `pop/index` | Int32 serials in array order (−1 = non-standard id) |
+| `pop/odd` | competitors with non-standard ids, whole, JSON (normally absent); `pop/raw` if ids are not unique |
+| `pop/hot/<key>` | 17 columns dense by serial (i8 / i16 / i32 / f64 + tags: null, not stored) |
+| `pop/h2h/<n>`, `pop/rh/<n>` | Int32 `[serial, len, words…]`, 1,024 serials per chunk |
+| `pop/cold/<n>`, `pop/warm/<n>` | `{ ids, t: tabular rows }`, 250 / 100 serials per chunk |
+| `jr/<gen>` | journal: `{ k: 'jr', h: JSON header, b: ArrayBuffer[] }` (index appends, hot cells, blob ops, family rows) |
+
+Backups: `slot0..2` now hold format 3 (`{ v: 3, enc: 'gzip', data, checksum, bytes, gen, season, games, … }`); format 2 (v0.3) and schema-1 backups are still listed, verified and restorable.
+
+### Integrity (unchanged guarantees, new tests)
+
+- One transaction per commit; journals and bases are ordinary parts under the manifest; old keys are deleted only after the new manifest. `tests/persist.journal.test.ts`: a crash after the first put of a journal commit and in the middle of a compaction both leave the previous generation loadable exactly, and the app carries on from it.
+- Damaged base part under live journals → per-competitor repair from the backup (journal patches for a damaged chunk are not applied). Damaged journal → treated as structural (it may hold new index members): the newest backup is restored; without one the readable records are kept and the loss is reported; then healed.
+- Randomised test: 60 rounds of edits of every kind the layout carries (simulated days, h2h / rating-history patches, non-encodable values, null / NaN / −0 / strings in hot fields, deleted fields, unknown fields, debuts, pruning, non-standard ids, style changes) with compactions every few commits and reloads every 6 rounds: exact canonical equality every time, no orphan records.
+- Mutation guard test: edits during a sliced preparation (noted, and an un-noted world day caught by the probe) restart it; the committed save is the final state.
+- Migration: `tests/migrate.v04.test.ts` uses `tests/fixtures/v03-layout.json.gz`, a genuine IndexedDB dump written by the v0.3 code (layout 3: positional hot columns, JSON cold / rh / warm, binary h2h; 413 competitors, 14 games, a game in progress) with a v0.3 format-2 backup and a v0.3 export file. It loads exactly; the first commit rewrites it in layout 4 with no orphan keys; a crash during that commit leaves the v0.3 save loadable; days later it reloads exactly; the v0.3 backup restores; the v0.3 export imports and a v0.4 export of it imports back identically. v0.2 saves keep loading through the same path (`tests/migrate.v03.test.ts`), schema-1 documents through `migrateLegacy`.
+
+### Results: v0.3 vs v0.4 (same 25k world, measured)
+
+World: `createWorld(4242)` + 3 seasons (26,700 competitors, 338 tournaments; 29.6 MB of JSON), 30 finished games (one crosses a season boundary). **Browser**: headless Chromium 153 (Playwright), real IndexedDB, production build of a bench page that drives `persistSave` exactly as the store does (`{ backup: true }` after each game); long tasks from `PerformanceObserver('longtask')` (≥ 50 ms). **Node**: Node 22 + fake-indexeddb (in-memory; wall times are a rough guide only). Machine: shared 4-vCPU Xeon with other jobs running (load average 1.7–6.7 during the runs); two alternating runs per version, ranges shown. Expect lower numbers on a quiet desktop and 2–3× higher on a phone. "Bytes" counts JSON as UTF-16 (2 bytes per char) and binary as bytes, as in v0.2/v0.3.
+
+| | v0.3 | v0.4 |
+|---|---|---|
+| Post-game commit: longest main-thread task (browser) | **108–113 ms** median (max 615–621), 1 long task per commit | **no task ≥ 50 ms**; longest slice 11.7–11.9 ms median (max 30–32) |
+| Post-game commit: total main-thread preparation | browser 108–113 ms; Node 151–153 ms | browser 61–74 ms; Node 91 ms (in ~10–15 slices) |
+| Post-game commit: written | 4,664 KB (every hot column + every h2h chunk + …) | 1,060 KB median, 1,386–1,500 KB mean incl. a compaction every ~10 games |
+| Season-boundary commit | 5 long tasks, longest 667–692 ms; 28.9 MB written | no long task, longest slice 16–18 ms; 15.1 MB written (compaction; style drift touches ~2,000 cold records) |
+| Commit that takes a backup (browser wall) | 1.36–1.47 s, long tasks up to 666–690 ms | 0.77–0.91 s, no long task (worker) |
+| Backup snapshot | 1.30–1.34 s on the main thread, 5.68 MB gzip | 0.77–0.83 s in the worker (Node inline), 4.95 MB gzip |
+| Export (browser) | 296–417 ms, one long task of the same length | 656–836 ms wall, no long task (worker; includes committing first) |
+| Cold load (browser wall / longest task) | 428–500 ms / 348–403 ms task | 319–437 ms / no task ≥ 50 ms |
+| Cold load (Node) | 555–722 ms | 467–486 ms |
+| First commit after a load | 176–187 ms (one task) | 63–73 ms (sliced) |
+| In-game move (light commit) | 0.8 ms | 0.7–0.8 ms |
+| Stored size (sum of parts) | 37.6 MB (965 parts) | 21.2 MB (884 parts) after 30 games; 18.8 MB right after a rewrite |
+| IndexedDB usage incl. backups (`navigator.storage.estimate`) | 24.9 MB | 22.1 MB |
+| JS heap: loaded save + tracker / tracker alone (Node) | 121.9 MB / 18.6 MB | 85.9 MB / 21.9 MB (fast-mode objects are smaller; the mirror costs ~3 MB more than v0.3's string cache) |
+| Full rewrite (restore / import / migration), Node | 390–400 ms wall, one task | 310–410 ms prep in slices, longest 28–54 ms |
+
+Reproduce: `npx vitest run tests/persist.perf.test.ts` prints the Node figures for v0.4 and checks generous budgets (median longest slice < 60 ms, median written < 8% of the save, median light commit < 10 ms). The A/B scripts (Node bench and the Chromium bench page with a v0.3 copy of `src/persist` taken with `git show HEAD:…`) were run from a scratch directory; the method is the one described above.
+
+### Limits (honest)
+
+- Total main-thread work per post-game commit is still ~60–90 ms on this box (spread over ~10 slices): reading 26,700 competitors' hot fields, h2h lists and signatures has to happen on the main thread, because the live Save is there (a worker would need a copy of it, which costs more than the scan). On a phone expect 2–3×: still no long task, but more total CPU.
+- A preparation that is restarted twice runs in one go (~60–100 ms). The guard relies on mutations going through the store (or `persistSave`); a mutation that bypasses both and changes nothing the probe sees, during a yield, could still produce a commit mixing two moments — the next commit fixes it.
+- A compaction (about every 10 games, or at a season boundary) writes ~4.5–15 MB; the bytes are written in ~1 MB batches, but IndexedDB disk I/O is proportionally larger for that commit.
+- Verification of edits the signatures cannot see is slower than in v0.3 (16 / 64 full commits instead of 8).
+- Backups and exports are built from the *committed* save. Exports commit the live save first; if that commit fails, the live object is exported on the main thread as in v0.3.
+- Import (`importAll`) still parses and checksums the file on the main thread (rare, user-initiated).

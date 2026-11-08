@@ -3,10 +3,10 @@ import { IDBFactory } from 'fake-indexeddb';
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   wrap, persistSave, loadSave, exportAll, parseImport, importAll, listBackups, restoreBackup, storeGame, getGame,
-  resetPersistState, whenSaved, persistStats, wipeAll, type Manifest,
+  resetPersistState, whenSaved, persistStats, wipeAll, persistTuning, type Manifest,
 } from '../src/persist/save';
 import { idb, dbStats, dbFaults, resetDbHandle } from '../src/persist/db';
-import { canonicalJson, WARM, COLD, H2H, HOT_KEYS } from '../src/persist/layout';
+import { canonicalJson, COLD, HOT_KEYS } from '../src/persist/layout';
 import { emptyWorld, advanceWorld } from '../src/world/world';
 import { newSave, startGame, suggestOpponents, finishPlayerGame, hooksFor } from '../src/game/career';
 import type { Save } from '../src/game/state';
@@ -103,46 +103,69 @@ describe('split persistence', () => {
     // First commit after load re-verifies everything but writes nothing that did not change.
     await persistSave(x);
     expect(written()).toEqual(['meta']);
-    // One competitor's head-to-head record (v0.3: binary h2h family) -> one h2h chunk.
+    // v0.4: a change to one competitor's head-to-head record, honours or rating is a tiny journal record.
     const c = x.world.competitors[1234];
     c.h2h.push({ id: 'c000001', w: 1, d: 0, l: 0 });
     dbStats.putKeys.length = 0;
     await persistSave(x);
-    const serial = Number(c.id.slice(1));
-    expect(written().sort()).toEqual(['meta', `pop/h2h/${Math.floor(serial / H2H.size)}`]);
-    expect(dbStats.putKeys.length).toBe(3); // meta, chunk, manifest
-    // A new honour (warm family) -> one warm chunk.
+    const journalOnly = () => {
+      expect(written().filter((n) => n !== 'meta').every((n) => n.startsWith('jr/'))).toBe(true);
+      expect(written().length).toBe(2);
+      expect(persistStats.last!.journalBytes).toBeGreaterThan(0);
+      expect(persistStats.last!.journalBytes).toBeLessThan(2048);
+    };
+    journalOnly();
+    expect(dbStats.putKeys.length).toBe(3); // meta, journal, manifest
+    // A new honour (warm family).
     c.honours.push('Test Cup (S1)');
     await persistSave(x);
-    expect(written().sort()).toEqual(['meta', `pop/warm/${Math.floor(serial / WARM.size)}`]);
-    // One rating -> one hot column.
+    journalOnly();
+    // One rating (hot column).
     x.world.competitors[10].rating += 7;
     await persistSave(x);
-    expect(written().sort()).toEqual(['meta', 'pop/hot/rating']);
-    // A world day: hot columns, a few warm chunks, world core, tournaments; cold chunks only where membership changed.
-    advanceWorld(x.world, 1, hooksFor(x));
-    await persistSave(x);
-    const w = written();
-    expect(w.length).toBeLessThan(total);
-    expect(w.filter((n) => n.startsWith('pop/rh/')).length).toBeLessThanOrEqual(2);
-    const coldWritten = w.filter((n) => n.startsWith('pop/cold/'));
-    expect(coldWritten.length).toBeLessThanOrEqual(2);
-    expect(persistStats.last!.bytes).toBeLessThan(0.5 * JSON.stringify(x).length * 2); // young world: h2h lists still filling (mature worlds: see perf test)
+    journalOnly();
     reopen();
     expect((await loadSave()).save).toEqual(x);
+    // A world day: world core, tournaments, a journal; no population base part is rewritten.
+    const { save: y } = await loadSave();
+    advanceWorld(y!.world, 1, hooksFor(y!));
+    await persistSave(y!);
+    const w = written();
+    expect(w.length).toBeLessThan(total);
+    expect(w.filter((n) => n.startsWith('pop/')).length).toBe(0);
+    expect(w.filter((n) => n.startsWith('jr/')).length).toBe(1);
+    expect(persistStats.last!.bytes).toBeLessThan(0.1 * JSON.stringify(y).length * 2);
+    reopen();
+    expect((await loadSave()).save).toEqual(y);
   });
 
-  it('cold chunk is rewritten when a new competitor debuts in it, and removed chunks are deleted', async () => {
+  it('a debutant goes to the journal, compaction writes its cold chunk, and empty chunks are deleted', async () => {
     const s = bigSave();
     await persistSave(s);
     const extra = clone(s.world.competitors[0]);
     extra.id = 'c099999';
     s.world.competitors.push(extra);
     await persistSave(s);
+    expect(written().some((n) => n.startsWith('jr/'))).toBe(true);
+    expect(written()).not.toContain(`pop/cold/${Math.floor(99999 / COLD.size)}`);
+    reopen();
+    expect((await loadSave()).save).toEqual(s);
+    // Compaction folds the journals into base parts.
+    const lim = persistTuning.journalLimitBytes;
+    persistTuning.journalLimitBytes = 0;
+    try {
+      s.player.influence += 1;
+      await persistSave(s);
+    } finally {
+      persistTuning.journalLimitBytes = lim;
+    }
+    expect(persistStats.last!.compacted).toBe(true);
     expect(written()).toContain(`pop/cold/${Math.floor(99999 / COLD.size)}`);
+    let m = await manifest();
+    expect(Object.keys(m.parts).some((n) => n.startsWith('jr/'))).toBe(false);
     s.world.competitors.pop();
     await persistSave(s);
-    const m = await manifest();
+    m = await manifest();
     expect(m.parts[`pop/cold/${Math.floor(99999 / COLD.size)}`]).toBeUndefined();
     const keys = (await idb.keys('parts')) as string[];
     expect(keys.length).toBe(Object.keys(m.parts).length + 1); // no orphans
@@ -164,7 +187,7 @@ describe('split persistence', () => {
       expect(written()).toContain('active');
       expect(written().every((n) => n === 'active' || n === 'meta')).toBe(true);
       expect(persistStats.last!.bytes).toBeLessThan(8 * 1024);
-      expect(persistStats.last!.prepMs).toBeLessThan(5);
+      expect(persistStats.last!.prepMs).toBeLessThan(25); // ~1 ms typical; generous for a loaded CI box
     }
     expect(dbStats.puts - before).toBeLessThanOrEqual(4 * 3);
     reopen();
@@ -269,7 +292,10 @@ describe('split persistence', () => {
     const m = await manifest();
     const chunk = Object.keys(m.parts).find((n) => n.startsWith('pop/cold/'))!;
     const rec = await idb.get<{ s: string }>('parts', m.parts[chunk].key);
-    await idb.put('parts', m.parts[chunk].key, { ...rec, s: rec!.s.replace(/"name":"[^"]+"/, '"name":"Corrupted"') });
+    // Corrupt one competitor's name inside the (tabular) chunk; the stored checksum no longer matches.
+    const victim = atBackup.world.competitors.find((c) => `pop/cold/${Math.floor(Number(c.id.slice(1)) / COLD.size)}` === chunk)!;
+    expect(rec!.s).toContain(JSON.stringify(victim.name));
+    await idb.put('parts', m.parts[chunk].key, { ...rec, s: rec!.s.replace(JSON.stringify(victim.name), '"Corrupted"') });
     reopen();
     const err = console.error;
     const r = await loadSave();
@@ -302,8 +328,14 @@ describe('split persistence', () => {
     expect(r.save!.player.name).toBe('Tester');
     expect(r.save!.world.competitors.length).toBe(s.world.competitors.length);
     expect(r.save!.world.competitors.every((c) => typeof c.skill === 'number')).toBe(true);
-    const ids = new Set(Object.keys(JSON.parse(wr!.s)));
-    for (const c of r.save!.world.competitors) if (ids.has(c.id)) expect(c.h2h).toEqual(s.world.competitors.find((x) => x.id === c.id)!.h2h);
+    // The warm chunk (v0.4: tabular {ids, t}) was read as-is: its members keep their records.
+    const ids = new Set((JSON.parse(wr!.s).ids as number[]).map((n) => 'c' + String(n).padStart(6, '0')));
+    expect(ids.size).toBeGreaterThan(0);
+    for (const c of r.save!.world.competitors) {
+      if (!ids.has(c.id)) continue;
+      const o = s.world.competitors.find((x) => x.id === c.id)!;
+      expect([c.honours, c.titles, c.h2h]).toEqual([o.honours, o.titles, o.h2h]);
+    }
   });
 
   it('damaged career record: restores the whole backup; with no backup, quarantines instead of wiping', async () => {
@@ -339,7 +371,7 @@ describe('split persistence', () => {
     expect(persistStats.backups).toBeGreaterThan(0);
     const n0 = persistStats.backups;
     const b0 = await idb.get<{ enc: string; v: number; data: ArrayBuffer; bytes: number }>('backups', 'slot0');
-    expect(b0!.v).toBe(2);
+    expect(b0!.v).toBe(3); // v0.4: snapshot of the committed parts
     expect(b0!.enc).toBe('gzip');
     expect(b0!.data.byteLength).toBeLessThan(b0!.bytes / 3);
     // Not due yet: same season, fewer than 10 games.
