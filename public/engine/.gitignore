@@ -1,0 +1,9 @@
+# The full-strength (big-net) Stockfish 19 .wasm files (~99 MB each) are NOT
+# committed as single files (GitHub refuses files > 100 MiB and warns > 50 MB;
+# Cloudflare Pages refuses > 25 MiB). They are committed as the "engine pack":
+# public/engine/pack/ (gzip chunks of 20 MiB + a 259 KB delta for the threaded
+# build + engine-pack.json with SHA-256 checksums). See docs/ENGINE.md (v0.3).
+# Recreate the single files locally (tests, benches, local Windows packaging):
+#   node scripts/engine-pack.mjs assemble public/engine
+stockfish-19-single.wasm
+stockfish-19.wasm

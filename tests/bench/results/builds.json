@@ -1,0 +1,129 @@
+{
+ "meta": {
+  "date": "2026-11-07T23:30:51.968Z",
+  "node": "v22.23.4",
+  "cpus": 4,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "memGB": 16
+ },
+ "data": {
+  "movetime": 2000,
+  "loadavg": [
+   4.28,
+   6.5,
+   6.66
+  ],
+  "rows": [
+   {
+    "build": "lite-single",
+    "file": "stockfish-19-lite-single.wasm",
+    "wasmMB": 1.8,
+    "threads": 1,
+    "hash": 16,
+    "startupMs": 185,
+    "knps": 408,
+    "depth": "21/22/18/20",
+    "peakRssMB": 138
+   },
+   {
+    "build": "lite-single",
+    "file": "stockfish-19-lite-single.wasm",
+    "wasmMB": 1.8,
+    "threads": 1,
+    "hash": 64,
+    "startupMs": 157,
+    "knps": 529,
+    "depth": "21/22/17/22",
+    "peakRssMB": 184
+   },
+   {
+    "build": "full-single",
+    "file": "stockfish-19-single.wasm",
+    "wasmMB": 94.6,
+    "threads": 1,
+    "hash": 64,
+    "startupMs": 745,
+    "knps": 322,
+    "depth": "20/21/19/21",
+    "peakRssMB": 492
+   },
+   {
+    "build": "lite-mt",
+    "file": "stockfish-19-lite.wasm",
+    "wasmMB": 1.6,
+    "threads": 1,
+    "hash": 64,
+    "startupMs": 361,
+    "knps": 521,
+    "depth": "20/22/18/22",
+    "peakRssMB": 203
+   },
+   {
+    "build": "lite-mt",
+    "file": "stockfish-19-lite.wasm",
+    "wasmMB": 1.6,
+    "threads": 2,
+    "hash": 64,
+    "startupMs": 374,
+    "knps": 1158,
+    "depth": "24/24/17/22",
+    "peakRssMB": 267
+   },
+   {
+    "build": "lite-mt",
+    "file": "stockfish-19-lite.wasm",
+    "wasmMB": 1.6,
+    "threads": 4,
+    "hash": 64,
+    "startupMs": 387,
+    "knps": 1441,
+    "depth": "20/22/19/20",
+    "peakRssMB": 324
+   },
+   {
+    "build": "full-mt",
+    "file": "stockfish-19.wasm",
+    "wasmMB": 94.5,
+    "threads": 2,
+    "hash": 64,
+    "startupMs": 941,
+    "knps": 664,
+    "depth": "21/20/20/20",
+    "peakRssMB": 782
+   },
+   {
+    "build": "full-mt",
+    "file": "stockfish-19.wasm",
+    "wasmMB": 94.5,
+    "threads": 4,
+    "hash": 64,
+    "startupMs": 895,
+    "knps": 929,
+    "depth": "21/22/20/17",
+    "peakRssMB": 865
+   },
+   {
+    "build": "full-single",
+    "file": "stockfish-19-single.wasm",
+    "wasmMB": 94.6,
+    "threads": 1,
+    "hash": 128,
+    "startupMs": 827,
+    "knps": 287,
+    "depth": "21/22/18/20",
+    "peakRssMB": 625
+   },
+   {
+    "build": "full-mt",
+    "file": "stockfish-19.wasm",
+    "wasmMB": 94.5,
+    "threads": 3,
+    "hash": 128,
+    "startupMs": 1040,
+    "knps": 820,
+    "depth": "20/21/18/20",
+    "peakRssMB": 922
+   }
+  ]
+ }
+}

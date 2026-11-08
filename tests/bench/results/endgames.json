@@ -1,0 +1,34 @@
+{
+ "meta": {
+  "date": "2026-11-07T23:39:20.013Z",
+  "node": "v22.23.4",
+  "cpus": 4,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "memGB": 16
+ },
+ "data": {
+  "opponent": "full-single",
+  "rows": [
+   {
+    "config": "lite-single 100ms",
+    "score": "8/8",
+    "detail": "KQK:win@17 KRK:win@31 KBBK:win@39 KBNK:win@79 KPK-6th:win@45 KPK-opposition:draw Lucena:win@51 Philidor:draw"
+   },
+   {
+    "config": "full-single 100ms",
+    "score": "8/8",
+    "detail": "KQK:win@15 KRK:win@35 KBBK:win@35 KBNK:win@55 KPK-6th:win@21 KPK-opposition:draw Lucena:win@39 Philidor:draw"
+   },
+   {
+    "config": "persona 3200 full-single",
+    "score": "8/8",
+    "detail": "KQK:win@13 KRK:win@29 KBBK:win@35 KBNK:win@75 KPK-6th:win@23 KPK-opposition:draw Lucena:win@31 Philidor:draw"
+   },
+   {
+    "config": "persona 3200 lite-single",
+    "score": "8/8",
+    "detail": "KQK:win@13 KRK:win@31 KBBK:win@23 KBNK:win@49 KPK-6th:win@21 KPK-opposition:draw Lucena:win@31 Philidor:draw"
+   }
+  ]
+ }
+}

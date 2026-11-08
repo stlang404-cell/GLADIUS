@@ -1,0 +1,93 @@
+{
+ "meta": {
+  "date": "2026-11-07T21:23:57.120Z",
+  "node": "v22.23.4",
+  "cpus": 4,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "memGB": 16
+ },
+ "data": {
+  "positions": 62,
+  "personaThinkMs": 500,
+  "rows": [
+   {
+    "config": "lite-single 100ms",
+    "solved": "56/62",
+    "rate": 90.3,
+    "failed": "WAC.015 WAC.021 WAC.049 BK.01 BK.02 BK.22"
+   },
+   {
+    "config": "full-single 100ms",
+    "solved": "53/62",
+    "rate": 85.5,
+    "failed": "WAC.011 WAC.015 WAC.021 WAC.035 WAC.041 WAC.043 WAC.049 BK.02 BK.16"
+   },
+   {
+    "config": "lite-mt T3 100ms",
+    "solved": "58/62",
+    "rate": 93.5,
+    "failed": "WAC.015 WAC.021 WAC.041 WAC.049"
+   },
+   {
+    "config": "lite-single 500ms",
+    "solved": "59/62",
+    "rate": 95.2,
+    "failed": "WAC.015 WAC.021 WAC.049"
+   },
+   {
+    "config": "full-single 500ms",
+    "solved": "60/62",
+    "rate": 96.8,
+    "failed": "WAC.011 WAC.049"
+   },
+   {
+    "config": "lite-mt T3 500ms",
+    "solved": "59/62",
+    "rate": 95.2,
+    "failed": "WAC.015 WAC.021 WAC.049"
+   },
+   {
+    "config": "persona 1000 (lite)",
+    "solved": "9/62",
+    "rate": 14.5,
+    "failed": "WAC.003 WAC.004 WAC.007 WAC.009 WAC.010 WAC.011 WAC.013 WAC.014 WAC.015 WAC.016 WAC.019 WAC.020 WAC.021 WAC.022 WAC.023 WAC.024 WAC.025 WAC.026 WAC.027 WAC.029 WAC.030 WAC.032 WAC.033 WAC.034 WAC.035 WAC.036 WAC.037 WAC.038 WAC.039 WAC.040 WAC.041 WAC.042 WAC.043 WAC.044 WAC.046 WAC.047 WAC.048 WAC.049 WAC.050 BK.01 BK.02 BK.06 BK.08 BK.10 BK.12 BK.13 BK.14 BK.15 BK.16 BK.19 BK.20 BK.21 BK.22"
+   },
+   {
+    "config": "persona 1600 (lite)",
+    "solved": "32/62",
+    "rate": 51.6,
+    "failed": "WAC.004 WAC.009 WAC.015 WAC.019 WAC.020 WAC.023 WAC.026 WAC.029 WAC.032 WAC.033 WAC.036 WAC.037 WAC.039 WAC.040 WAC.041 WAC.042 WAC.043 WAC.046 WAC.047 WAC.048 BK.01 BK.02 BK.06 BK.08 BK.10 BK.13 BK.15 BK.19 BK.20 BK.22"
+   },
+   {
+    "config": "persona 2200 (lite)",
+    "solved": "43/62",
+    "rate": 69.4,
+    "failed": "WAC.009 WAC.015 WAC.029 WAC.032 WAC.033 WAC.037 WAC.039 WAC.041 WAC.043 WAC.047 BK.01 BK.02 BK.06 BK.08 BK.10 BK.13 BK.15 BK.19 BK.22"
+   },
+   {
+    "config": "persona 2600 (lite)",
+    "solved": "55/62",
+    "rate": 88.7,
+    "failed": "WAC.015 WAC.033 WAC.041 BK.01 BK.02 BK.19 BK.22"
+   },
+   {
+    "config": "persona 2800 (lite)",
+    "solved": "61/62",
+    "rate": 98.4,
+    "failed": "WAC.021"
+   },
+   {
+    "config": "persona 3000 (lite)",
+    "solved": "59/62",
+    "rate": 95.2,
+    "failed": "WAC.015 WAC.021 WAC.049"
+   },
+   {
+    "config": "persona 3000 (full, H128)",
+    "solved": "60/62",
+    "rate": 96.8,
+    "failed": "WAC.011 WAC.049"
+   }
+  ]
+ }
+}
