@@ -24,7 +24,13 @@ import { getEngine } from '../engine/browserEngine';
 export function App() {
   const [boot, setBoot] = useState<'loading' | 'new' | 'ready'>('loading');
   const [bootMsg, setBootMsg] = useState<string | null>(null);
+  const [replacing, setReplacing] = useState<string | null>(null); // name of the career a "New career" would replace
   useVersion();
+  useEffect(() => {
+    const onNew = () => { setReplacing(hasSave() ? getSave().player.name : null); setBoot('new'); };
+    window.addEventListener('gladius:new-career', onNew);
+    return () => window.removeEventListener('gladius:new-career', onNew);
+  }, []);
   useEffect(() => {
     void loadSave().then(({ save, recovered, error }) => {
       if (save) {
@@ -44,7 +50,14 @@ export function App() {
   }, []);
   if (boot === 'loading') return <div className="splash"><img src={new URL('brand/logo-stacked.svg', document.baseURI).href} alt="GLADIUS" /></div>;
   if (boot === 'new' || !hasSave())
-    return <Onboarding notice={bootMsg} onDone={(s) => { setSave(s); void persistSave(s, { backup: true }); setBoot('ready'); }} />;
+    return (
+      <Onboarding
+        notice={bootMsg}
+        currentName={replacing ?? undefined}
+        onCancel={replacing ? () => { setReplacing(null); setBoot('ready'); } : undefined}
+        onDone={(s) => { setSave(s); void persistSave(s, { backup: true, full: true }); setReplacing(null); setBoot('ready'); }}
+      />
+    );
   return <Shell notice={bootMsg} />;
 }
 

@@ -1,4 +1,5 @@
-import { ChessPerformance, CareerHistory, HallOfFame } from './legacyExtras';
+import { ChessPerformance, CareerHistory, HallOfFame, TournamentResults, GameHistory } from './legacyExtras';
+import { PROVISIONAL_GAMES } from '../../rating/elo';
 import { sigDefFor } from '../../world/trophies';
 import { isPieceSetUnlocked, pieceSetById } from '../../board2d/pieceSets';
 import { useEffect, useMemo, useState } from 'react';
@@ -13,7 +14,7 @@ import { TrophyImage } from '../components/TrophyImage';
 import { PIECE_STYLES, pieceSrc, type PieceStyle } from '../components/Board';
 import { ALL_THEMES, boardImages } from '../../board2d/themes';
 import { careerRating, bestRating } from '../../game/career';
-import { exportAll, importAll, listBackups, restoreBackup, wipeAll } from '../../persist/save';
+import { exportAll, importAll, listBackups, restoreBackup, wipeAll, persistSave, whenSaved } from '../../persist/save';
 import { requestPersistence } from '../../persist/db';
 import { downloadText } from '../AnalysisView';
 import { engineStatus, installEnginePack, cancelEnginePack, verifyEnginePack, removeEnginePack, onEngineStatus } from '../../engine/browserEngine';
@@ -83,7 +84,7 @@ export function Profile() {
           )}
         </div>
         <div className="stats-grid">
-          <Stat label="Elo" value={r.rating} sub={`peak ${r.peak}`} />
+          <Stat label={r.games < PROVISIONAL_GAMES ? 'Elo · provisional' : 'Elo'} value={r.games < PROVISIONAL_GAMES ? `${r.rating}?` : r.rating} sub={r.games < PROVISIONAL_GAMES ? `placement ${r.games}/${PROVISIONAL_GAMES}` : `peak ${r.peak}`} />
           <Stat label="Influence" value={p.influence} sub={`prestige ${p.prestige}`} />
           <Stat label="Games" value={p.w + p.d + p.l} sub={<Record w={p.w} d={p.d} l={p.l} />} />
           <Stat label="Score" value={`${pct(p.w, p.d, p.l)}%`} />
@@ -94,7 +95,7 @@ export function Profile() {
         </div>
         <div className="form-row">{form.map((f, i) => <span key={i} className={'form ' + f}>{f.toUpperCase()}</span>)}</div>
         <Sparkline values={hist.slice(-120)} w={320} h={60} color="#9c1f1a" />
-        <div className="muted small">Best ever {bestRating(s)} · peak {r.peak}</div>
+        <div className="muted small">{r.games < PROVISIONAL_GAMES ? `Provisional rating — ${PROVISIONAL_GAMES - r.games} more rated games to establish it. Peak Elo is recorded once established.` : `Best ever ${bestRating(s)} · peak ${r.peak}`}</div>
       </Card>
       {rivals.length > 0 && (
         <Card title="Rivalries">
@@ -110,7 +111,9 @@ export function Profile() {
       )}
       {openings.length > 0 && <Card title="Opening results">{openings.map(([n, o]) => <div key={n} className="leader"><span className="grow">{n}</span><Record w={o.w} d={o.d} l={o.l} /></div>)}</Card>}
       <ChessPerformance />
+      <TournamentResults />
       <CareerHistory />
+      <GameHistory />
     </>
   );
 }
@@ -381,6 +384,39 @@ function SettingsPanel() {
   );
 }
 
+/** Start a fresh zero-progress career without losing the current one: download + snapshot first. */
+function NewCareerCard() {
+  const s = useSave();
+  const [step, setStep] = useState<'idle' | 'confirm' | 'saving'>('idle');
+  const [download, setDownload] = useState(true);
+  const p = s.player;
+  const begin = async () => {
+    setStep('saving');
+    const cur = getSave();
+    if (download) downloadText(`gladius-${cur.player.name.replace(/\W+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.json`, await exportAll(cur), 'application/json');
+    await persistSave(cur, { backup: true, full: true });
+    await whenSaved();
+    window.dispatchEvent(new Event('gladius:new-career'));
+  };
+  return (
+    <Card title="Career">
+      <div className="leader"><span className="grow"><b>Continue: {p.name}</b><div className="muted small">{RANKS[p.rank].name} · {ARENAS[RANKS[p.rank].arena].name} · {p.w}–{p.d}–{p.l}</div></span><span className="pill gold">Active</span></div>
+      {step === 'idle' && <button className="btn" style={{ marginTop: 10 }} onClick={() => setStep('confirm')}>Start a new career…</button>}
+      {step !== 'idle' && (
+        <div className="notice" style={{ marginTop: 10 }}>
+          <div>A new career starts at zero: Arena I, grade 1 of 72, no record, no Influence, no honours, provisional rating. {p.name}&rsquo;s career is snapshotted to Automatic backups first{download ? ' and downloaded as a file' : ''}, so it can be restored.</div>
+          <label className="row" style={{ gap: 8, marginTop: 8 }}><input type="checkbox" checked={download} onChange={(e) => setDownload(e.target.checked)} /> Download a backup file first (recommended)</label>
+          <div className="row gap" style={{ marginTop: 10 }}>
+            <button className="btn crimson" disabled={step === 'saving' || !!s.active} onClick={() => void begin()}>{step === 'saving' ? 'Saving…' : 'Start new career'}</button>
+            <button className="btn" onClick={() => setStep('idle')}>Cancel</button>
+          </div>
+          {s.active && <div className="muted small" style={{ marginTop: 6 }}>Finish or leave your current game first.</div>}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function Saves() {
   const s = useSave();
   const [backups, setBackups] = useState<{ key: string; savedAt: string; ok: boolean }[]>([]);
@@ -415,11 +451,12 @@ function Saves() {
             {b.ok && <button className="btn small" onClick={() => void restoreBackup(b.key).then((sv) => { setSave(sv); setMsg('Backup restored.'); })}>Restore</button>}</div>
         ))}
       </Card>
+      <NewCareerCard />
       <Card title="Danger zone">
         <button className="btn red" onClick={() => { if (confirm('Delete this career and world permanently? Export first if unsure.')) void wipeAll().then(() => location.reload()); }}>Delete career</button>
       </Card>
       <Card title="About">
-        <div className="muted small">GLADIUS v0.3 · Chess engine: Stockfish 19 WASM (lite and full-net builds by Nathan Rugg; the active build is shown above), GPL-3.0 — see engine/STOCKFISH-LICENSE.txt. Rules: chess.js (BSD-2). All art is original and generated in this project. GLADIUS is distributed under GPL-3.0-or-later.</div>
+        <div className="muted small">GLADIUS v0.4 · Chess engine: Stockfish 19 WASM (lite and full-net builds by Nathan Rugg; the active build is shown above), GPL-3.0 — see engine/STOCKFISH-LICENSE.txt. Rules: chess.js (BSD-2). All art is original and generated in this project. GLADIUS is distributed under GPL-3.0-or-later.</div>
       </Card>
     </>
   );

@@ -14,7 +14,7 @@ const LEVELS = [
   { r: 1800, label: 'Expert' },
 ];
 
-export function Onboarding({ onDone, notice }: { onDone: (s: Save) => void; notice: string | null }) {
+export function Onboarding({ onDone, notice, onCancel, currentName }: { onDone: (s: Save) => void; notice: string | null; onCancel?: () => void; currentName?: string }) {
   const [name, setName] = useState('');
   const [female, setFemale] = useState(false);
   const [level, setLevel] = useState(1);
@@ -50,11 +50,13 @@ export function Onboarding({ onDone, notice }: { onDone: (s: Save) => void; noti
               <button className={'chip' + (!female ? ' on' : '')} onClick={() => setFemale(false)}>Portrait A</button>
               <button className={'chip' + (female ? ' on' : '')} onClick={() => setFemale(true)}>Portrait B</button>
             </div>
-            <div className="muted small center">Your chess experience (sets your provisional rating — your first 20 games place you accurately):</div>
+            {onCancel && <div className="notice small center">Starting a new career. {currentName}'s career stays in your backups — you can return to it now or restore it later.</div>}
+            <div className="muted small center">You start at the bottom: Arena I of 24, grade 1 of 72, no wins, no Influence, no honours. Your chess experience only sets a provisional rating — your first rated games place you, and strong results earn faster promotion.</div>
             <div className="chips center wrap">
               {LEVELS.map((l, i) => <button key={l.r} className={'chip' + (level === i ? ' on' : '')} onClick={() => setLevel(i)}>{l.label}</button>)}
             </div>
             <button className="btn gold big" onClick={found}>ENTER THE DUST PITS</button>
+            {onCancel && <button className="btn" onClick={onCancel}>Continue {currentName}'s career</button>}
             <label className="btn small">Restore a backup<input type="file" accept=".json" hidden onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) void f.text().then(importAll).then(onDone).catch((x) => setErr((x as Error).message));
@@ -62,7 +64,7 @@ export function Onboarding({ onDone, notice }: { onDone: (s: Save) => void; noti
           </>
         ) : (
           <>
-            <div className="muted center">Five thousand competitors are living through eight seasons of history…</div>
+            <div className="muted center">Twenty-five thousand competitors are living through eight seasons of history…</div>
             <div className="meter"><span style={{ width: `${Math.round(progress * 100)}%` }} /></div>
           </>
         )}

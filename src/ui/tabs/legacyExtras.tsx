@@ -10,7 +10,7 @@ import { useNav } from '../nav';
 import { Card, Record as WDLRecord, Sparkline, dayLabel } from '../components/common';
 import { ARENAS, RANKS } from '../../world/arenas';
 import { hallOfFame, playerCareerRecords, notableUpsets } from '../../world/hall';
-import { computeCareerStats, type WDL } from '../../game/careerStats';
+import { computeCareerStats, playerResult, type WDL } from '../../game/careerStats';
 import { computeSkillProfile, type SkillProfile } from '../../analysis/skills';
 import { CLASS_META } from '../../analysis/classify';
 import { getGame } from '../../persist/save';
@@ -38,6 +38,7 @@ export function ChessPerformance() {
   const recs = useMyGames();
   const stats = useMemo(() => (recs ? computeCareerStats(recs) : null), [recs]);
   const skills: SkillProfile | null = useMemo(() => (recs ? computeSkillProfile(recs) : null), [recs]);
+  const wins = useMemo(() => (recs ?? []).filter((g) => g.rated && playerResult(g) === 'W').sort((a, b) => (b.playerColor === 'w' ? b.black : b.white).rating - (a.playerColor === 'w' ? a.black : a.white).rating).slice(0, 5), [recs]);
   if (!stats) return <Card title="Chess performance"><div className="muted">Loading your games…</div></Card>;
   if (!stats.games) return <Card title="Chess performance"><div className="muted">Play a game — every statistic here is computed from your stored games.</div></Card>;
   const q = stats.quality.total;
@@ -61,7 +62,26 @@ export function ChessPerformance() {
             <div className="lx-qleg">{QUALITY.filter((k) => q[k]).map((k) => <span key={k}><i style={{ background: CLASS_META[k].color }} />{CLASS_META[k].label} {(100 * (q[k] ?? 0) / qTotal).toFixed(0)}%</span>)}</div>
           </>
         )}
+        <div className="lx-counts">
+          {(['brilliant', 'great', 'best', 'good', 'inaccuracy', 'mistake', 'blunder'] as MoveClass[]).map((k) => (
+            <div key={k}><b style={{ color: CLASS_META[k].color }}>{q[k] ?? 0}</b><span>{CLASS_META[k].label}</span></div>
+          ))}
+        </div>
+        <div className="muted small">Counts over {stats.analysed} analysed game{stats.analysed === 1 ? '' : 's'} (your moves only).</div>
       </Card>
+      {wins.length > 0 && (
+        <Card title="Strongest opponents defeated">
+          {wins.map((g) => {
+            const opp = g.playerColor === 'w' ? g.black : g.white;
+            return (
+              <div key={g.id} className="leader" onClick={() => nav.open({ kind: 'analysis', gameId: g.id })}>
+                <span className="grow"><b>{opp.name}</b><div className="muted small">{RANKS[opp.rank]?.name ?? ''} · {dayLabel(g.day)}{g.opening ? ` · ${g.opening.name}` : ''}</div></span>
+                <b>{opp.rating}</b>
+              </div>
+            );
+          })}
+        </Card>
+      )}
       <Card title="Results">
         <div className="leader"><span className="grow">All games</span>{scoreLine(stats.overall)}</div>
         <div className="leader"><span className="grow">With White</span>{scoreLine(stats.asWhite)}</div>
@@ -177,5 +197,63 @@ export function HallOfFame() {
         </Card>
       )}
     </div>
+  );
+}
+
+export function TournamentResults() {
+  const s = useSave();
+  const nav = useNav();
+  const rows = useMemo(() => (s.world.history ?? []).filter((h) => h.playerPlace !== undefined).slice().reverse(), [s.world.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  const live = s.world.tournaments.filter((t) => t.playerEntered && t.status !== 'complete');
+  if (rows.length === 0 && live.length === 0) return <Card title="Tournament results"><div className="muted small">No tournaments yet — invitations appear in the Arena as you climb.</div></Card>;
+  return (
+    <Card title={`Tournament results · ${rows.length}`}>
+      {live.map((t) => <div key={t.id} className="leader" onClick={() => nav.open({ kind: 'tournament', id: t.id })}><span className="grow"><b>{t.name}</b><div className="muted small">{t.status === 'running' ? 'In progress' : 'Entered'}</div></span><span className="pill gold">live</span></div>)}
+      {rows.slice(0, 30).map((h) => (
+        <div key={h.id} className="leader" onClick={() => nav.open({ kind: 'tournament', id: h.id })}>
+          <span className="grow"><b>{h.name}</b><div className="muted small">{ARENAS[h.arena]?.name ?? ''} · season {h.season + 1} · {h.size} players · won by {h.winner === 'player' ? 'you' : h.winnerName}</div></span>
+          <span className={'pill' + (h.playerPlace === 1 ? ' gold' : '')}>{h.playerPlace === 1 ? '1st' : h.playerPlace === 2 ? '2nd' : h.playerPlace === 3 ? '3rd' : `${h.playerPlace}th`}</span>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
+/** Searchable, filterable history of every stored player game (opens the game's replay and analysis). */
+export function GameHistory() {
+  const s = useSave();
+  const nav = useNav();
+  const [q, setQ] = useState('');
+  const [res, setRes] = useState<'all' | 'W' | 'D' | 'L'>('all');
+  const [col, setCol] = useState<'all' | 'w' | 'b'>('all');
+  const [n, setN] = useState(30);
+  const all = useMemo(() => s.library.map((id) => s.libraryMeta[id]).filter((m) => m && m.playerColor).reverse(), [s.library.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const needle = q.trim().toLowerCase();
+  const list = all.filter((m) => {
+    const opp = m.playerColor === 'w' ? m.black : m.white;
+    const r = m.result === '1/2-1/2' ? 'D' : (m.result === '1-0') === (m.playerColor === 'w') ? 'W' : 'L';
+    return (res === 'all' || r === res) && (col === 'all' || m.playerColor === col) && (!needle || opp.toLowerCase().includes(needle) || (m.opening ?? '').toLowerCase().includes(needle));
+  });
+  return (
+    <Card title={`Game history · ${all.length}`}>
+      <input className="lx-search" placeholder="Search opponent or opening" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search games" />
+      <div className="chips">
+        {(['all', 'W', 'D', 'L'] as const).map((x) => <button key={x} className={'chip' + (res === x ? ' on' : '')} onClick={() => setRes(x)}>{{ all: 'All', W: 'Won', D: 'Drawn', L: 'Lost' }[x]}</button>)}
+        {(['all', 'w', 'b'] as const).map((x) => <button key={'c' + x} className={'chip' + (col === x ? ' on' : '')} onClick={() => setCol(x)}>{{ all: 'Both colours', w: 'White', b: 'Black' }[x]}</button>)}
+      </div>
+      {list.length === 0 && <div className="muted small">No games match.</div>}
+      {list.slice(0, n).map((m) => {
+        const opp = m.playerColor === 'w' ? m.black : m.white;
+        const r = m.result === '1/2-1/2' ? 'D' : (m.result === '1-0') === (m.playerColor === 'w') ? 'W' : 'L';
+        return (
+          <div key={m.id} className="leader" onClick={() => nav.open({ kind: 'analysis', gameId: m.id })}>
+            <span className={'form ' + r.toLowerCase()}>{r}</span>
+            <span className="grow"><b>{opp}</b><div className="muted small">{dayLabel(m.day)} · {m.playerColor === 'w' ? 'White' : 'Black'}{m.opening ? ` · ${m.opening}` : ''}{m.kind !== 'ranked' ? ` · ${m.kind}` : ''}</div></span>
+            <span className="muted small">{m.accuracy !== undefined ? `${m.accuracy.toFixed(0)}%` : m.analysed ? '' : '—'}{m.eloDelta !== undefined ? ` ${m.eloDelta >= 0 ? '+' : ''}${m.eloDelta}` : ''}</span>
+          </div>
+        );
+      })}
+      {list.length > n && <button className="btn small" onClick={() => setN(n + 50)}>Show more ({list.length - n})</button>}
+    </Card>
   );
 }
