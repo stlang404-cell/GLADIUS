@@ -317,11 +317,14 @@ export function arenaCrestSvg(arenaIndex: number): string {
   o += `<path d="${sh}" fill="${grad(c, [[0, f0], [1, f1]])}" transform="translate(80 74) scale(.86) translate(-80 -74)"/>`;
   o += `<path d="${sh}" fill="${grad(c, [[0, '#ffffff'], [0.45, '#ffffff'], [0.46, f0], [1, f0]], 1, 1)}" opacity=".14" transform="translate(80 74) scale(.86) translate(-80 -74)"/>`;
   o += legacy >= 0 ? chargeLegacy(legacy, shade(stoneDark, -0.2), light, accent) : chargeNew(i, light, accent);
-  // ribbon with the arena numeral
-  o += `<path d="M22,128l14,-6v22l-14,6l6,-11z" fill="${shade(ribbon, -0.35)}" stroke="${OUT}" stroke-width="2"/><path d="M138,128l-14,-6v22l14,6l-6,-11z" fill="${shade(ribbon, -0.35)}" stroke="${OUT}" stroke-width="2"/>`;
-  o += `<path d="M34,120Q80,132 126,120V142Q80,154 34,142Z" fill="${ribbon}" stroke="${OUT}" stroke-width="2.5"/>`;
+  // ribbon with the arena numeral — large and outlined so it stays legible at 40 px
+  o += `<path d="M8,124l16,-7v28l-16,7l7,-14z" fill="${shade(ribbon, -0.35)}" stroke="${OUT}" stroke-width="2"/><path d="M152,124l-16,-7v28l16,7l-7,-14z" fill="${shade(ribbon, -0.35)}" stroke="${OUT}" stroke-width="2"/>`;
+  o += `<path d="M20,115Q80,129 140,115V146Q80,160 20,146Z" fill="${ribbon}" stroke="${OUT}" stroke-width="2.5"/>`;
+  o += `<path d="M24,119Q80,132.5 136,119" fill="none" stroke="#ffffff" stroke-width="1.5" opacity=".3"/>`;
   const num = NUMERALS[i];
-  const sc = num.length > 4 ? 0.86 : 1;
-  o += `<path d="${numeral(num, 80, 128.5 + (1 - sc) * 7, sc)}" fill="none" stroke="${metal[0]}" stroke-width="${n(2.6 * sc)}" stroke-linecap="square"/>`;
+  const sc = num.length >= 5 ? 1.42 : num.length === 4 ? 1.5 : 1.7;
+  const nd = numeral(num, 80, 138 - 7 * sc, sc);
+  o += `<path d="${nd}" fill="none" stroke="${OUT}" stroke-width="${n(2.9 * sc + 2.6)}" stroke-linecap="square" stroke-linejoin="round" opacity=".85"/>`;
+  o += `<path d="${nd}" fill="none" stroke="${tier === 0 ? '#fff0dc' : metal[0]}" stroke-width="${n(2.9 * sc)}" stroke-linecap="square"/>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><defs>${c.defs.join('')}</defs>${o}</svg>`;
 }

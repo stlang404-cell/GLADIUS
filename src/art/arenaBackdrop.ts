@@ -1088,7 +1088,15 @@ function stoneTower(s: S, x: number, base: number, w: number, h: number, c: { li
     win += `M${P(x + w * 0.42, wy + h * 0.08)}v${n(-h * 0.05)}a${n(w * 0.08)},${n(w * 0.08)} 0 0,1 ${n(w * 0.16)},0v${n(h * 0.05)}z`;
   }
   o += path(win, '#1e2228');
-  if (c.roof) o += path(`M${P(x - w * 0.1, top - h * 0.08)}L${P(x + w / 2, top - h * 0.08 - w * 0.75)}L${P(x + w * 1.1, top - h * 0.08)}Z`, s.lg([[0, shade(c.roof, 0.25)], [0.55, c.roof], [1, shade(c.roof, -0.3)]], 0, 0, 1, 0));
+  // low Roman hipped roof of terracotta tiles on short posts (not a pointed fairy-tale spire)
+  if (c.roof) {
+    const ry = top - h * 0.08 - w * 0.12;
+    o += stroke(`M${P(x + w * 0.04, top - h * 0.02)}V${n(ry)}M${P(x + w * 0.96, top - h * 0.02)}V${n(ry)}`, shade(c.dark, -0.2), Math.max(1.5, w * 0.05));
+    o += path(`M${P(x - w * 0.14, ry)}L${P(x + w * 0.22, ry - w * 0.3)}H${n(x + w * 0.78)}L${P(x + w * 1.14, ry)}Z`, s.lg([[0, shade(c.roof, 0.25)], [0.55, c.roof], [1, shade(c.roof, -0.3)]], 0, 0, 1, 0));
+    let tl = '';
+    for (let i = 1; i < 6; i++) tl += `M${P(x - w * 0.14 + (w * 1.28 * i) / 6, ry)}l${n(w * (0.18 - i * 0.06))},${n(-w * 0.3)}`;
+    o += stroke(tl, shade(c.roof, -0.4), Math.max(1, w * 0.02), op(0.5)) + rect(x - w * 0.16, ry - 1, w * 1.32, Math.max(2, w * 0.04), shade(c.roof, -0.35));
+  }
   if (banner) o += hangingBanner(s, x + w * 0.3, top + h * 0.06, w * 0.4, h * 0.42, banner, '#e2b04a', `<path d="${starPath5(x + w * 0.5, top + h * 0.2, w * 0.08)}" fill="#e2b04a"/>`);
   return o;
 }
@@ -1122,11 +1130,13 @@ function ironCitadel(s: S): void {
   for (let i = 0; i < 9; i++) rf += fir(560 + i * 60 + s.rnd(-10, 10), 560 - Math.abs(i - 4) * 18 + s.rnd(0, 10), s.rnd(30, 46), '#5a7a6a', '#8aa890');
   s.add(rf);
   const stoneF = patStone(s, 22, 10, '#2a2e36', '#ffffff', 0.3, 0.15);
-  const tc = { lit: '#c8ccd4', mid: '#9aa0aa', dark: '#6a707c', roof: '#5a6878' };
+  const tc = { lit: '#c8ccd4', mid: '#9aa0aa', dark: '#6a707c', roof: '#a0503a' };
   s.add(rect(690, 214, 220, 70, s.lg([[0, '#9aa0aa'], [1, '#c4c8d0']], 0, 0, 1, 0)), rect(690, 214, 220, 70, stoneF), path(crenels(690, 910, 214, 10, 9), '#b4bac4'));
-  s.add(stoneTower(s, 660, 300, 56, 150, tc, stoneF), stoneTower(s, 884, 300, 56, 150, tc, stoneF), stoneTower(s, 770, 240, 62, 150, tc, stoneF));
-  s.add(path('M790,284v-26a10,10 0 0,1 20,0v26z', '#2a2e36'));
-  s.add(flag(s, 801, 60, 46, 22, '#b8342a', '#3a3e46', -1, 0.6), flag(s, 688, 120, 38, 18, '#b8342a', '#3a3e46', -1, 1.6), flag(s, 912, 120, 38, 18, '#b8342a', '#3a3e46', -1, 2.4));
+  // a Roman castellum: square towers with low tiled roofs, the principia's pediment behind the gate, standards on the towers
+  s.add(path('M738,214L800,178L862,214Z', '#e8e2d6'), path('M752,210L800,184L848,210Z', '#cfc8ba'), rect(732, 210, 136, 6, '#f2eee6'));
+  s.add(stoneTower(s, 660, 300, 56, 128, tc, stoneF), stoneTower(s, 884, 300, 56, 128, tc, stoneF), stoneTower(s, 764, 300, 72, 104, tc, stoneF));
+  s.add(path('M786,300v-34a14,14 0 0,1 28,0v34z', '#2a2e36'), stroke('M782,300v-34a18,18 0 0,1 36,0v34', '#d8dce2', 3));
+  s.add(standard(s, 800, 176, 92, 'aquila', '#b8342a', '#e2b04a'), standard(s, 688, 146, 70, 'vex', '#b8342a', '#e2b04a'), standard(s, 912, 146, 70, 'vex', '#b8342a', '#e2b04a'));
   // switchback road
   s.add(stroke('M800,560L700,500L880,440L760,380L800,300', '#d8c8a8', 6, op(0.7) + ' stroke-linejoin="round"'));
   // mist bands — the calm centre
@@ -1166,18 +1176,24 @@ function ironCitadel(s: S): void {
     s.add(path(crenels(x0, x0 + 380, 380, 34, 30), '#9aa0aa'));
     // iron gate arch
     const gx = x0 + 120;
-    s.add(path(`M${gx},900V700a70,70 0 0,1 140,0V900z`, '#1c1f24'));
+    // iron-bound timber gate under a voussoir arch (Roman, not a medieval portcullis)
+    s.add(path(`M${gx},900V700a70,70 0 0,1 140,0V900z`, s.lg([[0, '#4a3020'], [0.5, '#6a4428'], [1, '#3a2416']], 0, 0, 1, 0)));
     let grid = '';
     for (let i = 1; i < 7; i++) grid += `M${gx + i * 20},640V900`;
-    for (let j = 0; j < 9; j++) grid += `M${gx},${700 + j * 24}h140`;
-    s.add(g(stroke(grid, '#4a505a', 6) + stroke(grid, '#7a828e', 2), `clip-path="url(#${s.id}gc${side > 0 ? 'r' : 'l'})"`));
+    s.add(g(stroke(grid, '#2a1a10', 2.5) + stroke(`M${gx},${730}h140M${gx},${800}h140M${gx},${870}h140`, '#3a3e46', 12) + stroke(`M${gx},${730}h140M${gx},${800}h140M${gx},${870}h140`, '#8a929e', 5, `stroke-dasharray="3 14" stroke-linecap="round"`), `clip-path="url(#${s.id}gc${side > 0 ? 'r' : 'l'})"`));
     s.def(`<clipPath id="${s.id}gc${side > 0 ? 'r' : 'l'}"><path d="M${gx},900V700a70,70 0 0,1 140,0V900z"/></clipPath>`);
-    s.add(stroke(`M${gx - 6},900V700a76,76 0 0,1 152,0V900`, '#c8ccd4', 10));
+    s.add(stroke(`M${gx + 70},640V900`, '#1c1410', 4), stroke(`M${gx - 6},900V700a76,76 0 0,1 152,0V900`, '#c8ccd4', 10));
+    let vs = '';
+    for (let i = 0; i <= 8; i++) {
+      const a = Math.PI - (i * Math.PI) / 8;
+      vs += `M${P(gx + 70 + Math.cos(a) * 76, 700 - Math.sin(a) * 76)}L${P(gx + 70 + Math.cos(a) * 96, 700 - Math.sin(a) * 96)}`;
+    }
+    s.add(stroke(`M${gx - 26},900V700a96,96 0 0,1 192,0V900`, '#d2d6dc', 2), stroke(vs, '#5a606a', 2));
     s.add(hangingBanner(s, x0 + (side < 0 ? 290 : 30), 420, 56, 200, '#a33b2b', '#d6a54a', `<path d="${starPath5(x0 + (side < 0 ? 318 : 58), 480, 14)}" fill="#d6a54a"/>`));
     s.add(torch(s, x0 + (side < 0 ? 300 : 80), 690, 1.2, '#3a3e46'));
   }
-  s.add(stoneTower(s, -30, 900, 150, 640, { ...wallC, roof: '#4e5a6a' }, big), stoneTower(s, 1490, 900, 150, 640, { ...wallC, roof: '#4e5a6a' }, big));
-  s.add(flag(s, 45, 160, 90, 40, '#b8342a', '#3a3e46', 1, 0.5), flag(s, 1565, 160, 90, 40, '#b8342a', '#3a3e46', -1, 1.5));
+  s.add(stoneTower(s, -30, 900, 150, 640, { ...wallC, roof: '#8e4632' }, big), stoneTower(s, 1490, 900, 150, 640, { ...wallC, roof: '#8e4632' }, big));
+  s.add(standard(s, 128, 190, 150, 'vex', '#b8342a', '#e2b04a'), standard(s, 1472, 190, 150, 'vex', '#b8342a', '#e2b04a'));
   birds(s, 1020, 180, 6, 70, '#3a4a5a', 8);
   vignette(s, '#2a3440', 0.3);
 }
@@ -1496,12 +1512,28 @@ function praetorianBastion(s: S): void {
     s.add(path(`M${x0},900V420L${side < 0 ? x1 - 60 : x0 + 60},400H${side < 0 ? x1 : x0 + 440 - 380}`, 'none'));
     s.add(rect(x0, 400, 440, 500, wallFill(side)), rect(x0, 400, 440, 500, brick));
     s.add(rect(x0 - 10, 392, 460, 16, '#c8786a'), path(crenels(x0 - 10, x1 + 10, 392, 30, 34), '#8a3030'));
+    // depth: string course and plinth, buttress piers with shadowed flanks, the wall's return face toward the court
+    s.add(rect(x0, 566, 440, 12, '#b8645a'), rect(x0, 578, 440, 8, '#1e0a0c', op(0.35)), rect(x0, 820, 440, 16, '#9a4a44'), rect(x0, 836, 440, 34, '#2e0e12', op(0.35)));
+    for (const px of side < 0 ? [x0 + 40, x0 + 360] : [x0 + 50, x0 + 400]) {
+      s.add(rect(px, 408, 30, 462, s.lg([[0, '#b85448'], [0.5, '#8a2e30'], [1, '#4a161c']], 0, 0, 1, 0)), rect(px + (side < 0 ? 30 : -14), 408, 14, 462, '#1e0a0c', op(0.3)), rect(px - 4, 400, 38, 10, '#d08a78'));
+    }
+    const rx = side < 0 ? x1 : x0;
+    const rd = side < 0 ? 46 : -46;
+    s.add(path(`M${rx},404L${rx + rd},430V880L${rx},900Z`, s.lg(side < 0 ? [[0, '#e07a58'], [1, '#a8423a']] : [[0, '#a8423a'], [1, '#e07a58']], 0, 0, 1, 0)), path(`M${rx},404L${rx + rd},430V880L${rx},900Z`, brick, op(0.6)));
+    s.add(path(`M${rx - 4},396L${rx + rd},422L${rx + rd},432L${rx},410Z`, '#d89a80'));
     // rim light from the sunset on inner edges
     s.add(rect(side < 0 ? x1 - 6 : x0, 400, 6, 500, '#ffb070', op(0.7)));
     // gate arch with glow
     const gx = side < 0 ? x0 + 200 : x0 + 100;
     s.add(path(`M${gx},900V700a70,70 0 0,1 140,0V900z`, s.lg([[0, '#ffb060'], [1, '#6a2a1a']])));
     s.add(stroke(`M${gx - 8},900V700a78,78 0 0,1 156,0V900`, '#c8786a', 14));
+    let vs = '';
+    for (let i = 0; i <= 10; i++) {
+      const a = Math.PI - (i * Math.PI) / 10;
+      vs += `M${P(gx + 70 + Math.cos(a) * 85, 700 - Math.sin(a) * 85)}L${P(gx + 70 + Math.cos(a) * 112, 700 - Math.sin(a) * 112)}`;
+    }
+    s.add(stroke(`M${gx - 42},900V700a112,112 0 0,1 224,0V900`, '#d8907a', 3), stroke(vs, '#5a1e22', 2.5), path(`M${gx + 60},582h20l4,22h-28z`, '#e0b050'));
+    s.add(`<circle cx="${n(side < 0 ? x0 + 390 : x0 + 50)}" cy="590" r="150" fill="${s.rgu([[0, '#ffb060', 0.35], [1, '#ffb060', 0]], side < 0 ? x0 + 390 : x0 + 50, 590, 150)}"/>`);
     // scorpion banners
     const bx = side < 0 ? x0 + 240 : x0 + 130;
     s.add(hangingBanner(s, bx, 440, 70, 230, '#7b1e3a', '#e0b050', scorpion(bx + 35, 530, 46, '#e0b050')));
@@ -1511,6 +1543,15 @@ function praetorianBastion(s: S): void {
   for (const side of [-1, 1]) {
     const x = side < 0 ? -40 : 1460;
     s.add(rect(x, 160, 180, 740, wallFill(side)), rect(x, 160, 180, 740, brick), path(crenels(x - 10, x + 190, 160, 26, 34, 0.4), '#8a3030'), rect(x - 10, 152, 200, 14, '#c8786a'));
+    // tower relief: return face, string courses and a corbel table under the battlements
+    const tx = side < 0 ? x + 180 : x;
+    const td = side < 0 ? 34 : -34;
+    s.add(path(`M${tx},166L${tx + td},186V880L${tx},900Z`, s.lg(side < 0 ? [[0, '#d0664e'], [1, '#8a3030']] : [[0, '#8a3030'], [1, '#d0664e']], 0, 0, 1, 0)), path(`M${tx},166L${tx + td},186V880L${tx},900Z`, brick, op(0.6)));
+    let sc2 = '';
+    for (const y of [360, 620]) sc2 += `M${x},${y}h180`;
+    let corb = '';
+    for (let i = 0; i < 9; i++) corb += `M${x + 6 + i * 20},166v14h12v-14z`;
+    s.add(stroke(sc2, '#c8786a', 10), stroke(sc2.replace(/,(\d+)h/g, (_m, y) => `,${+y + 7}h`), '#1e0a0c', 4, op(0.35)), path(corb, '#a84a40'), rect(x, 180, 180, 4, '#1e0a0c', op(0.3)));
     let win = '';
     for (let i = 0; i < 4; i++) win += `M${x + 76},${300 + i * 130}v-30a14,14 0 0,1 28,0v30z`;
     s.add(path(win, '#ffc060'), path(win, s.rgu([[0, '#ffc060', 0.6], [1, '#ffc060', 0]], x + 90, 400, 300), op(0.4)));
@@ -2050,22 +2091,40 @@ function imperialPalace(s: S): void {
 
 /** Colossal emperor statue (local: base centre at 0,0, height 100). */
 function emperorStatue(s: S, x: number, base: number, h: number, variant: number, light: string, dark: string, gold: string): string {
+  // a carved marble emperor in contrapposto: cuirass, pteruges and paludamentum (or a toga), with
+  // modelled curves, fold lines and a cast shade on the far side, so the figures read as sculpture
   const sc = h / 100;
   const fill = s.lg([[0, shade(light, 0.2)], [0.45, light], [1, dark]], 0, 0, 1, 0);
+  const cloak = s.lg([[0, shade(light, 0.05)], [1, shade(dark, -0.1)]], 0, 0, 1, 0);
   const arm = variant % 3;
-  let d = 'M-9,0L-7,-36L-1.5,-36L-1,0ZM1,0L1.5,-36L7,-36L9,0Z';
-  d += 'M-11.5,-36L11.5,-36L9.5,-24L-9.5,-24Z';
-  d += 'M-10,-35L-12,-62Q0,-67 12,-62L10,-35Z';
-  d += 'M-12,-62Q-21,-48 -19,-18L-12,-18Q-14,-44 -8,-56Z';
-  if (arm === 0) d += 'M9,-61L21,-84L25.5,-82L14,-57Z';
-  else if (arm === 1) d += 'M9,-61L18,-40L22,-42L14,-60Z';
-  else d += 'M9,-61L24,-66L24,-61L13,-56Z';
-  d += 'M-3,-66h6v4h-6z';
-  const head = `<circle cx="0" cy="-71.5" r="5.4" fill="${light}"/>` + stroke('M-7,-58Q0,-50 8,-58M-8,-50Q0,-42 9,-50', dark, 1, op(0.6));
-  let extra = stroke('M-6,-76Q0,-82 6,-76', gold, 2.2, 'stroke-linecap="round"');
+  const toga = variant % 4 === 3;
+  let d = '';
+  let fold = '';
+  if (toga) {
+    d += 'M-10,0C-12,-20 -12.5,-44 -11,-62Q0,-66.5 11,-62C12.5,-44 12,-20 10.5,0Z';
+    fold += 'M-10,-60C-4,-50 4,-42 10,-28M-8,-56C-3,-44 2,-36 6,-20M-6,-30C-5,-18 -5,-8 -6,0M2,-24C3,-14 3,-6 2,0';
+  } else {
+    d += 'M-8,0C-8,-12 -7,-24 -6.5,-33L-1.5,-33C-1.5,-24 -2,-12 -2.5,0ZM2,0C3,-10 4.5,-20 2,-33L7,-33C9,-22 8.5,-10 8,0Z';
+    d += 'M-11,-34L11,-34L10,-25L-10,-25Z';
+    d += 'M-10,-33C-12,-44 -12.5,-54 -11,-62Q0,-66.5 11,-62C12.5,-54 12,-44 10,-33Z';
+    fold += 'M-6,-57Q0,-53 6,-57M-5,-47Q0,-44 5,-47M0,-61V-38';
+    for (let i = -9; i <= 9; i += 3) fold += `M${i},-33v8`;
+  }
+  // paludamentum / toga end over the left shoulder
+  const drape = 'M-11,-62C-17.5,-58 -20.5,-44 -19.5,-18C-17.5,-15 -13.5,-15 -12,-19C-13,-36 -12,-48 -7.5,-56Z';
+  if (arm === 0) d += 'M9,-60C14,-66 18,-74 20.5,-84L25,-82C22.5,-72 18.5,-62 13.5,-56Z';
+  else if (arm === 1) d += 'M9,-60C13,-54 16,-46 18,-40L22,-42C20,-49 17,-57 13.5,-60Z';
+  else d += 'M9,-61C14,-63 19,-65 24,-66L24,-61C19,-60 15,-58 13,-56Z';
+  d += 'M-2.6,-66.5h5.2v5h-5.2z';
+  const hand = arm === 0 ? '<circle cx="23" cy="-85" r="2.4"/>' : arm === 1 ? '<circle cx="20" cy="-40" r="2.4"/>' : '<circle cx="25" cy="-63.5" r="2.4"/>';
+  const head = `<ellipse cx="0.6" cy="-71.5" rx="5" ry="6" fill="${light}"/>` + path('M-4.6,-72.5Q-4,-78.5 1,-78Q5.6,-77.6 5.4,-72Q3,-75.5 -1,-74.5Q-3,-74 -4.6,-72.5Z', shade(light, -0.12)) + path('M5.2,-71.5l1.6,1.8l-1.6,0.6z', shade(dark, 0.1));
+  let extra = stroke('M-5.4,-75Q0.6,-81 6.4,-75', gold, 2, 'stroke-linecap="round"');
+  if (!toga) extra += stroke('M-10,-35H10', gold, 1.4);
   if (variant % 2 === 0) extra += stroke('M-16,-22L-18,-98', shade(dark, -0.2), 1.6) + path('M-18,-98l-2,-6l4,0z', gold);
   else extra += `<circle cx="-16" cy="-24" r="4" fill="${gold}"/>`;
-  return `<g transform="translate(${n(x)} ${n(base)}) scale(${n(sc)})">${path(d, fill)}${head}${extra}</g>`;
+  // far-side shade (light from the left) and a contact shadow at the feet
+  const shadeSide = path('M4,-62C10,-60 12.5,-54 12,-44C11.5,-30 10.5,-14 10,0L6,0C7,-16 8,-34 7,-48C6.5,-56 5,-60 4,-62Z', dark, op(0.35));
+  return `<g transform="translate(${n(x)} ${n(base)}) scale(${n(sc)})">${ell(0, 0, 13, 2.2, dark, op(0.45))}${path(drape, cloak)}${path(d, fill)}${shadeSide}${stroke(fold, dark, 0.9, `${op(0.55)}`)}<g fill="${light}">${hand}</g>${head}${extra}</g>`;
 }
 
 /** 10 · The Hall of Caesars — teal-and-gold barrel-vaulted hall of statues. */
@@ -2974,6 +3033,29 @@ function harbourOstia(s: S): void {
   for (let i = 1; i < 9; i++) qp += `M${P(-20 + i * 50, 760 - i * 20 + 140 * (i / 9))}L${P(380 + i * 40, 600 - i * 4)}`;
   for (let i = 1; i < 6; i++) qp += `M${P(-20 + i * 70, 760 + i * 28)}L${P(380 + i * 70, 600 + i * 20)}`;
   s.add(stroke(qp, '#a8987a', 1.2, op(0.45)));
+  // dressed-stone quay: block courses across the deck, lit kerb, jointed sea face with mooring rings
+  let qb = '';
+  for (let i = 0; i < 7; i++) {
+    const t0 = i / 7;
+    const ax = -20 + 460 * t0, ay = 900 - 200 * t0, bx = 380 + 380 * t0, by = 600;
+    qb += `M${P(ax, ay)}L${P(bx, by - 40 * t0)}`;
+  }
+  s.add(stroke(qb, '#8a7a5a', 1.4, op(0.35)));
+  s.add(stroke('M-20,900L440,700L760,600', '#fffaf0', 3, op(0.9)));
+  let qf = '';
+  const seg = (a: number[], b: number[], c: number[], d: number[], k: number) => {
+    for (let i = 1; i < k; i++) {
+      const t = i / k;
+      qf += `M${P(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)}L${P(c[0] + (d[0] - c[0]) * t, c[1] + (d[1] - c[1]) * t)}`;
+    }
+  };
+  seg([-20, 900], [440, 700], [60, 900], [470, 724], 9);
+  seg([440, 700], [760, 600], [470, 724], [780, 616], 6);
+  s.add(stroke('M60,900L470,724L780,616', '#6a5a40', 2, op(0.6)), stroke(qf, '#6a5a40', 1.5, op(0.5)));
+  let rings = '';
+  for (const [x, y] of [[230, 828], [520, 700], [690, 640]] as const) rings += `M${P(x - 7, y)}a7,7 0 1,0 14,0a7,7 0 1,0 -14,0`;
+  s.add(stroke(rings, '#4a4640', 2.5));
+  s.add(stroke('M480,742Q620,700 780,640', '#ffffff', 2, op(0.35)));
   // crane: A-frame with treadwheel
   {
     const x = 560;
@@ -3015,14 +3097,32 @@ function harbourOstia(s: S): void {
     return stroke(d, '#c8a068', 4) + stroke(d, '#8a6038', 1.2, op(0.6));
   };
   s.add(coil(470, 852, 34), coil(1240, 860, 36));
-  const amph = (x: number, y: number, sc: number, c: string) =>
-    path(`M${P(x - 5 * sc, y - 76 * sc)}h${n(10 * sc)}v${n(8 * sc)}q${n(16 * sc)},${n(10 * sc)} ${n(14 * sc)},${n(34 * sc)}q${n(-2 * sc)},${n(22 * sc)} ${n(-12 * sc)},${n(34 * sc)}l${n(-2 * sc)},${n(10 * sc)}l${n(-2 * sc)},${n(-10 * sc)}q${n(-10 * sc)},${n(-12 * sc)} ${n(-12 * sc)},${n(-34 * sc)}q${n(-2 * sc)},${n(-24 * sc)} ${n(14 * sc)},${n(-34 * sc)}z`, s.lg([[0, shade(c, 0.3)], [0.45, c], [1, shade(c, -0.45)]], 0, 0, 1, 0));
+  // amphorae: shouldered body, rim, loop handles, painted band and a sheen; stacked two deep in a rack
+  const amph = (x: number, y: number, sc: number, c: string) => {
+    const body = path(`M${P(x - 5 * sc, y - 76 * sc)}h${n(10 * sc)}v${n(8 * sc)}q${n(16 * sc)},${n(10 * sc)} ${n(14 * sc)},${n(34 * sc)}q${n(-2 * sc)},${n(22 * sc)} ${n(-12 * sc)},${n(34 * sc)}l${n(-2 * sc)},${n(10 * sc)}l${n(-2 * sc)},${n(-10 * sc)}q${n(-10 * sc)},${n(-12 * sc)} ${n(-12 * sc)},${n(-34 * sc)}q${n(-2 * sc)},${n(-24 * sc)} ${n(14 * sc)},${n(-34 * sc)}z`, s.lg([[0, shade(c, 0.3)], [0.45, c], [1, shade(c, -0.45)]], 0, 0, 1, 0));
+    const handles = stroke(`M${P(x - 5 * sc, y - 70 * sc)}q${n(-9 * sc)},${n(2 * sc)} ${n(-8 * sc)},${n(10 * sc)}M${P(x + 5 * sc, y - 70 * sc)}q${n(9 * sc)},${n(2 * sc)} ${n(8 * sc)},${n(10 * sc)}`, shade(c, -0.35), 2.4 * sc);
+    const rim = rect(x - 6.5 * sc, y - 79 * sc, 13 * sc, 4 * sc, shade(c, 0.15), `rx="${n(1.5 * sc)}"`);
+    const band = stroke(`M${P(x - 13 * sc, y - 52 * sc)}q${n(13 * sc)},${n(4 * sc)} ${n(26 * sc)},0`, '#3a1e12', 1.6 * sc, `${op(0.55)}`);
+    const sheen = stroke(`M${P(x - 7 * sc, y - 56 * sc)}q${n(-3 * sc)},${n(14 * sc)} ${n(1 * sc)},${n(26 * sc)}`, '#fff2dc', 2 * sc, `stroke-linecap="round" ${op(0.45)}`);
+    return body + handles + rim + band + sheen;
+  };
+  const rack = (x0: number, x1: number, y: number) => stroke(`M${P(x0, y - 30)}H${n(x1)}M${P(x0, y - 62)}H${n(x1)}M${P(x0 + 4, y)}V${n(y - 70)}M${P(x1 - 4, y)}V${n(y - 70)}`, '#6a4424', 5, 'stroke-linecap="round"');
   let am = '';
-  for (let i = 0; i < 6; i++) am += amph(70 + i * 34, 890 - (i % 2) * 6, 1.3, i % 2 ? '#d07848' : '#c4683c');
+  for (let i = 0; i < 6; i++) am += amph(88 + i * 32, 846, 1.05, i % 2 ? '#b8603a' : '#a8542e');
+  am += rack(64, 290, 852);
+  for (let i = 0; i < 6; i++) am += amph(70 + i * 34, 900 - (i % 2) * 6, 1.3, i % 2 ? '#d07848' : '#c4683c');
+  for (let i = 0; i < 4; i++) am += amph(1396 + i * 34, 846, 1.05, i % 2 ? '#b8603a' : '#a04a28');
+  am += rack(1374, 1530, 852);
   for (let i = 0; i < 4; i++) am += amph(1380 + i * 36, 900 - (i % 2) * 6, 1.4, i % 2 ? '#d07848' : '#b85a30');
   s.add(am);
-  // crates
-  s.add(rect(250, 830, 80, 60, s.lg([[0, '#c8955c'], [1, '#8a5a30']])), stroke('M250,830l80,60M330,830l-80,60', '#6a4020', 3), rect(1300, 820, 70, 70, s.lg([[0, '#c8955c'], [1, '#8a5a30']])));
+  // one amphora lying on its side by the crate, and a grain sack
+  s.add(`<g transform="rotate(-78 ${n(345)} ${n(882)})">${amph(345, 900, 1.1, '#c4683c')}</g>`);
+  s.add(path('M1268,900q-6,-38 14,-52q-6,-10 6,-12q12,2 6,12q22,14 14,52z', s.lg([[0, '#e8d4a8'], [1, '#b89a68']], 0, 0, 1, 0)), stroke('M1280,846q8,4 16,0', '#8a6a3a', 2));
+  // crates: planked, lidded, banded
+  const crate = (x: number, y: number, w: number, h: number) =>
+    rect(x, y, w, h, s.lg([[0, '#c8955c'], [1, '#8a5a30']])) + rect(x - 3, y - 6, w + 6, 9, '#d8a86c') +
+    stroke(`M${P(x, y + h / 3)}h${n(w)}M${P(x, y + (2 * h) / 3)}h${n(w)}M${P(x + 6, y)}v${n(h)}M${P(x + w - 6, y)}v${n(h)}`, '#6a4020', 2, op(0.7));
+  s.add(crate(250, 830, 80, 60), stroke('M256,834l68,52M324,834l-68,52', '#6a4020', 3), crate(1300, 820, 70, 70));
   // umbrella pines framing the left, a palm at right
   s.add(umbrellaPine(s, 20, 790, 560, 360, '#5a3e2a', '#3f6a4a', '#6a9a62'));
   s.add(palm(s, 1560, 790, 420, -0.35, '#8a6a4a', '#3f7a4a', '#7ab060'));
@@ -3037,10 +3137,13 @@ function aqueductHeights(s: S): void {
   sky(s, [[0, '#4d8fd0'], [0.28, '#9ccbe8'], [0.42, '#f4e6c8'], [0.47, '#ffdca8']]);
   sun(s, 240, 230, 38, '#fffaf0', '#ffe2a8', 520, 0.8);
   shafts(s, 240, 230, -Math.PI * 0.4, Math.PI * 0.35, 10, 1200, '#fff6dc', 0.13);
-  cloud(s, 620, 90, 380, 80, '#ffffff', '#d0c8d8');
+  // the big cumulus sits over the centre so the phone crop's top strip above the board has a subject
+  cloud(s, 790, 96, 430, 86, '#ffffff', '#d0c8d8');
   cloud(s, 1180, 200, 300, 56, '#fff8f0', '#e0c8c8', 0.9);
   cloud(s, 140, 80, 260, 50, '#ffffff', '#d8d0e0', 0.85);
-  birds(s, 900, 130, 6, 70, '#4a5a7a', 9);
+  cloud(s, 1010, 40, 170, 34, '#ffffff', '#dcd4e4', 0.8);
+  birds(s, 900, 150, 6, 70, '#4a5a7a', 9);
+  s.add(soaringEagle(680, 168, 0.9, '#5a4a40'));
   // lavender mountains + hill towns
   mountains(s, HY, [[60, 120, 240], [380, 90, 220], [1100, 150, 260], [1420, 110, 230]], '#a8a4c8', '#c8c0dc');
   haze(s, 280, HY, '#f8e8d4', 0, 0.6);
@@ -3425,7 +3528,8 @@ function circusMaximus(s: S): void {
   s.add(stroke(pc, '#c8a888', 3));
   haze(s, 200, 340, '#ffe0b0', 0, 0.45);
   // ---- stands (both sides) in perspective
-  const crowdL = patCrowd(s, 1.7, '#8a5a3a', ['#c0392b', '#f6f0e4', '#2f8a4a', '#2f6db3', '#e8b04b', '#9a3a8a'], ['#c88a62', '#a86a48', '#e0b08a']);
+  // crowd texture kept low-contrast (dimmed toward the stone) so the stands read as one mass, not noise
+  const crowdL = patCrowd(s, 1.7, '#9a6a44', ['#c0392b', '#f6f0e4', '#2f8a4a', '#2f6db3', '#e8b04b', '#9a3a8a'], ['#c88a62', '#a86a48', '#e0b08a'], 0.42);
   for (const k of [-1, 1]) {
     const inner = (Z: number) => pj(k * TX, 200, Z);
     const outer = (Z: number) => pj(k * SX, SYT, Z);
@@ -3439,7 +3543,15 @@ function circusMaximus(s: S): void {
       const Y = 200 + (SYT - 200) * t;
       tiers += `M${P(...pj(X, Y, ZN))}L${P(...pj(X, Y, ZF))}`;
     }
-    s.add(stroke(tiers, '#fff4e0', 5), stroke(tiers, '#a8784a', 1.5, op(0.6)));
+    // seat rows: faint perspective lines give the stands structure
+    let rows = '';
+    for (let t = 0.06; t < 1; t += 0.055) {
+      const X = k * (TX + (SX - TX) * t);
+      const Y = 200 + (SYT - 200) * t;
+      rows += `M${P(...pj(X, Y, ZN))}L${P(...pj(X, Y, ZF))}`;
+    }
+    s.add(stroke(rows, '#5a3a22', 1.6, op(0.28)));
+    s.add(stroke(tiers, '#fff4e0', 6), stroke(tiers, '#a8784a', 1.5, op(0.6)));
     // podium wall along the track
     s.add(path(quad(pj(k * TX, 200, ZN), pj(k * TX, 200, ZF), pj(k * TX, FY, ZF), pj(k * TX, FY, ZN)), k < 0 ? '#e8d4b0' : '#c8a87a'));
     let pod = '';
@@ -3510,29 +3622,28 @@ function circusMaximus(s: S): void {
   s.add(path(quad(pj(-110, spTop, 900), pj(110, spTop, 900), pj(110, spTop, ZF - 600), pj(-110, spTop, ZF - 600)), '#fff4e0'));
   s.add(path(quad(pj(-110, spTop, 900), pj(-110, spTop, ZF - 600), pj(-110, FY, ZF - 600), pj(-110, FY, 900)), '#d8bc90'));
   s.add(path(quad(pj(110, spTop, 900), pj(110, spTop, ZF - 600), pj(110, FY, ZF - 600), pj(110, FY, 900)), '#b08a5a'));
-  s.add(path(quad(pj(-26, spTop, 1000), pj(26, spTop, 1000), pj(26, spTop, ZF - 700), pj(-26, spTop, ZF - 700)), '#4f9ab0', op(0.85)));
+  s.add(path(quad(pj(-26, spTop, 1000), pj(26, spTop, 1000), pj(26, spTop, ZF - 700), pj(-26, spTop, ZF - 700)), '#6aa6b4', op(0.6)));
   {
     const a = pj(-110, spTop, 900);
     const b = pj(110, FY, 900);
     s.add(rect(a[0], a[1], b[0] - a[0], b[1] - a[1], '#f2e2c4'), rect(a[0], a[1] + (b[1] - a[1]) * 0.45, b[0] - a[0], 4, '#b8342a'), rect(a[0] - 4, a[1] - 5, b[0] - a[0] + 8, 6, '#ffffff'));
   }
-  // statues and shrines along the spina
+  // statues on the far spina only (the near half stays clear around the obelisk)
   let sts = '';
-  for (const Z of [1600, 2300, 4200, 5600]) {
+  for (const Z of [4400, 5800]) {
     const [x, y] = pj(0, spTop, Z);
     const sc = 800 / Z;
     sts += rect(x - 30 * sc, y - 60 * sc, 60 * sc, 60 * sc, '#f6ecd8') + person(x, y - 60 * sc, 200 * sc, '#e8b84a', '#e8b84a', { arm: 4 });
   }
   s.add(sts);
-  // lap counter: seven golden dolphins on a frame
+  // golden dolphins (the lap counter) along the near end of the spina, kept low so the obelisk rises clear
   {
-    const [x, y] = pj(0, spTop, 1250);
-    const sc = 800 / 1250;
-    s.add(stroke(`M${P(x - 90 * sc, y)}V${n(y - 200 * sc)}M${P(x + 90 * sc, y)}V${n(y - 200 * sc)}M${P(x - 100 * sc, y - 200 * sc)}H${n(x + 100 * sc)}`, '#8a6a4a', 8 * sc));
+    const [x, y] = pj(0, spTop, 1000);
+    const sc = 800 / 1000;
     let dl = '';
     for (let i = 0; i < 7; i++) {
-      const dx = x - 78 * sc + i * 26 * sc;
-      dl += `M${P(dx, y - 196 * sc)}q${n(-10 * sc)},${n(18 * sc)} 0,${n(36 * sc)}q${n(12 * sc)},${n(-6 * sc)} ${n(8 * sc)},${n(-20 * sc)}z`;
+      const dx = x - 66 * sc + i * 22 * sc;
+      dl += `M${P(dx - 5 * sc, y)}q${n(-3 * sc)},${n(-14 * sc)} ${n(7 * sc)},${n(-22 * sc)}q${n(-2 * sc)},${n(9 * sc)} ${n(4 * sc)},${n(12 * sc)}z`;
     }
     s.add(path(dl, '#e8b84a'));
   }
@@ -4290,16 +4401,55 @@ function goldenHouse(s: S): void {
       s.add(`<circle cx="${n((p0[0] + p1[0]) / 2)}" cy="${n((p0[1] + p1[1]) / 2)}" r="${n(r * 1.8)}" fill="${s.rgu([[0, '#bff0e8', 0.4], [1, '#bff0e8', 0]], (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, r * 1.8)}"/>`);
       s.add(path(panel(0.03, 0.15, 0.1, 0.9), '#a8282a'), path(panel(0.85, 0.97, 0.1, 0.9), '#a8282a'));
     } else {
-      s.add(path(panel(0.08, 0.92, 0.08, 0.62), '#a8282a'), path(panel(0.08, 0.92, 0.68, 0.94), '#1e2a6a'));
-      s.add(path(panel(0.12, 0.88, 0.12, 0.58), 'none', `stroke="#f2c64a" stroke-width="${n(3 - lum)}"`));
-      // painted architecture: thin candelabra and a garland medallion
-      const c0 = at(0.5, 0.14);
-      const c1 = at(0.5, 0.56);
-      const mid = at(0.5, 0.3);
+      // Fourth-style fresco: red field with a dark frieze, a framed landscape picture (pinax) in the centre,
+      // painted candelabra, garland swags and floating figures; a navy dado with a gold meander below
       const fw = Math.abs(at(0.9, 0.3)[0] - at(0.1, 0.3)[0]);
-      s.add(stroke(`M${P(c0[0], c0[1])}L${P(c1[0], c1[1])}M${P(mid[0] - fw * 0.16, mid[1])}h${n(fw * 0.32)}`, '#f6d27a', 2.2), `<circle cx="${n(mid[0])}" cy="${n(mid[1] - fw * 0.08)}" r="${n(fw * 0.07)}" fill="none" stroke="#7ab060" stroke-width="2.5"/>`);
-      const sw = at(0.3, 0.42);
-      s.add(person(sw[0], sw[1] + fw * 0.12, fw * 0.24, '#f6e6c0', '#e8c8a0', { arm: 3 }), person(at(0.7, 0.42)[0], sw[1] + fw * 0.12, fw * 0.24, '#7ab0c0', '#e8c8a0', { arm: 2, dir: -1 }));
+      const L = (pts: Pt[]) => pts.map((p, i) => (i ? 'L' : 'M') + P(p[0], p[1])).join('');
+      s.add(path(panel(0.08, 0.92, 0.08, 0.62), '#a8282a'), path(panel(0.08, 0.92, 0.68, 0.94), '#1e2a6a'));
+      s.add(path(panel(0.08, 0.92, 0.08, 0.14), '#6e1a1e'), path(panel(0.08, 0.92, 0.555, 0.62), '#8a1f22'));
+      s.add(path(panel(0.12, 0.88, 0.16, 0.54), 'none', `stroke="#f2c64a" stroke-width="${n(2.6 - lum)}"`));
+      let dots = '';
+      for (let i = 0; i <= 16; i++) {
+        const p = at(0.1 + i * 0.05, 0.11);
+        dots += `M${P(p[0] - 2, p[1])}h4`;
+      }
+      s.add(stroke(dots, '#f2c64a', 4, 'stroke-linecap="round"'));
+      // the pinax: sky, distant hills, a white shrine, inside a gilded frame
+      s.add(path(panel(0.37, 0.63, 0.2, 0.48), s.lgu([[0, '#cfe8ec'], [1, '#f6e8c4']], at(0.5, 0.2)[0], at(0.5, 0.2)[1], at(0.5, 0.48)[0], at(0.5, 0.48)[1])));
+      s.add(path(L([at(0.37, 0.42), at(0.45, 0.36), at(0.52, 0.4), at(0.58, 0.35), at(0.63, 0.39), at(0.63, 0.48), at(0.37, 0.48)]) + 'Z', '#7a9a72'));
+      s.add(path(panel(0.47, 0.53, 0.33, 0.41), '#fbf4e4'), path(L([at(0.46, 0.33), at(0.5, 0.29), at(0.54, 0.33)]) + 'Z', '#fbf4e4'));
+      s.add(path(panel(0.37, 0.63, 0.2, 0.48), 'none', `stroke="#f6d27a" stroke-width="${n(4 - lum * 1.5)}"`));
+      // candelabra at the sides of the picture
+      let cand = '';
+      for (const u of [0.2, 0.8]) {
+        const t0 = at(u, 0.2), t1 = at(u, 0.52);
+        cand += `M${P(t0[0], t0[1])}L${P(t1[0], t1[1])}`;
+        for (const v of [0.26, 0.36, 0.46]) {
+          const q = at(u, v);
+          cand += `M${P(q[0] - fw * 0.025, q[1])}h${n(fw * 0.05)}`;
+        }
+      }
+      s.add(stroke(cand, '#f6d27a', 2.2, 'stroke-linecap="round"'));
+      for (const u of [0.2, 0.8]) {
+        const q = at(u, 0.2);
+        s.add(ell(q[0], q[1] - 3, fw * 0.035, 4, '#f6d27a'), ell(q[0], q[1] - 9, fw * 0.012, 5, '#ffb347', op(0.85)));
+      }
+      // garland swags from the frieze
+      let sw0 = '';
+      for (const [u0, u1] of [[0.12, 0.37], [0.63, 0.88]]) {
+        const p0 = at(u0, 0.17), p1 = at(u1, 0.17), m = at((u0 + u1) / 2, 0.27);
+        sw0 += `M${P(p0[0], p0[1])}Q${P(m[0], m[1])} ${P(p1[0], p1[1])}`;
+      }
+      s.add(stroke(sw0, '#4f8a4a', 4.5 - lum * 1.5, 'stroke-linecap="round"'), stroke(sw0, '#9ac870', 1.5, `stroke-dasharray="3 7" ${op(0.9)}`));
+      // dado: gold meander band and framed lozenges
+      let mz = '';
+      for (let i = 0; i < 16; i++) {
+        const p = at(0.1 + i * 0.05, 0.8), q = at(0.125 + i * 0.05, 0.75), r2 = at(0.15 + i * 0.05, 0.8);
+        mz += `M${P(p[0], p[1])}L${P(q[0], q[1])}L${P(r2[0], r2[1])}`;
+      }
+      s.add(stroke(mz, '#d8a83a', 2, `${op(0.85)}`), path(panel(0.1, 0.9, 0.84, 0.92), 'none', `stroke="#d8a83a" stroke-width="1.6" ${op(0.7)}`));
+      const sw = at(0.29, 0.44);
+      s.add(person(sw[0], sw[1] + fw * 0.1, fw * 0.2, '#f6e6c0', '#e8c8a0', { arm: 3 }), person(at(0.71, 0.44)[0], sw[1] + fw * 0.1, fw * 0.2, '#7ab0c0', '#e8c8a0', { arm: 2, dir: -1 }));
       // shade the oblique faces toward the sides
       s.add(path(quad(A, B, C, D), '#3a1a0a', op(0.12 + lum * 0.2)));
     }

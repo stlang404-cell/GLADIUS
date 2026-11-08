@@ -30,6 +30,8 @@ function enginePack(): Plugin {
       if (bad.length) this.error(`engine pack invalid:\n  ${bad.join('\n  ')}\nRestore public/engine/pack/ (see docs/ENGINE.md) or rebuild it: node scripts/engine-pack.mjs build <npm stockfish bin dir>`);
     },
     closeBundle() {
+      // Baked SDF meshes (public/models) are bake inputs only, never loaded by the game.
+      fs.rmSync(path.join(outDir, 'models'), { recursive: true, force: true });
       const engineDir = path.join(outDir, 'engine');
       if (!fs.existsSync(engineDir)) return;
       const names = Object.keys(readManifest()?.files ?? {});

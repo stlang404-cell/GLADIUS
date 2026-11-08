@@ -452,7 +452,7 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
   } else if (uMark < 0.28) fs += circ(cx + (uMark2 < 0.5 ? -1 : 1) * (mw + 2), mouthY - 2.5, 0.75, line, op(0.75));
   // hair shadow on forehead
   // cel shadow on the far side + rim light
-  fs += path(`M${P(cx + fw * 0.5, T - 2)}C${P(cx + cw * 0.72, browY)} ${P(cx + cw * 0.5, eyeY + 4)} ${P(cx + cw * 0.62, noseY)}C${P(cx + cw * 0.72, mouthY)} ${P(cx + jw * 0.85, chinY - 4)} ${P(cx + jw * 0.75, chinY + 3)}H${n(cx + cw + 6)}V${n(T - 2)}Z` + ell(cx + 2, T + 4, fw + 2, browY - T - 3), sh, op(helm || bald === 2 ? 0.2 : 0.25));
+  fs += path(`M${P(cx + fw * 0.5, T - 2)}C${P(cx + cw * 0.72, browY)} ${P(cx + cw * 0.5, eyeY + 4)} ${P(cx + cw * 0.62, noseY)}C${P(cx + cw * 0.72, mouthY)} ${P(cx + jw * 0.85, chinY - 4)} ${P(cx + jw * 0.75, chinY + 3)}H${n(cx + cw + 6)}V${n(T - 2)}Z` + ell(cx + 2, T + 4, fw + 2, browY - T - 3), dark ? mix(sh, '#000000', 0.25) : sh, op(helm || bald === 2 ? 0.2 : dark ? 0.42 : 0.25));
   fs += stroke(spline([[R, browY - 5], [cx + cw, eyeY + 3.5], [cx + jw, jawY], [cx + jw * 0.6, chinY - 2.5]], false), mix(rim, skin, 0.4), 2.4, op(0.55));
   s += `<g clip-path="url(#${id}k)">${fs}</g>`;
 
@@ -514,7 +514,7 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
 
   // ======================= nose
   const nY = noseY;
-  const nwid = [3.2, 3.4, 5, 3.4, 3.4, 2.8, 4.2][noseT];
+  const nwid = [3.2, 3.6, 5.8, 3.4, 3.2, 2.4, 4.8][noseT];
   let no = '';
   const bridge =
     noseT === 1 ? `M${P(cx + 1.4, eyeY + 1)}Q${P(cx + 3.6, eyeY + nlen * 0.45)} ${P(cx + 2.4, nY - 1)}`
@@ -523,8 +523,10 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
           : `M${P(cx + 1.6, eyeY + 2)}Q${P(cx + 2, nY - 4)} ${P(cx + 2.4, nY - 1.6)}`;
   fl += bridge;
   const tipY = nY + (noseT === 3 ? -0.8 : noseT === 1 ? 0.6 : 0);
-  no += stroke(`M${P(cx - nwid, tipY - 1.6)}Q${P(cx - nwid - 1, tipY + 1)} ${P(cx - 1.6, tipY + 0.8)}Q${P(cx, tipY + 1.8)} ${P(cx + 1.6, tipY + 0.8)}Q${P(cx + nwid + 1, tipY + 1)} ${P(cx + nwid, tipY - 1.6)}`, mix(sh, line, 0.35), 1.1);
-  if (noseT === 3 || noseT === 2) no += stroke(`M${P(cx - 2.4, tipY + 0.4)}h.8M${P(cx + 1.6, tipY + 0.4)}h.8`, line, 1.1, op(0.7));
+  // far-side plane of the nose (hooked for roman, short for snub, wide for broad): makes nose types read at 48 px
+  no += path(`M${P(cx + 1.2, noseT === 3 ? eyeY + 4 : eyeY + 1)}Q${P(cx + (noseT === 1 ? 4.6 : 2.4) + nwid * 0.3, nY - nlen * 0.4)} ${P(cx + nwid + 0.4, tipY - 1)}L${P(cx + 1.4, tipY + 0.6)}Z`, sh, op(dark ? 0.42 : 0.32));
+  no += stroke(`M${P(cx - nwid, tipY - 1.6)}Q${P(cx - nwid - 1, tipY + 1)} ${P(cx - 1.6, tipY + 0.8)}Q${P(cx, tipY + 1.8)} ${P(cx + 1.6, tipY + 0.8)}Q${P(cx + nwid + 1, tipY + 1)} ${P(cx + nwid, tipY - 1.6)}`, mix(sh, line, 0.35), 1.35);
+  if (noseT === 3 || noseT === 2) no += stroke(`M${P(cx - 2.6, tipY + 0.4)}h1M${P(cx + 1.6, tipY + 0.4)}h1`, line, 1.4, op(0.75));
   if (noseT === 6) no += circ(cx, tipY - 1.2, 2.6, sh, op(0.18));
   no += circ(cx - 0.8, tipY - 1.8, noseT === 6 ? 1.3 : 0.9, W, op(0.45));
   s += no;
@@ -640,7 +642,7 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
       if (hs === 'curlsf') {
         let c1 = '';
         for (let i = 0; i < 6; i++) c1 += `M${P(L - 1.5 + (i % 2) * 1.5, browY + 1 + i * 3.4)}h0M${P(R + 1.5 - (i % 2) * 1.5, browY + 1 + i * 3.4)}h0`;
-        fh += layers(c1, [[shade(hairC, -0.45), 5.8], [hairC, 4.6], [shade(hairC, 0.3), 1.8, 0.6, '-.7 -.7']]);
+        fh += layers(c1, [[shade(hairC, -0.45), 6.4], [hairC, 5.2], [shade(hairC, 0.3), 1.6, 0.35, '-.9 -.8']]);
       }
     } else if (bald === 2) {
       // horseshoe: sides only + scalp shine
@@ -649,8 +651,8 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
     } else {
       const buzz = hs === 'buzz';
       const top = buzz ? T - 1 : capTop;
-      const ext = buzz ? 0.7 : hs === 'curly' ? 1.8 : 1.6;
-      const o = arc(ext, top, hs === 'tousled' ? 9 : 6, hs === 'tousled' ? 0.07 : 0.02, eyeY - 1);
+      const ext = buzz ? 0.7 : (hs === 'curly' ? 1.8 : 1.6) + ((uStyle * 13.7) % 1) * 2.6 - 0.9;
+      const o = arc(ext, top, hs === 'tousled' ? 7 : 6, hs === 'tousled' ? 0.045 : 0.02, eyeY - 1);
       const hl = hy + (bald === 1 ? -3 : 0);
       const sp = cx + (uPart - 0.5) * 12;
       let edge: string;
@@ -676,11 +678,12 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
       const outerD = spline(o, false, true);
       if (hs === 'curly' && !bald) {
         let bumps = '';
-        for (let i = 0; i < 9; i++) {
-          const a = Math.PI * (0.02 + (i / 8) * 0.96);
-          bumps += `M${P(cx + Math.cos(a) * (fw + 1.2), hcY - Math.sin(a) * (hcY - top - 1.2))}h0`;
+        for (let i = 0; i < 13; i++) {
+          const a = Math.PI * (0.02 + (i / 12) * 0.96);
+          const rr = i % 2 ? 2 : 0.5;
+          bumps += `M${P(cx + Math.cos(a) * (fw + rr), hcY - Math.sin(a) * (hcY - top - 0.6 + rr * 0.5))}h0`;
         }
-        fh += layers(bumps, [[shade(hairC, -0.5), 7.6], [hairC, 6.2], [shade(hairC, 0.25), 2.4, 0.5, '-1 -1']]);
+        fh += layers(bumps, [[shade(hairC, -0.5), 7.4], [hairC, 6.4]]);
       }
       fh += path(outerD + edge, buzz ? mix(hairC, skin, 0.3) : hairPaint, hairOut + (buzz ? op(0.85) : ''));
       if (hs === 'curly' && !bald) {
@@ -688,9 +691,9 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
         for (let i = 0; i < 9; i++) {
           const a = Math.PI * (0.12 + (i / 8) * 0.76);
           const rr = i % 2 ? 0.45 : 0.75;
-          cu += `M${P(cx + Math.cos(a) * fw * rr, hcY - 3 - Math.sin(a) * (hcY - top - 3) * rr)}a1.7,1.7 0 1 1 ${P(2, 1)}`;
+          cu += `M${P(cx + Math.cos(a) * fw * rr, hcY - 3 - Math.sin(a) * (hcY - top - 3) * rr)}a2.3,2.3 0 0 ${i % 2} ${P(3.6, i % 3 ? 1.2 : -1)}`;
         }
-        fh += stroke(cu, hairD, 1, op(0.7));
+        fh += stroke(cu, hairD, 1.1, op(0.6));
       } else if (!buzz) {
         fh += strands(top, hl + 1);
         if (hs === 'wavy' && !bald) fh += path(`M${P(sp - 1, hl)}C${P(sp - 6, hl + 2)} ${P(sp - 9, hl + 5)} ${P(sp - 8, hl + 8)}C${P(sp - 6, hl + 5)} ${P(sp - 3, hl + 3)} ${P(sp + 2, hl + 1)}Z`, hairPaint, hairOut);
@@ -746,6 +749,7 @@ export function portraitSvg(seed: number, opts: PortraitOptions): string {
     hg += path(`M${P(L - 3.5, bandY + 2)}C${P(L - 4.5, T - 11)} ${P(R + 4.5, T - 11)} ${P(R + 3.5, bandY + 2)}Z`, mp, mo2);
     if (gear === 'glad') hg += path(`M${P(L - 11, bandY + 5)}Q${P(cx, bandY - 4)} ${P(R + 11, bandY + 5)}Q${P(R + 12, bandY + 1)} ${P(R + 4, bandY - 1)}Q${P(cx, bandY - 8)} ${P(L - 4, bandY - 1)}Q${P(L - 12, bandY + 1)} ${P(L - 11, bandY + 5)}Z`, mp, mo2);
     else hg += path(`M${P(L - 4.5, bandY + 4)}Q${P(cx, bandY - 2)} ${P(R + 4.5, bandY + 4)}L${P(R + 4.2, bandY + 0.5)}Q${P(cx, bandY - 5.5)} ${P(L - 4.2, bandY + 0.5)}Z`, shade(metal, -0.15), mo2);
+    hg += stroke(`M${P(L - 3.3, bandY)}C${P(L - 4.3, T - 10.6)} ${P(R + 4.3, T - 10.6)} ${P(R + 3.3, bandY)}`, W, 1, op(0.5));
     hg += stroke(`M${P(cx - fw * 0.6, T + 2)}Q${P(cx - 5, T - 3.5)} ${P(cx + 2, T - 4)}`, W, 2, op(0.7));
     hg += stroke(`M${P(R - 1, T + 4)}Q${P(R + 3, T + 9)} ${P(R + 3.4, bandY - 1)}`, rim, 1.6, op(0.7));
     if (ai >= 7) hg += circ(cx, bandY - 1, 1.6, '#c0281e', out('#c0281e'));

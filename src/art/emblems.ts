@@ -825,22 +825,29 @@ function rankCharge(M: Mats, a: number): string {
   }
 }
 
-/** Grade pips: 1–3 bold marks on a dark band (studs / bars / gold dots / stars by family). */
+/**
+ * Grade pips: 1–3 bold marks on a dark band (studs / bars / diamonds / stars by family). The marks are
+ * large, light and well separated (≈4 px with 1.5 px gaps at 24 px) so the grade reads at 20–24 px.
+ */
 function gradePips(M: Mats, fam: Fam, count: number, band: string): string {
-  const w = 28 + count * 24;
+  const step = 29;
+  const w = 22 + count * step;
   const x0 = 64 - w / 2;
-  let s = `<path d="M${n(x0 - 9)},104L${n(x0)},99V125L${n(x0 - 9)},120L${n(x0 - 4)},112Z M${n(64 + w / 2 + 9)},104L${n(64 + w / 2)},99V125L${n(64 + w / 2 + 9)},120L${n(64 + w / 2 + 4)},112Z" fill="${shade(band, -0.35)}" ${st(OUT, 1.6)}/>`;
-  s += `<rect x="${n(x0)}" y="98" width="${n(w)}" height="28" rx="6" fill="${band}" ${st(OUT, 2)}/>`;
+  let s = `<path d="M${n(x0 - 9)},102L${n(x0)},97V125L${n(x0 - 9)},120L${n(x0 - 4)},111Z M${n(64 + w / 2 + 9)},102L${n(64 + w / 2)},97V125L${n(64 + w / 2 + 9)},120L${n(64 + w / 2 + 4)},111Z" fill="${shade(band, -0.35)}" ${st(OUT, 1.6)}/>`;
+  s += `<rect x="${n(x0)}" y="95" width="${n(w)}" height="32" rx="7" fill="${band}" ${st(OUT, 2)}/>`;
+  s += `<path d="M${n(x0 + 5)},98.5H${n(x0 + w - 5)}" stroke="#ffffff" stroke-opacity=".22" stroke-width="1.5"/>`;
   const mat: MatName = fam === 0 ? 'bronze' : fam === 1 ? 'silver' : fam === 2 ? 'gold' : 'celest';
+  const lite = ['#ffe2b8', '#ffffff', '#fff0a0', '#fff2b8'][fam];
   let d = '';
   for (let i = 0; i < count; i++) {
-    const x = 64 + (i - (count - 1) / 2) * 24;
-    if (fam === 0) d += `M${n(x + 8.5)},112a8.5,8.5 0 1,0 -17,0a8.5,8.5 0 1,0 17,0Z`;
-    else if (fam === 1) d += `M${n(x - 5.5)},102h11v20h-11z`;
-    else if (fam === 2) d += `M${n(x)},102L${n(x + 10)},112L${n(x)},122L${n(x - 10)},112Z`;
-    else d += starPath(x, 113, 11.5, 0.46);
+    const x = 64 + (i - (count - 1) / 2) * step;
+    if (fam === 0) d += `M${n(x + 10.5)},111a10.5,10.5 0 1,0 -21,0a10.5,10.5 0 1,0 21,0Z`;
+    else if (fam === 1) d += `M${n(x - 7)},99.5h14v23h-14z`;
+    else if (fam === 2) d += `M${n(x)},99L${n(x + 12)},111L${n(x)},123L${n(x - 12)},111Z`;
+    else d += starPath(x, 112, 13.5, 0.5);
   }
-  s += `<path d="${d}" fill="${M.u(mat)}" stroke="${OUT}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  s += `<path d="${d}" fill="${lite}" stroke="${OUT}" stroke-width="1.8" stroke-linejoin="round"/>`;
+  s += `<path d="${d}" fill="${M.u(mat)}" opacity=".45"/>`;
   return s;
 }
 
