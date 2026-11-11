@@ -200,6 +200,7 @@ export class Board {
   renderPieces(prevMap) {
     const g = this.gPieces;
     g.innerHTML = '';
+    this.gDrag.innerHTML = '';
     const els = {};
     for (const [sq, p] of Object.entries(this.map)) {
       const [x, y] = this.xy(sq);

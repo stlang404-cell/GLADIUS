@@ -139,7 +139,7 @@ label { font-weight: 500; }
 /* ------------------------------------------------ board */
 .board { position: relative; width: 100%; aspect-ratio: 1 / 1; border: 5px solid #2E2B27; border-radius: 4px; background: #2E2B27; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .board-svg { display: block; width: 100%; height: 100%; }
-.board .pieces use, .board .dots, .board .arrows, .board .coords { pointer-events: none; }
+.board .board-svg > g:not(:first-child), .board .pieces use { pointer-events: none; }
 .board.interactive .board-svg { cursor: pointer; touch-action: none; }
 .board .drag use { pointer-events: none; filter: drop-shadow(0 6px 6px rgba(0,0,0,.28)); }
 .coord { font: 600 19px var(--ui); }
@@ -374,3 +374,5 @@ pre { white-space: pre-wrap; background: var(--tint); padding: 10px; border-radi
 /* book-base.css styles bare h2s for the book; keep UI headings clean */
 h2 { border-bottom: 0; padding-bottom: 0; }
 .book h2 { border-bottom: 1px solid #E3D9C4; padding-bottom: .15em; }
+.book .chapter-subtitle { line-height: 1.25; }
+.book .chapter-title { line-height: 1.05; }

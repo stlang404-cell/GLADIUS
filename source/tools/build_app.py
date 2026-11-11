@@ -148,7 +148,7 @@ def build_app():
     (APP / "README.txt").write_text(README.format(version=version))
 
     files = sorted(str(p.relative_to(APP)).replace("\\", "/") for p in APP.rglob("*")
-                   if p.is_file() and p.name not in ("sw.js", "README.txt") and p.suffix != ".map")
+                   if p.is_file() and p.name not in ("sw.js", "sw.template.js", "README.txt") and p.suffix != ".map")
     precache = ["./"] + files
     sw_src = (WEB / "sw.template.js")
     if not sw_src.exists():
@@ -213,6 +213,13 @@ def esc(s) -> str:
     return html.escape(str(s), quote=True)
 
 
+def check_downloads(allow_missing: bool):
+    missing = [n for n, _, _ in DOWNLOADS if not (DIST / n).exists()]
+    if missing and not allow_missing:
+        fail(f"download(s) missing from {DIST}: " + ", ".join(missing)
+             + "  (build them first, or pass --allow-missing)")
+
+
 def build_site(book: dict, version: str, allow_missing: bool):
     if SITE.exists():
         shutil.rmtree(SITE)
@@ -236,7 +243,7 @@ def build_site(book: dict, version: str, allow_missing: bool):
                             f'<span class="dl-title">{esc(title)}</span><span class="dl-meta">not yet available</span>'
                             f'</span><p>{esc(desc)}</p></li>')
     if missing and not allow_missing:
-        fail("download(s) missing from build/dist/: " + ", ".join(missing)
+        fail(f"download(s) missing from {DIST}: " + ", ".join(missing)
              + "  (build them first, or pass --allow-missing)")
     cover = BUILD / "cover" / "cover.jpg"
     if cover.exists():
@@ -479,9 +486,13 @@ NOT_FOUND = """<!DOCTYPE html>
 
 
 def main():
+    global DIST
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--allow-missing", action="store_true", help="build the site even if downloads are missing")
+    ap.add_argument("--dist", default=str(BUILD / "dist"), help="folder with the downloadable files (default build/dist)")
     a = ap.parse_args()
+    DIST = pathlib.Path(a.dist)
+    check_downloads(a.allow_missing)
     book, version = build_app()
     build_site(book, version, a.allow_missing)
 

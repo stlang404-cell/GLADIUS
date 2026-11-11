@@ -52,6 +52,8 @@ function buildNav() {
 }
 
 function markNav(cur) {
+  const t = document.getElementById('toast');
+  if (t && !t.dataset.sticky) t.classList.remove('show');
   for (const a of document.querySelectorAll('[data-nav]')) {
     const n = NAV.find((x) => x.key === a.dataset.nav);
     let on = n.match.test(cur.path);

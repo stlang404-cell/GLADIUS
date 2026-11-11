@@ -46,6 +46,7 @@ export function toast(msg, opts = {}) {
     t.appendChild(h('button', { class: 'btn small light', onclick: () => { opts.action.fn(); hide(); } }, opts.action.label));
   }
   t.classList.add('show');
+  if (opts.sticky) t.dataset.sticky = '1'; else delete t.dataset.sticky;
   clearTimeout(toastTimer);
   const hide = () => t.classList.remove('show');
   if (!opts.sticky) toastTimer = setTimeout(hide, opts.ms || 3200);

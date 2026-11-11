@@ -222,6 +222,10 @@ Exchanges are strategic decisions. A useful set of guidelines:
 * **When ahead in material, trade pieces, not pawns.** When behind, trade pawns and keep pieces (see [Chapter 16](#ch-16) and [Chapter 17](#ch-17)).
 * **Check what the recapture changes.** Every exchange involves a recapture, and the recapturing piece or pawn lands somewhere. A trade that brings an enemy pawn to a strong square, opens a file for his rook, or kicks your knight is not neutral.
 
+A small example of the recapture question: if you take a knight on c6 with your bishop, the recapture decides what you have really done. After ...bxc6 your opponent gets the bishop pair and a half-open b-file, but also doubled pawns; after ...dxc6 the d-file opens for his rooks and his light-squared bishop gets an open diagonal. The same capture can be a good trade in one case and a gift in the other, so picture the position after the recapture before you exchange.
+
+Exchanges are also the main tool of the defender in a worse position. If you are cramped or under pressure, every trade reduces the attacking potential of your opponent, but choose the trades that remove his *active* pieces. Trading your passive rook for his active one is good; trading your active knight for his passive bishop usually helps him.
+
 ## Open and closed centres: where to play
 
 The centre decides where the battle is fought.

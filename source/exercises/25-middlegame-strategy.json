@@ -35,7 +35,7 @@
     {
       "id": "25-02",
       "type": "strategy",
-      "difficulty": 4,
+      "difficulty": 5,
       "fen": "r1bq1rk1/p3bppp/1pn1pn2/8/3P4/P1N2N2/1PB2PPP/R1BQR1K1 b - - 1 12",
       "question": "Black to move. White's bishop on c2 and a queen coming to d3 would aim at h7. Find the move that prevents White's attacking set-up.",
       "solution": [

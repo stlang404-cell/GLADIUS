@@ -96,6 +96,13 @@ function explain(p, evBefore, evAfter, before, after, k) {
   if (hang) {
     return { cat: 'hanging-piece', text: `${p.san} leaves your ${NAME[hang.piece]} on ${hang.sq} ${hang.defended ? 'under-defended' : 'undefended'}: ${hang.san} wins it${hang.defended ? ' (it is attacked by a cheaper piece)' : ''}.` };
   }
+  // the move allows a forcing reply (capture / check) that wins material or the game
+  const replyC = new Chess(p.after);
+  const reply = evAfter.b ? uciToMove(replyC, evAfter.b) : null;
+  const lossCp = scoreCp(before) - scoreCp(after);
+  if (reply && (reply.captured || /[+#]/.test(reply.san)) && lossCp >= 200 && Math.abs(scoreCp(after)) < 90000) {
+    return { cat: reply.captured ? 'hanging-piece' : 'calculation', text: `${p.san} allows ${reply.san}${reply.captured ? ', winning material' : ''}: ${oppLine}. Better was ${bestSan} (${fmtScore(before)} instead of ${fmtScore(after)}). Before each move, list your opponent’s checks and captures in the new position.` };
+  }
   // missed tactic: best move was forcing and wins at least two pawns more than the move played
   const c = new Chess(p.fen);
   const bm = evBefore.b ? uciToMove(c, evBefore.b) : null;

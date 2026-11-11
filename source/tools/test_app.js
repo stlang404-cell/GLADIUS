@@ -150,7 +150,8 @@ async function playSan(page, fen, san, mobile, promoPiece) {
 }
 
 async function pieceAt(page, square) {
-  return page.locator(`.gameboard use[data-at="${square}"]`).first().getAttribute('data-piece').catch(() => null);
+  const loc = page.locator(`.gameboard use[data-at="${square}"]`);
+  return (await loc.count()) ? loc.first().getAttribute('data-piece') : null;
 }
 
 // ------------------------------------------------------------------ main
@@ -421,7 +422,7 @@ async function pieceAt(page, square) {
     return `${key}: ${score}`;
   });
 
-  await test('legal-move enforcement: illegal moves, castling (and through check), en passant, promotion, typed SAN', async () => {
+  await test('legal-move enforcement: illegal moves, castling (and through check), en passant, promotion, typed SAN, drag', async () => {
     const an = async (fen) => { await goto(page, BASE, '/analysis?fen=' + encodeURIComponent(fen)); await page.waitForSelector('.gameboard .board svg'); };
     await an('r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1');
     await sq(page, 'e1', M); await sq(page, 'e3', M);
@@ -448,6 +449,16 @@ async function pieceAt(page, square) {
     await page.fill('.type-move', 'Ke2');
     await page.press('.type-move', 'Enter');
     assert(/not a legal move/.test(await page.textContent('.type-msg')), 'illegal typed move not rejected');
+    // drag and drop (pointer events): 1...e5
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const box = async (q) => page.locator(`.gameboard rect[data-sq="${q}"]`).first().boundingBox();
+    const a = await box('e7'), b2 = await box('e5');
+    await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(a.x + a.width / 2, a.y + a.height, { steps: 4 });
+    await page.mouse.move(b2.x + b2.width / 2, b2.y + b2.height / 2, { steps: 6 });
+    await page.mouse.up();
+    assert((await pieceAt(page, 'e5')) === 'bP' && !(await pieceAt(page, 'e7')), 'drag-and-drop move failed');
   });
 
   await test('play vs engine: legal reply within timeout, takeback, draw/end handling, saved to library', async () => {
