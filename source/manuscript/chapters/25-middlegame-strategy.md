@@ -43,6 +43,12 @@ Here 45.Bc2! defends the a4 pawn along the diagonal, and White keeps a clear adv
 In my experience, the quickest test is: "How many safe squares does this piece have, and do they reach the important part of the board?" A bishop staring at its own pawns, or a knight with no square closer than the fourth rank, is a weak piece, whatever its point value.
 :::
 
+### Outposts in practice
+
+A knight on an outpost is strong only if it can stay there. Before you put a knight on a beautiful square, check three things: can an enemy pawn ever attack it, can the opponent simply trade it off for a bad piece, and if it is exchanged, does your recapture keep the square? A knight on e5 supported by a pawn on d4 can be traded, but after dxe5 your new pawn on e5 may be weak, or it may cramp the opponent; that is the real question.
+
+The defender's methods against an outpost are the mirror image: trade the knight for a minor piece of yours that is doing less, undermine the supporting pawn, or prepare a pawn move that controls the square in advance.
+
 ## Good and bad bishops
 
 A **bad bishop** is a bishop whose own pawns are fixed on squares of its colour. It is blocked by them, and it cannot attack the enemy pawns, which usually stand on the other colour. A **good bishop** is one whose pawns stand on the opposite colour, leaving its diagonals open.
@@ -85,6 +91,10 @@ In positions like this, giving up a bishop "because it is attacked" or "to doubl
 :::mistake Trading the wrong minor piece
 Before every exchange of minor pieces, ask: "Which of my pieces will be left, and which of his?" Trading your good bishop for his knight can leave you with a bad bishop against a dominant knight. Trading your bishop pair away without a reason gives back the main trump of your position.
 :::
+
+### Opposite-coloured bishops in the middlegame
+
+When each side has one bishop and they run on different colours, endgames tend to be drawish (see [Chapter 26](#ch-26)). In the middlegame the opposite is true: the attacker's bishop cannot be opposed by the defender's bishop, so on the attacker's colour he effectively has an extra piece. If you have the initiative against the king, keep the queens and rooks on and aim your bishop at squares the enemy bishop can never guard. If you are the one defending, trading queens is usually your best route to safety.
 
 ## The isolated queen's pawn
 
@@ -153,6 +163,15 @@ fen: r1bqrnk1/pp2bppp/2p2n2/3p2B1/3P4/2NBPN2/PPQ2PPP/1R3RK1 b - - 10 11
 moves: 11...Ng6 12.b4 a6 13.a4
 check: engine
 caption: White prepares b4-b5. Black's ...a6 makes White spend a move on a4 before the pawn can arrive.
+```
+
+White's other plan in the Carlsbad is central: Nge2, f3 and e4, using the extra central pawn. It is more ambitious and weakens White's own king a little, so Black must react actively.
+
+```board
+fen: r1bqrnk1/pp2bppp/2p2n2/3p2B1/3P4/2NBPP2/PPQ1N1PP/R4RK1 b - - 0 11
+caption: Black to move. White has chosen the central plan with Nge2 and f3, preparing e4. Black's best is to bring the knight to g6 at once and keep the pieces flexible; the routine trade ...Ne4 is impossible here because of fxe4.
+arrows: f8g6
+red: f3e4
 ```
 
 Black's usual counterplay is in the centre and on the kingside: ...Ne4 to trade pieces, ...Ng6 and ...Bd6 towards White's king, and sometimes ...f5 to support a knight on e4. White also has a central plan, f3 and e4, but it must be prepared; played too early it often runs into tactics.
