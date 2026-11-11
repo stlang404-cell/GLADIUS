@@ -132,7 +132,7 @@ caption: The check saves the bishop and the knight escapes by taking the bishop 
 
 ### The Evans Gambit: 4.b4
 
-White sacrifices a pawn to gain time for c3 and d4. Take it and put the bishop on a5, where it pins the c3 pawn against the white king's side of the board and is hard to attack:
+White sacrifices a pawn to gain time for c3 and d4. Take it and put the bishop on a5. From there it is hard to attack, and once White's d-pawn has moved it pins the c3 pawn to the white king:
 
 ```line
 fen: startpos
@@ -266,7 +266,7 @@ check: engine
 caption: Black's knight hits the queen and c2, and ...d5 opens lines with a big lead in development. White's queen has made four moves and achieved nothing.
 ```
 
-:::mistake Copying the queen raid
+:::mistake Chasing the queen with pawns
 After a premature Qh5, many players try to "punish" the queen by chasing it around with pawn moves. Usually a calm developing move that defends f7 (...g6 or ...Nf6 at the right moment, ...Qe7) is better. Develop *with* tempo against the queen (...Nf6, ...Nd4) when you can, and never with a weakening pawn move when a piece move is available.
 :::
 
@@ -372,16 +372,16 @@ fen: startpos
 moves: 1.d4 d5 2.c4 e6 3.Nc3 Nf6 4.Bg5 Nbd7 5.cxd5 exd5 6.Nxd5?? Nxd5 7.Bxd8 Bb4+ 8.Qd2 Bxd2+ 9.Kxd2 Kxd8
 check: engine
 diagram: end
-caption: White won the queen but lost more: Black has gained a bishop and a knight for it, ending a piece up.
+caption: The queens have been traded and Black has won a knight for a pawn. The trap has netted a whole piece.
 orientation: black
 squares: d8
 ```
 
-After 6.Nxd5?? Nxd5!, if White takes the queen with 7.Bxd8, Black plays 7...Bb4+ and wins White's queen back, ending a piece ahead. This is called the **Elephant Trap**. It works only because White's queen is on d1 and can be forced to block the check on d2. If White's queen has already left d1, check before you rely on it.
+After 6.Nxd5?? Nxd5!, if White takes the queen with 7.Bxd8, Black plays 7...Bb4+ and wins White's queen back. When the dust settles, Black is a knight for a pawn ahead. (If White does not take the queen, Black is simply a piece up.) This is called the **Elephant Trap**. It works only because White's queen is on d1 and can be forced to block the check on d2. If White's queen has already left d1, check before you rely on it.
 
 ### The Exchange Variation: the Carlsbad structure
 
-If White takes on d5 early with cxd5 exd5, you get the **Carlsbad structure**: your pawns on d5, c6 (or c7) and the a-, b-pawns; White's on d4 and e3. This structure appears so often that it is worth knowing its main ideas.
+If White takes on d5 early with cxd5 exd5, you get the **Carlsbad structure**: your pawns on d5 and c6 (or still c7) with no black e-pawn, against White's pawns on d4 and e3 with no white c-pawn. This structure appears so often that it is worth knowing its main ideas.
 
 ```line
 fen: startpos
@@ -488,12 +488,12 @@ squares: c5
 
 **Step 1 — What does White threaten?** The d4 pawn attacks my bishop on c5. Also, if White gets in d5 or e5, the pawns will push my knights back. So I must move the bishop *and* do something against the centre.
 
-**Step 2 — Checks, captures, threats for me.** Checks: ...Bb4+. Captures: ...Nxe4, which takes a pawn, but after the bishop moves White can play d5 or Qe2 and the knight is in trouble. ...Bxd4 loses the bishop for a pawn. Threats: ...d5 attacks e4 but leaves the bishop on c5 en prise.
+**Step 2 — Checks, captures, threats for me.** Checks: ...Bb4+. Captures: ...Nxe4 takes a pawn but leaves the bishop on c5 hanging (dxc5). ...Bxd4 gives the bishop for a pawn. Threats: ...d5 attacks e4, but it also leaves the bishop on c5 en prise.
 
 **Step 3 — Candidates.** 6...Bb4+, 6...Bb6, 6...d5?!.
 
 * 6...Bb6 is safe, but passive: after 7.d5 or 7.e5 White's centre rolls forward with tempo.
-* 6...d5? 7.exd5 Nxd5 8.dxc5 loses the bishop.
+* 6...d5?! looks active, but after 7.exd5 Nxd5 the bishop is still attacked and White keeps the initiative; the engine rates it about a pawn worse than the check.
 * 6...Bb4+ forces White to spend a move dealing with the check. If 7.Bd2 Bxd2+ 8.Nbxd2, I have traded one pair of pieces and can play 8...d5, smashing the centre.
 
 **Step 4 — Decide.** 6...Bb4+, with ...d5 as the follow-up. Notice the general lesson: when White's centre is about to roll forward, use a **check** to gain the time you need for your own central pawn break.

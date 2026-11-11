@@ -274,6 +274,12 @@ Knowing the patterns also makes you a better defender. Most mates can be prevent
 - **Trade off a key attacker**, such as the bishop or knight that supports the queen.
 - **Look for counter-checks.** A check against the attacking king can sometimes break the whole combination.
 
+### A defender's question: which pattern is my opponent building?
+
+Every pattern in this chapter can also be read from the defender's side. If your king is on h8 with a rook on g8, an enemy knight that can reach f7 is a smothered-mate warning. If your king has castled queenside and your c-pawn has moved, look at the a6-c8 diagonal for a Boden-style bishop check. If an enemy pawn has arrived on f6 (or f3 against your king), the g7 square is under permanent pressure and you will often need a piece dedicated to guarding it. A knight that lands on e7 next to your king on h8 or h7 means the h-file must stay closed.
+
+The idea is to recognize the picture one or two moves *before* it is complete, while a cheap defensive move still works. Once the final sacrifice is on the board, it is usually too late. Many club games are lost not because the defender missed the final combination, but because they made a careless pawn move or traded off their best defender a few moves earlier.
+
 The danger in defence is the "natural move" that ignores the threat: a developing move or a pawn grab while the queen and bishop line up against h7. Every time your opponent's move creates a battery aimed at your king, stop and count attackers and defenders of the target square.
 
 ## Practice at the board

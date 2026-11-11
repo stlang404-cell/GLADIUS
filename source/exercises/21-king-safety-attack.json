@@ -11,10 +11,10 @@
       "solution": ["Rxf6"],
       "goal": "win",
       "accept": [],
-      "explanation": "h7 is attacked by the queen and the bishop and defended only by the knight on f6 (and the king). Rxf6 removes that defender. If Black recaptures with ...gxf6, Qxh7 is mate; so Black must play ...g6 and is simply a piece down. Moving the rook to g3 or pushing g4 first gives Black time for ...Qh5 or ...Nd5.",
+      "explanation": "h7 is attacked by the queen and the bishop and defended only by the knight on f6 (and the king). Rxf6 removes that defender. If Black recaptures with ...gxf6, Qxh7 is mate; so Black must play ...g6 and is simply a piece down. Moving the rook to g3 or pushing g4 first gives Black time to bring more defenders.",
       "wrong": [
         {"move": "Rg3", "why": "Black answers ...Kh8 or ...Qh5 and the knight on f6 holds everything."},
-        {"move": "g4", "why": "Too slow and weakening; Black trades queens or plays ...Nd5 and the attack fizzles."}
+        {"move": "g4", "why": "Too slow: Black plays ...h6 or ...Qh5 and the knight on f6 holds h7."}
       ],
       "hint": "Which black piece is the only defender of h7?",
       "objective": "Remove the last defender of a square next to the king.",
@@ -48,10 +48,10 @@
       "solution": ["g3"],
       "goal": "only",
       "accept": [],
-      "explanation": "Of the three pawn moves that meet the threat, g3 is the only good one: it blocks the bishop's diagonal *and* hits the queen with tempo, and the dark squares it weakens are covered by White's own pieces. White is even slightly better afterwards. h3 also stops the mate but lets Black regroup with ...Nf6 and ...Ng6, and f4 is a disaster: it opens the e1-a5 diagonal and the rook on e1 falls to ...Qxe1+.",
+      "explanation": "Of the three pawn moves that meet the threat, g3 is the only good one: it blocks the bishop's diagonal *and* hits the queen with tempo, so Black has to spend a move retreating. White ends up better. h3 also stops the mate but gains nothing and lets Black regroup with ...Nf6, and f4 is a disaster: the f2 pawn was blocking the queen's diagonal to e1, and ...Qxe1+ wins the rook.",
       "wrong": [
         {"move": "h3", "why": "Stops the mate but gains no time; Black keeps a comfortable attacking position."},
-        {"move": "f4", "why": "...Qxe1+ — the pawn move cut off the rook's protection and loses material at once."},
+        {"move": "f4", "why": "...Qxe1+: the f2 pawn was shielding the rook on e1 from the queen."},
         {"move": "Bxh7+", "why": "...Qxh7 Qxh7+ Kxh7 and you have given a bishop for a pawn."}
       ],
       "hint": "Which pawn move also attacks something?",
@@ -67,9 +67,9 @@
       "solution": ["Bxh7+", "Kxh7", "Ng5+", "Kg8", "Qh5"],
       "goal": "win",
       "accept": [],
-      "explanation": "All the conditions are there: bishop on d3, knight ready for g5, queen ready for h5, pawn on e5 keeping Black's knight off f6, and no black bishop on e7 to take on g5. After Bxh7+ Kxh7 Ng5+ Kg8 Qh5 White threatens Qh7 mate, and Black's only way out is to give back the queen with ...Qxg5. If 13...Kg6 instead, Qd3+ or Qg4 continues the attack.",
+      "explanation": "All the conditions are there: bishop on d3, knight ready for g5, queen ready for h5, pawn on e5 keeping Black's knight off f6, and no black bishop on e7 to take on g5. After Bxh7+ Kxh7 Ng5+ Kg8 Qh5 White threatens Qh7 mate, and Black's only way out is to give back the queen with ...Qxg5. If 10...Kg6 instead, Qd3+ or Qg4 continues the attack.",
       "wrong": [
-        {"move": "Ng5", "why": "Without the sacrifice, ...h6 kicks the knight and Black is fine."},
+        {"move": "Ng5", "why": "Without the sacrifice, ...h6 kicks the knight and White's chance for a decisive attack is gone."},
         {"move": "a3", "why": "Gains the bishop pair but gives Black time for ...Be7 or ...f6; the chance is gone."}
       ],
       "hint": "Bishop d3, knight g5, queen h5 — is anything missing?",
@@ -104,7 +104,7 @@
       "solution": ["h6"],
       "goal": "best",
       "accept": ["Nf6"],
-      "explanation": "Here the trade on g5 is not the answer: after ...Bxg5 Bxg5 White's bishop arrives with tempo on the queen. Instead ...h6 asks the knight where it is going. Nxf7 Rxf7 does not work for White, and after Nf3 Black plays ...Nf6 and the attack has run out of pieces. ...Nf6, hitting the queen, is equally good. ...g6?? allows Qxh7 mate.",
+      "explanation": "Here the trade on g5 is not the answer: after ...Bxg5 Bxg5 White's bishop arrives with tempo on the queen. Instead ...h6 asks the knight where it is going; after Nf3 Black plays ...Nf6, covering h7, and the attack has run out of pieces. ...Nf6, hitting the queen, is equally good. ...g6?? allows Qxh7 mate.",
       "wrong": [
         {"move": "Bxg5", "why": "Bxg5 recaptures with tempo on the queen, and White's dark-squared bishop joins the attack."},
         {"move": "g6", "why": "Qxh7 is mate: the g-pawn move does not stop queen and knight."}
@@ -176,7 +176,7 @@
       "solution": ["Bxh2+", "Kxh2", "Ng4+", "Kg3", "Qg5"],
       "goal": "best",
       "accept": [],
-      "explanation": "The Greek gift works for Black too. The pawn on e4 keeps White's knight off f3, and no white piece can take a knight on g4. After ...Bxh2+ Kxh2 Ng4+ the king cannot go back to g1 because ...Qh4 mates soon, so Kg3 is forced, and ...Qg5 threatens ...Nxe3+ and ...Qh5. Slow moves such as ...Qc7 or ...Re8 give White time for h3 or f3, and the chance is gone.",
+      "explanation": "The Greek gift works for Black too. The pawn on e4 keeps White's knight off f3, and no white piece can take a knight on g4. After ...Bxh2+ Kxh2 Ng4+ the king cannot go back to g1 (...Qh4 wins on h2 and f2), so Kg3 is the best try, and ...Qg5 keeps the attack going with ...Nxe3+ in the air. Slow moves such as ...Qc7 or ...Re8 give White time for h3 or f3, and the chance is gone.",
       "wrong": [
         {"move": "Qc7", "why": "Lines up on h2 but gives White time for h3 or f3 to defend."},
         {"move": "Re8", "why": "Too slow; White breaks with f3 and the e4 pawn is no longer a strong point."}

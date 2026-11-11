@@ -366,6 +366,96 @@
         "open-file",
         "outpost"
       ]
+    },
+    {
+      "id": "T4-13",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "1k6/1pp5/pn1r2p1/3P1p1p/1P5q/PBQ5/5PP1/4R1K1 w - - 3 32",
+      "question": "White to move. Black's queen and rook look active. Find the forcing sequence that overloads Black's queen.",
+      "solution": [
+        "Re8+",
+        "Rd8",
+        "g3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Re8+ forces ...Rd8 (...Ka7 drops the c7-pawn and more to Qxc7, and ...Qd8 simply loses the queen to Rxd8+). Now the rook on d8 is defended only by the queen on h4, along the h4-d8 diagonal. g3! attacks the queen, which must stay on that diagonal to keep guarding d8; after ...Qg5 f4 it runs out of squares and Black loses material. One defender, two jobs: that is overloading.",
+      "wrong": [
+        {
+          "move": "Qg7",
+          "why": "It looks active, but Black regroups with ...Nc8 and the back rank is safe."
+        },
+        {
+          "move": "b5",
+          "why": "A slow pawn move; Black's queen and knight get time to attack d5 and White's king."
+        }
+      ],
+      "hint": "Check first, then ask which black piece is the only defender of the blocking rook.",
+      "objective": "Recognize overloading: a single defender with two jobs.",
+      "tags": [
+        "overloading",
+        "back-rank",
+        "calculation"
+      ]
+    },
+    {
+      "id": "T4-14",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "4rk2/pp3ppp/8/8/PR4P1/1P6/1r3P1P/3R2K1 w - - 0 32",
+      "question": "White to move. Both sides have active rooks. Which move uses your rooks best?",
+      "solution": [
+        "Rxb7"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The b7-pawn is undefended because White's own pawn on b3 blocks Black's rook. Rxb7 wins a pawn and puts a rook on the seventh rank; Rdd7 next doubles rooks there, attacking f7 and a7 and tying Black's king to the back rank. Quiet moves such as Rd7 or a5 give Black time for ...Ree2, and then Black's rooks are the active ones.",
+      "wrong": [
+        {
+          "move": "Rd7",
+          "why": "It reaches the seventh rank, but Black answers ...Re1+ and ...Ree2 with full counterplay."
+        },
+        {
+          "move": "Rc1",
+          "why": "Defensive: Black gets time for ...b6 and ...Ree2, and White's chance is gone."
+        }
+      ],
+      "hint": "Look for a free pawn that also brings a rook to the seventh rank.",
+      "objective": "Activate rooks on the seventh rank in rook endings.",
+      "tags": [
+        "piece-activity",
+        "rook-endgame"
+      ]
+    },
+    {
+      "id": "T4-15",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "8/8/3k1P2/6K1/8/2R5/4r3/8 b - - 0 1",
+      "question": "Black to move. White's f-pawn is close to promotion. Which move draws?",
+      "solution": [
+        "Ke6"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "Your king must fight the pawn directly. ...Ke6 attacks f6 and heads for f7 or f8, the squares in front of the pawn. After Rc6+ Kf7 the king blocks the pawn and the position is a draw. Checks such as ...Rg2+ only drive the white king where it wants to go, and the black king stays cut off.",
+      "wrong": [
+        {
+          "move": "Rg2+",
+          "why": "The check drives the white king forward to f5 and g6, supporting the pawn while your king is still far away."
+        },
+        {
+          "move": "Kd7",
+          "why": "The king goes the wrong way; Kg6 and f7 follow, and the pawn queens."
+        }
+      ],
+      "hint": "Which piece should stand in front of the pawn?",
+      "objective": "Bring the defending king to the passed pawn before checking.",
+      "tags": [
+        "rook-endgame",
+        "defense"
+      ]
     }
   ]
 }

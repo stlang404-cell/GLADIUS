@@ -35,7 +35,7 @@
       "id": "22-02",
       "type": "strategy",
       "difficulty": 3,
-      "fen": "r1bqr1k1/pp2bppp/2p2nn1/3p2B1/3P4/2NBPN2/PPQ2PPP/1R3RK1 w - - 10 12",
+      "fen": "r1bqrnk1/pp2bp1p/2p2np1/3p2B1/3P4/2NBPN2/PPQ2PPP/1R3RK1 w - - 0 12",
       "question": "White to move. Read the pawn structure and choose a plan move.",
       "solution": [
         "b4"
@@ -48,7 +48,7 @@
       "wrong": [
         {
           "move": "e4",
-          "why": "After ...dxe4 Bxe4 Nxe4 Nxe4 Bf5 the pinned knight on e4 drops; the centre break is premature."
+          "why": "After ...dxe4 Bxe4 Nxe4 Nxe4 Bxg5 the exchanges leave White's pieces loose, and Black wins material."
         },
         {
           "move": "g4",

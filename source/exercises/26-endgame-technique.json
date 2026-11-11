@@ -1,0 +1,203 @@
+{
+  "chapter": 26,
+  "title": "Endgame Technique",
+  "exercises": [
+    {
+      "id": "26-01",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "4k3/8/8/7P/5K2/8/8/5B2 w - - 0 60",
+      "question": "White to move. Your bishop does not control h8, the queening square. Keep the black king out of the corner and win.",
+      "solution": ["Bc4"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "With the wrong-coloured bishop the rook pawn wins only if the defending king never reaches h8. 60.Bc4! takes f7 and g8 away, so the king cannot cross towards the corner, and the h-pawn simply runs: 60...Ke7 61.Ke5 and h6-h7-h8. Any slow move lets ...Kf7-g7 and the game is a dead draw.",
+      "wrong": [
+        {"move": "h6", "why": "Kf7 and the king reaches g8 and h8: a draw, because the bishop can never drive it out."},
+        {"move": "Kg5", "why": "Kf7 and the king gets to the corner in time; draw."}
+      ],
+      "hint": "Which squares does the black king need on its way to h8?",
+      "objective": "Use the wrong-coloured bishop to cut the defending king off from the corner.",
+      "tags": ["minor-piece-endgame", "endgame-technique", "promotion"]
+    },
+    {
+      "id": "26-02",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/8/8/8/1Q2K3/8/1kp5/8 b - - 0 60",
+      "question": "Black to move. Queen against a c-pawn on the seventh. Which king move saves the game?",
+      "solution": ["Ka1"],
+      "goal": "draw",
+      "accept": ["Ka2"],
+      "explanation": "Against a bishop's pawn the defender has a stalemate trick: with the king in the corner, capturing the pawn (or blocking it from c1) leaves Black with no moves. So ...Ka1! ignores the pawn's protection: after Qa3+ Kb1 Qb3+ Ka1 White cannot gain the tempo needed to bring the king closer. 60...Kc1? steps in front of the pawn and gives White time to approach.",
+      "wrong": [
+        {"move": "Kc1", "why": "Blocks your own pawn: White checks, gains time and brings the king to b3 or d2 for mate."}
+      ],
+      "hint": "If White takes the pawn while your king is on a1, what happens?",
+      "objective": "Know the stalemate defence against queen versus bishop's pawn.",
+      "tags": ["queen-endgame", "stalemate", "defense"]
+    },
+    {
+      "id": "26-03",
+      "type": "endgame",
+      "difficulty": 5,
+      "fen": "8/8/3Q4/8/4K3/1k6/2p5/8 w - - 0 60",
+      "question": "White to move. Your king is close enough to win against the c-pawn, but only one move does it. Find it.",
+      "solution": ["Qd2"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "60.Qd2! stops the pawn by controlling c1 and attacks it on c2, without giving a check that drives the king to safety. If 60...Kc4 then 61.Qxc2+ wins the pawn, and if 60...Kb2 the white king walks to d3 while the pawn is pinned to its job. Checks such as Qb4+ or Qd5+ let the king reach a1 or b1, and the stalemate defence draws.",
+      "wrong": [
+        {"move": "Qb4+", "why": "Drives the king towards a1 where the stalemate trick holds the draw."},
+        {"move": "Kd3", "why": "The king steps up a move too early: ...c1=Q (or the pawn's defence) and White has nothing."}
+      ],
+      "hint": "Find a quiet queen move that both attacks the pawn and controls its queening square.",
+      "objective": "Win queen versus bishop's pawn when the king is close, without allowing the stalemate defence.",
+      "tags": ["queen-endgame", "endgame-technique", "quiet-move"]
+    },
+    {
+      "id": "26-04",
+      "type": "endgame",
+      "difficulty": 4,
+      "fen": "8/8/1P6/2K5/8/5n2/7k/8 b - - 0 60",
+      "question": "Black to move. White's b-pawn is running and your king is far away. Find the only knight move that stops it.",
+      "solution": ["Ne5"],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "The knight must reach a square from which it controls b8 or b7 in time: ...Ne5! heads for d7 or c6, and from e5 it already eyes d7 and c6. After b7 the knight answers ...Nd7+ and ...Nb8 or ...Nc6, catching the pawn. Natural-looking moves like ...Nd4 or ...Kg3 are one tempo short.",
+      "wrong": [
+        {"move": "Nd4", "why": "Looks central but cannot reach b8 or b7 in time: b7 and b8=Q."},
+        {"move": "Kg3", "why": "The king is far too slow; the pawn promotes."}
+      ],
+      "hint": "Count the knight moves to b8 from each square it can reach.",
+      "objective": "Calculate knight routes to stop a passed pawn.",
+      "tags": ["minor-piece-endgame", "calculation", "passed-pawn"]
+    },
+    {
+      "id": "26-05",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/5pp1/1n5p/3k4/P7/3K3P/5PP1/5B2 w - - 0 45",
+      "question": "White to move. Bishop against knight, and you have an outside passed pawn. Use it.",
+      "solution": ["a5"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Passed pawns must be pushed. 45.a5! drives the knight from b6 to c8 or a8, a passive square, and the pawn on a5 now ties the knight down for good. White's king and bishop then attack the kingside. Slow moves let Black play ...Nxa4 or ...Nd7 with a drawish position.",
+      "wrong": [
+        {"move": "Ke3", "why": "Too slow: ...Nxa4 and the outside passed pawn is gone."},
+        {"move": "g3", "why": "Black simply captures on a4; the trump disappears."}
+      ],
+      "hint": "Your a-pawn is attacked. Defend it or push it?",
+      "objective": "Push the outside passed pawn to tie down the opponent's knight.",
+      "tags": ["passed-pawn", "minor-piece-endgame", "bishop-vs-knight"]
+    },
+    {
+      "id": "26-06",
+      "type": "endgame",
+      "difficulty": 4,
+      "fen": "8/3k2pp/1n6/3P4/3K4/8/4B1PP/8 w - - 0 45",
+      "question": "White to move. Bishop against knight with a protected... no, a free passed d-pawn. Find the king move that wins.",
+      "solution": ["Ke5"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Activate the king: 45.Ke5! supports the d-pawn from in front and heads for e6 or f7, where it attacks Black's kingside pawns while the knight is busy. The knight cannot both stop the pawn and defend the kingside. Bishop checks or pawn moves waste the moment and Black's king blockades on d6.",
+      "wrong": [
+        {"move": "Bg4+", "why": "A check for nothing: ...Kd6 and Black's king blockades the pawn; draw."},
+        {"move": "d6", "why": "The pawn runs too early and is rounded up by king and knight."}
+      ],
+      "hint": "In the endgame the king is a fighting piece. Where does it belong?",
+      "objective": "Activate the king to support a passed pawn and attack weaknesses.",
+      "tags": ["endgame-technique", "piece-activity", "passed-pawn"]
+    },
+    {
+      "id": "26-07",
+      "type": "endgame",
+      "difficulty": 5,
+      "fen": "8/3kb3/4p1p1/3pPp1p/3P1P1P/3KB1P1/8/8 b - - 0 45",
+      "question": "Black to move. White's bishop is bad: all White's pawns stand on dark squares. Find the winning plan move.",
+      "solution": ["Kc6"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Your bishop is good and White's is bad, so the dark squares in White's camp are yours. 45...Kc6! starts the king march to b5 and c4 or b4; White's king cannot cover both the queenside entry squares and d4, and the white bishop cannot attack anything. Bishop moves or waiting moves let White's king hold the entry squares and the game is drawn.",
+      "wrong": [
+        {"move": "Bb4", "why": "Activity without a target: White's king stays on d3 and covers the entry squares."},
+        {"move": "g5", "why": "Opens the kingside for White's pieces and throws away the bind; Black is worse."}
+      ],
+      "hint": "Which route lets your king reach the white pawns?",
+      "objective": "With good bishop against bad bishop, use the king to invade on the colour the bad bishop cannot cover.",
+      "tags": ["minor-piece-endgame", "endgame-technique", "piece-activity"]
+    },
+    {
+      "id": "26-08",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/4k1p1/7p/4PP2/7b/6P1/B3K2P/8 b - - 0 50",
+      "question": "Black to move. Opposite-coloured bishops and White has two connected passed pawns. Your bishop is attacked. Where does it go?",
+      "solution": ["Bg5"],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "In opposite-coloured bishop endings the defender sets up a blockade on the squares the enemy bishop cannot attack. 50...Bg5 keeps the bishop on the c1-h6 and d8-h4 diagonals, controlling f6 and e7 behind the king, while the king blockades on e7 and f7. 50...Bxg3? grabs a pawn but lets the e- and f-pawns roll.",
+      "wrong": [
+        {"move": "Bxg3", "why": "Grabbing loses: hxg3 and the connected pawns advance with the king's help."},
+        {"move": "Bf6", "why": "exf6+ and the bishop is simply lost."}
+      ],
+      "hint": "Which dark squares must stay under control so that the pawns cannot advance?",
+      "objective": "Blockade connected passed pawns in an opposite-coloured bishop ending.",
+      "tags": ["minor-piece-endgame", "defense", "endgame-technique"]
+    },
+    {
+      "id": "26-09",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "1Q6/P4pk1/6p1/2q4p/8/6P1/5P1K/8 b - - 0 45",
+      "question": "Black to move. White's a-pawn is about to queen. Save the game.",
+      "solution": ["Qxf2+"],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "Queen endings are full of perpetual checks, and the defender should look for them first. 45...Qxf2+ takes the pawn that shelters White's king, and after Kh3 Qf1+ or Kh1 Qf1+ White cannot escape the checks. Any slow move loses to a8=Q.",
+      "wrong": [
+        {"move": "Qf8", "why": "Stops nothing for long: White's queen supports the pawn and it promotes."},
+        {"move": "Kh7", "why": "A waiting move while the pawn queens; lost."}
+      ],
+      "hint": "Which white pawn shelters the king?",
+      "objective": "Look for perpetual check in queen endings when you are worse.",
+      "tags": ["queen-endgame", "perpetual", "defense"]
+    },
+    {
+      "id": "26-10",
+      "type": "endgame",
+      "difficulty": 4,
+      "fen": "8/4k1pp/1n6/3PK3/B7/8/6PP/8 w - - 0 45",
+      "question": "White to move. Bishop against knight. Push the passed pawn at the right moment.",
+      "solution": ["d6+"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "45.d6+! gains a tempo with check and pushes the black king back; the pawn on d6 is guarded by the king, and the knight on b6 must now watch d7 and c8. White's king then marches to the kingside pawns. Quiet bishop moves give Black time for ...Kd7 and ...Nxd5 or a solid blockade.",
+      "wrong": [
+        {"move": "Bc2", "why": "Too slow: ...Kd7 and the blockade on d6 holds."},
+        {"move": "Kf5", "why": "Leaves the pawn: ...Nxd5 and Black has won the trump."}
+      ],
+      "hint": "Which forcing pawn move gains a tempo?",
+      "objective": "Push a passed pawn with tempo when the king supports it.",
+      "tags": ["passed-pawn", "minor-piece-endgame", "endgame-technique"]
+    },
+    {
+      "id": "26-11",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/p4pp1/7p/nN1k4/8/6PP/4KP2/8 b - - 0 40",
+      "question": "Black to move. Knight ending: your a-pawn is your trump, and White's knight attacks it. Keep it.",
+      "solution": ["Nc6"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "An outside passed pawn wins knight endings because it drags the enemy king or knight away from the other wing. 40...Nc6! defends a7 and keeps the knight close to the pawn; next ...a5-a4 pushes. If the a-pawn falls, the remaining pawns are level and the game is drawn.",
+      "wrong": [
+        {"move": "Nc4", "why": "Active-looking, but Nxa7 removes your only winning chance."},
+        {"move": "a6", "why": "Nc7+ forks king and pawn: the a-pawn falls next."}
+      ],
+      "hint": "Which square defends a7 and stays near the pawn?",
+      "objective": "Protect the outside passed pawn; it is the winning trump.",
+      "tags": ["minor-piece-endgame", "passed-pawn", "endgame-technique"]
+    }
+  ]
+}
