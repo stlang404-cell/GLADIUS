@@ -107,6 +107,14 @@ The basic rule:
 * If a piece is attacked more times than it is defended, it is usually in danger.
 * If it is defended at least as many times as it is attacked, it is usually safe, *as long as every attacker is worth more than or the same as the target.*
 
+```board
+fen: r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3
+caption: The simplest count. After 1.e4 e5 2.Nf3 Nc6, the e5-pawn is attacked once (by the knight on f3) and defended once (by the knight on c6). Taking it would give a knight for a pawn.
+arrows: f3e5
+red: c6e5
+squares: e5
+```
+
 That last condition matters enormously. A knight defended twice can still be lost if it is attacked once by a pawn, because the pawn is cheaper. **When the attacker is worth less than the target, counting defenders does not help.**
 
 ```board

@@ -1,0 +1,207 @@
+{
+  "chapter": 9,
+  "title": "Discovered Attacks and Double Check",
+  "exercises": [
+    {
+      "id": "09-01",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "2r2rk1/pb2bppp/1p1qpn2/8/8/1P1BPN2/P3QPPP/2BR1RK1 w - - 0 16",
+      "question": "White to move. Your rook on d1 and the black queen on d6 are on the same file, with only your bishop between them. Win material.",
+      "solution": ["Bxh7+", "Nxh7", "Rxd6"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The bishop on d3 is the front piece of a battery: the rook on d1 is aimed at the queen on d6 behind it. Move the bishop with a threat and the rook's attack is uncovered. Bxh7+ takes a pawn with check, so Black has no time to save the queen, and Rxd6 wins it.",
+      "wrong": [
+        {"move": "Bb2", "why": "Develops, but lets Black move the queen off the d-file; the battery fires at nothing."},
+        {"move": "Ba6", "why": "A discovered attack too, but without check: Black simply moves the queen with ...Qxd1 or ...Qc7 and keeps everything."}
+      ],
+      "hint": "What is behind your bishop on d3? Which bishop move comes with check?",
+      "objective": "Fire a battery: move the front piece with check so the back piece wins material.",
+      "tags": ["discovered-attack"]
+    },
+    {
+      "id": "09-02",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "r1bqr1k1/ppp2ppp/2n5/3p4/3Pn3/3B1N2/PPP2PPP/RNBQK2R b KQ - 0 8",
+      "question": "Black to move. White's king is still on e1 and your rook stands on the open e-file behind your knight. Win material.",
+      "solution": ["Nc3+"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Any knight move uncovers a check from the rook on e8, so the knight may go anywhere, even to a square where it can be captured. ...Nc3+ is attacked by the b2 pawn, but White must answer the check first, and then ...Nxd1 wins the queen. Discovered check gives the front piece a free move.",
+      "wrong": [
+        {"move": "Nxf2+", "why": "Also a discovered check, but White answers with Kxf2: the king captures the knight and steps off the e-file at the same time."},
+        {"move": "Ng3+", "why": "Wins only the rook on h1 after Be3, and the knight may be trapped there."}
+      ],
+      "hint": "Every knight move is check. Which one also attacks the white queen?",
+      "objective": "Use a discovered check to let the front piece attack the queen from an unprotected square.",
+      "tags": ["discovered-attack"]
+    },
+    {
+      "id": "09-03",
+      "type": "opening",
+      "difficulty": 2,
+      "fen": "rnbqkb1r/pppp1ppp/5n2/4N3/8/8/PPPPQPPP/RNB1KB1R w KQkq - 2 5",
+      "question": "White to move. In the Petrov, Black played 3...Nxe4?, and after 4.Qe2 retreated with 4...Nf6??. Punish it.",
+      "solution": ["Nc6+", "Qe7", "Nxe7"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Your queen on e2 and the black king on e8 share the e-file, and only your knight stands between them. Any knight move gives check, so choose the square that also attacks the queen: Nc6+ hits d8. The d7 pawn cannot take, because capturing does not answer the check. After ...Qe7 Nxe7 (or Qxe7+) White has won the queen for a knight.",
+      "wrong": [
+        {"move": "Ng6+", "why": "Also a discovered check, but it only goes after the rook on h8, and after ...Be7 Nxh8 the knight may be trapped."},
+        {"move": "d4", "why": "A normal developing move that misses the chance to win the queen."}
+      ],
+      "hint": "Which knight move gives check and also attacks the black queen?",
+      "objective": "Recognize the discovered check trap on the open e-file.",
+      "tags": ["discovered-attack", "opening-traps"]
+    },
+    {
+      "id": "09-04",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "3r1rk1/pb2qppp/1p1bpn2/2p1N3/2P5/1P6/PB1Q1PPP/R3RBK1 b - - 0 17",
+      "question": "Black to move. Your rook on d8 and White's queen on d2 face each other on the d-file, with your bishop on d6 between them. Win material.",
+      "solution": ["Bxe5"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The bishop on d6 is the front piece of a battery aimed at the white queen. When it moves, the rook attacks d2. Make the front piece's move count: ...Bxe5 captures the knight, and White cannot both save the queen and recapture. After the queen moves, ...Bxb2 leaves Black a piece up.",
+      "wrong": [
+        {"move": "Bxg2", "why": "Grabs a pawn, but the battery has not fired; White calmly answers and Black has won far less."},
+        {"move": "Ng4", "why": "Attacks the knight, but White has time to move the queen off the d-file."}
+      ],
+      "hint": "Which move of the d6 bishop captures something at the same time as it uncovers the rook?",
+      "objective": "Use a discovered attack where the front piece also captures material.",
+      "tags": ["discovered-attack"]
+    },
+    {
+      "id": "09-05",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1bqkb1r/pp3ppp/1n1p1n2/4N3/2P5/3B1Q2/PP3PPP/R1B1R1K1 w kq - 0 11",
+      "question": "White to move. Black's king is still on e8 and your knight on e5 is attacked by the d6 pawn. Find the strongest knight move.",
+      "solution": ["Nc6+", "Be6", "Nxd8"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The knight blocks your rook's line to the king, so every knight move is a discovered check. Pick the square with the biggest second threat: Nc6+ attacks the queen on d8. The pawn on b7 attacks c6, but it cannot capture, because that does not answer the check. After ...Be6 to block, Nxd8 wins the queen.",
+      "wrong": [
+        {"move": "Ng6+", "why": "Also a discovered check, but it only attacks the rook on h8; Black blocks with ...Be6 and keeps the queen."},
+        {"move": "Nd7+", "why": "The king simply takes: ...Kxd7 steps off the e-file and the knight is lost."}
+      ],
+      "hint": "Every knight move is check. Which one attacks the queen?",
+      "objective": "Choose the best destination for the front piece of a discovered check.",
+      "tags": ["discovered-attack"]
+    },
+    {
+      "id": "09-06",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "2r2rk1/pb2bppp/1p1qpn2/8/8/1P1BPN2/P3QPPP/2BR1RK1 b - - 0 16",
+      "question": "Black to move. White's rook on d1 is aimed at your queen through the bishop on d3. Find a safe move.",
+      "solution": ["Qb8"],
+      "goal": "best",
+      "accept": ["Qc7", "Qb4", "Qc6", "Qc5", "Bxf3"],
+      "explanation": "White's battery threatens Bxh7+, uncovering the rook on your queen with check. The cure is to step off the line: ...Qb8 (or ...Qc7, ...Qc5 and similar) takes the queen off the d-file. Taking the f3 knight is also fine. Moves that ignore the line lose the queen.",
+      "wrong": [
+        {"move": "h6", "why": "Removes the check idea on h7 but not the battery: Bh7+ is still possible, and after ...Nxh7 Rxd6 the queen is gone."},
+        {"move": "Rfd8", "why": "Defends the queen, but Bxh7+ Kxh7 Rxd6 Rxd6 still wins queen for rook and bishop."}
+      ],
+      "hint": "Which enemy piece is behind the bishop on d3, and what is it pointed at?",
+      "objective": "Spot an enemy battery and move the target off the line.",
+      "tags": ["defense", "discovered-attack"]
+    },
+    {
+      "id": "09-07",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "r1b1kbnr/ppp2ppp/2np4/7q/3PN3/5P2/PPP3PP/R1BQRBK1 w kq - 0 9",
+      "question": "White to move. The black king is on the open e-file. Find checkmate in 2.",
+      "solution": ["Nf6+", "Kd8", "Re8#"],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "Nf6+ is a double check: the knight checks from f6 and the rook on e1 checks along the e-file. The knight is attacked by the g7 pawn and the g8 knight, but against a double check only a king move helps. The king must go to d8, and Re8# finishes.",
+      "wrong": [
+        {"move": "Nd6+", "why": "Also a double check, but after ...Kd7 or ...Kd8 there is no mate; the knight on d6 is far from the king's escape squares."},
+        {"move": "Ng3+", "why": "Discovered check that attacks the queen, but Black blocks with ...Be7 and it is not mate."}
+      ],
+      "hint": "Which knight move gives two checks at once and leaves the king only one square?",
+      "objective": "Use double check to force the king onto a mating square.",
+      "tags": ["double-check", "mate-patterns"]
+    },
+    {
+      "id": "09-08",
+      "type": "mate",
+      "difficulty": 4,
+      "fen": "r4rk1/pb3ppp/1p2p3/2p4q/4n3/2PB2P1/PP1N1P1P/R2Q1R1K b - - 0 18",
+      "question": "Black to move. Your bishop on b7 is aimed at the white king through your knight on e4. Find checkmate in 2.",
+      "solution": ["Nxf2+", "Kg1", "Nh3#"],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "Any knight move uncovers the bishop's check on h1. ...Nxf2+ is the right one: the king cannot take on f2 because your rook covers the f-file, and g2 is covered by the bishop. After Kg1, ...Nh3# checks from h3; f1 is blocked, f2 and g2 are covered, and nothing can capture the knight.",
+      "wrong": [
+        {"move": "Nxd2+", "why": "Wins material, but after f3 it is not mate."},
+        {"move": "Qxd1", "why": "Takes the queen, but after Rfxd1 the battery has been wasted and there is no mate."}
+      ],
+      "hint": "All knight moves are check. Which one also stops the king from escaping?",
+      "objective": "Combine a discovered check with a knight check to mate.",
+      "tags": ["discovered-attack", "mate-patterns"]
+    },
+    {
+      "id": "09-09",
+      "type": "mate",
+      "difficulty": 4,
+      "fen": "r2q1rk1/pbpnbNpp/1p1p4/8/2Q5/3P4/PPP2PPP/R1B2RK1 w - - 0 15",
+      "question": "White to move. Your knight on f7 blocks your queen's diagonal to g8. Find checkmate in 3.",
+      "solution": ["Nh6+", "Kh8", "Qg8+", "Rxg8", "Nf7#"],
+      "goal": "mate",
+      "mate_in": 3,
+      "accept": [],
+      "explanation": "Nh6+ is a double check from the knight and the queen on c4, so the g7 pawn cannot capture the knight and the king must go to h8. Then the queen sacrifice Qg8+ forces ...Rxg8 (the king cannot take, because the knight guards g8), and Nf7# is a smothered mate. Taking the queen on d8 wins material but misses the mate.",
+      "wrong": [
+        {"move": "Nxd8+", "why": "Wins the queen with check, but after ...d5 Black is still fighting; the mate was faster and certain."},
+        {"move": "Nxd6+", "why": "A discovered check that wins only a pawn; ...Kh8 and the attack has run out."}
+      ],
+      "hint": "Move the knight so that it gives check and uncovers the queen's check at the same time.",
+      "objective": "Use a double check to start a forced mating sequence.",
+      "tags": ["double-check", "smothered-mate"]
+    },
+    {
+      "id": "09-10",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r1bqkb1r/ppp2ppp/4pn2/3p4/1n1P4/2N1PQ1P/PPPB1PP1/R3KBNR b KQkq - 2 6",
+      "question": "Black to move. Review from Chapter 7: White's queen has left d1. Win material.",
+      "solution": ["Nxc2+"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "With the queen gone from d1, nothing guards c2. ...Nxc2+ takes a pawn and forks the king on e1 and the rook on a1. After the king moves, ...Nxa1 wins the exchange and a pawn; even if the knight is later trapped in the corner, Black stays ahead.",
+      "wrong": [
+        {"move": "c5", "why": "A good central move, but it misses the free fork on c2."},
+        {"move": "Be7", "why": "Develops, but lets White play Qd1 and the fork is gone."}
+      ],
+      "hint": "Which unprotected pawn stands a knight's jump from both the king and a rook?",
+      "objective": "Review: find a knight fork of king and rook after the queen has left its post.",
+      "tags": ["fork"]
+    },
+    {
+      "id": "09-11",
+      "type": "blunder-check",
+      "difficulty": 1,
+      "fen": "2br1rk1/pp2qppp/2p2n2/4p3/2BnP3/2P2N2/PP3PPP/R1BQR1K1 w - - 0 12",
+      "question": "White to move. Black's knight has jumped to d4, attacking your knight on f3 and standing in front of the rook on d8, which is aimed at your queen. What do you play?",
+      "solution": ["cxd4"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Run the safety scan from Chapter 4 first: the knight on d4 is attacked by your c3 pawn and is defended only by the e5 pawn. Capturing the front piece of a battery is the cleanest way to defuse it, and here cxd4 wins a piece outright. Grabbing the e5 pawn instead lets the battery fire.",
+      "wrong": [
+        {"move": "Nxe5", "why": "Moves the knight away from f3 and walks into trouble: after ...Qxe5 cxd4 Rxd4 Black's rook hits your queen and Black has regained the material."},
+        {"move": "Nxd4", "why": "Takes the front piece, but with the wrong unit: after ...exd4 Black's pawn and rook keep pressure and White has not won a piece."}
+      ],
+      "hint": "What can capture the knight on d4, and what is it defended by?",
+      "objective": "Defuse an enemy battery by capturing the front piece.",
+      "tags": ["blunder-check", "discovered-attack", "hanging-pieces"]
+    }
+  ]
+}
