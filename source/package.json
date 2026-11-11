@@ -1,0 +1,14 @@
+{
+  "name": "elo-blueprint-source",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build sources for The Elo Blueprint (book, EPUB, cheat sheets, 90-day plan, interactive trainer).",
+  "license": "SEE LICENSES.md",
+  "dependencies": {
+    "chess.js": "1.4.0",
+    "stockfish": "18.0.8",
+    "@fontsource/source-serif-4": "5.2.9",
+    "@fontsource/cormorant-garamond": "5.2.11",
+    "@fontsource/inter": "5.2.8"
+  }
+}

@@ -1,0 +1,351 @@
+{
+  "chapter": 4,
+  "title": "The Safety Scan: Checks, Captures, Threats",
+  "exercises": [
+    {
+      "id": "04-01",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "r1bq1rk1/ppp1bpp1/4pn1p/3p4/1nPP4/P1NBPN2/1P3PPP/R1BQ1RK1 w - - 2 9",
+      "question": "White to move. Black has just played 8...Nb4, attacking your bishop on d3. What does Black's last move allow?",
+      "solution": [
+        "axb4"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Ask the first scan question: what is attacking the square the piece just landed on? Your a3-pawn attacks b4, and nothing Black has defends the knight except the bishop on e7, which can only recapture a pawn. After 9.axb4 Bxb4 you have won a knight for a pawn. Retreating the bishop instead keeps material level and wastes the gift.",
+      "wrong": [
+        {
+          "move": "Bb1",
+          "why": "Saves the bishop, but you only had to take the knight that attacked it."
+        },
+        {
+          "move": "Be2",
+          "why": "Same mistake: you react to the threat and miss that the attacker itself is hanging."
+        }
+      ],
+      "hint": "Which of your pieces or pawns attack b4?",
+      "objective": "When the opponent's piece attacks yours, first check whether the attacker can simply be taken.",
+      "tags": [
+        "hanging-pieces",
+        "threats"
+      ]
+    },
+    {
+      "id": "04-02",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "r1bqk2r/ppp2pp1/2np1n1p/2b1p1B1/2B1P3/2PP1N2/PP3PPP/RN1Q1RK1 b kq - 1 7",
+      "question": "Black to move. White has just played 7.Bg5, pinning your knight. What is wrong with White's move?",
+      "solution": [
+        "hxg5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "White played the move from habit and forgot your pawn on h6, which already guards g5. 7...hxg5 wins a bishop. After 8.Nxg5 White has a pawn and threatens f7, but Black can meet that with ...O-O or ...Rf8 and is a piece up. Always look at what attacks the square your opponent's piece just moved to.",
+      "wrong": [
+        {
+          "move": "Bxf2+",
+          "why": "A flashy check that gives back material; the free bishop on g5 was the point."
+        },
+        {
+          "move": "O-O",
+          "why": "Ignores the gift; White retreats Bh4 and nothing has been won."
+        }
+      ],
+      "hint": "What guards g5?",
+      "objective": "Spot an opponent's piece that moved to an attacked, undefended square.",
+      "tags": [
+        "hanging-pieces"
+      ]
+    },
+    {
+      "id": "04-03",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "rnbqkb1r/pp2pppp/2pp1n2/6B1/2PP4/4P3/PP3PPP/RN1QKBNR b KQkq - 0 4",
+      "question": "Black to move. White's bishop on g5 has no defender. Find the forcing move that wins it.",
+      "solution": [
+        "Qa5+",
+        "Nc3",
+        "Qxg5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Undefended means target. 4...Qa5+ checks the king along a5-e1 and, from the same square, attacks the bishop along the fifth rank. White must answer the check, so there is no time to save the bishop: 5.Nc3 Qxg5 (or 5.Nd2 Qxg5). Checks that also attack a loose piece are among the most common ways material is won.",
+      "wrong": [
+        {
+          "move": "Ne4",
+          "why": "Attacks the bishop but gives White time to retreat it; you win nothing."
+        },
+        {
+          "move": "h6",
+          "why": "Asks the bishop to move, and it does (Bh4). A check first would have won it."
+        }
+      ],
+      "hint": "Which check also attacks g5?",
+      "objective": "Use a check to win an undefended piece (loose pieces drop off).",
+      "tags": [
+        "hanging-pieces",
+        "fork"
+      ]
+    },
+    {
+      "id": "04-04",
+      "type": "blunder-check",
+      "difficulty": 3,
+      "fen": "r1bqkb1r/pppn1ppp/5n2/3p2B1/3P4/2N5/PP2PPPP/R2QKBNR w KQkq - 0 6",
+      "question": "White to move. The d5-pawn is attacked twice and the knight on f6 seems pinned. Is the pawn free? Play the right move.",
+      "solution": [
+        "e3"
+      ],
+      "goal": "best",
+      "accept": [
+        "Nf3",
+        "Qc2",
+        "Rc1",
+        "a3",
+        "Bh4"
+      ],
+      "explanation": "The pawn is poisoned. After 6.Nxd5? Nxd5! the 'pinned' knight moves anyway, because 7.Bxd8 Bb4+ 8.Qd2 Bxd2+ 9.Kxd2 Kxd8 leaves Black a piece up. The pin is only relative (the queen is behind the knight, not the king), so ask what your opponent's checks are after you capture. Simple development with 6.e3 keeps a pleasant game.",
+      "wrong": [
+        {
+          "move": "Nxd5",
+          "why": "6...Nxd5! 7.Bxd8 Bb4+ and Black wins a piece (the Elephant Trap)."
+        }
+      ],
+      "hint": "After Nxd5 Nxd5 Bxd8, what checks does Black have?",
+      "objective": "Run the blunder check on captures: look for the opponent's checks after the exchange.",
+      "tags": [
+        "blunder-check",
+        "counting",
+        "pin"
+      ]
+    },
+    {
+      "id": "04-05",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "rn2kb1r/pp3ppp/2p1pn2/q2N1b2/2BP4/5N2/PPPB1PPP/R2QK2R b KQkq - 1 8",
+      "question": "Black to move. White has just played 8.Nd5. What does this move attack, and what line did it open? Find the only good reply.",
+      "solution": [
+        "Qd8"
+      ],
+      "goal": "only",
+      "accept": [],
+      "explanation": "Two questions answer this. What line did it open? The knight left c3 and uncovered the bishop on d2, which now attacks your queen. What does the knight attack? It hits f6 and threatens Nxf6+. The queen must move, and 8...Qd8 is the only square that also guards f6 and d5. Taking the knight with 8...cxd5 or 8...exd5 loses the queen to Bxa5.",
+      "wrong": [
+        {
+          "move": "cxd5",
+          "why": "Captures the attacker but forgets the bishop on d2: 9.Bxa5 wins the queen."
+        },
+        {
+          "move": "Qxd2+",
+          "why": "Gives the queen for a bishop."
+        }
+      ],
+      "hint": "Look behind the knight: which piece was it blocking?",
+      "objective": "Ask what line the opponent's last move opened (a discovered attack).",
+      "tags": [
+        "threats",
+        "discovered-attack",
+        "defense"
+      ]
+    },
+    {
+      "id": "04-06",
+      "type": "defense",
+      "difficulty": 2,
+      "fen": "r1b1r1k1/ppp1qppp/5n2/8/8/1QN5/PPP2PPP/R1BR2K1 w - - 0 15",
+      "question": "White to move. The b7-pawn is undefended. Before you take it, run the safety scan: what is Black threatening? Make a safe move.",
+      "solution": [
+        "h3"
+      ],
+      "goal": "best",
+      "accept": [
+        "Bf4",
+        "Bg5",
+        "Be3",
+        "Bd2",
+        "Qc4"
+      ],
+      "explanation": "Black threatens 15...Qe1+! 16.Rxe1 Rxe1#, a back-rank mate, because your king has no square and your rook on d1 is the only guard of e1. 15.h3 gives the king a flight square and ends the threat for good; blocking the e-file with a bishop move also works. 15.Qxb7?? is exactly the greedy move that walks into mate.",
+      "wrong": [
+        {
+          "move": "Qxb7",
+          "why": "15...Qe1+ 16.Rxe1 Rxe1# — the pawn costs the game."
+        },
+        {
+          "move": "Qxf7+",
+          "why": "15...Qxf7 and you have given away your queen for a pawn."
+        }
+      ],
+      "hint": "List Black's checks.",
+      "objective": "Check the opponent's forcing moves (especially back-rank checks) before grabbing material.",
+      "tags": [
+        "threats",
+        "back-rank",
+        "blunder-check"
+      ]
+    },
+    {
+      "id": "04-07",
+      "type": "counting",
+      "difficulty": 2,
+      "fen": "r1bqk2r/p1pp1ppp/2p2n2/8/1b2P3/2NB4/PPP2PPP/R1BQK2R b KQkq - 1 7",
+      "question": "Black to move. Your bishop pins the knight on c3, so the e4-pawn looks free. Is it? Play the right move.",
+      "solution": [
+        "d5"
+      ],
+      "goal": "best",
+      "accept": [
+        "O-O"
+      ],
+      "explanation": "Count attackers and defenders before you capture. e4 is attacked once (Nf6) and defended by the bishop on d3, which is not pinned. After 7...Nxe4? 8.Bxe4 Black has lost a knight for a pawn. 7...d5! challenges the centre and develops instead, the main line of this Scotch Four Knights.",
+      "wrong": [
+        {
+          "move": "Nxe4",
+          "why": "8.Bxe4 and you are a knight for a pawn down; the pin on c3 did not matter because d3 also guards e4."
+        }
+      ],
+      "hint": "Count every defender of e4, not just the pinned one.",
+      "objective": "Count all defenders before capturing a 'free' pawn.",
+      "tags": [
+        "counting",
+        "hanging-pieces"
+      ]
+    },
+    {
+      "id": "04-08",
+      "type": "blunder-check",
+      "difficulty": 4,
+      "fen": "r1b1k2r/ppppqppp/2n5/4n3/1bP2B2/P4N2/1P1NPPPP/R2QKB1R w KQkq - 0 8",
+      "question": "White to move. Black's bishop on b4 is attacked by your a3-pawn. Before you take it, ask: after my move, what can my opponent check or capture?",
+      "solution": [
+        "Nxe5"
+      ],
+      "goal": "best",
+      "accept": [
+        "Bxe5",
+        "e3",
+        "Qc2",
+        "Qb3",
+        "Rc1",
+        "g3"
+      ],
+      "explanation": "8.axb4?? loses at once to 8...Nd3#: the knight checks, your own knight on d2 and pawn on e2 box the king in, and the e2-pawn cannot take on d3 because the queen on e7 pins it once the e5-knight has moved. This is the classic trap of the Budapest Gambit. Exchanging the dangerous knight with 8.Nxe5 is calm and good; the bishop on b4 is not going anywhere.",
+      "wrong": [
+        {
+          "move": "axb4",
+          "why": "8...Nd3# — the 'free' bishop was bait."
+        },
+        {
+          "move": "Ra2",
+          "why": "Unpins nothing and still allows ...Nd3+ ideas; it also wastes a tempo."
+        }
+      ],
+      "hint": "Look at every knight check Black would have if you took the bishop.",
+      "objective": "Check your opponent's checks after your capture (the blunder check).",
+      "tags": [
+        "blunder-check",
+        "mate-patterns"
+      ]
+    },
+    {
+      "id": "04-09",
+      "type": "blunder-check",
+      "difficulty": 3,
+      "fen": "rn1qkb1r/pbpp1ppp/1p2pn2/8/3PP3/2NB1N2/PPP2PPP/R1BQK2R b KQkq - 5 5",
+      "question": "Black to move. You want to develop your f8-bishop. Find a safe square for it.",
+      "solution": [
+        "Bb4"
+      ],
+      "goal": "best",
+      "accept": [
+        "Be7",
+        "d6",
+        "d5"
+      ],
+      "explanation": "Run the question 'after my move, what is my opponent's strongest reply?' If 5...Bd6?, then 6.e5! attacks the knight and the bishop at once and wins a piece. 5...Bb4 develops with a pin and puts pressure on e4; 5...Be7 is also safe. Pawn forks are easy to walk into when two pieces stand side by side on the same rank in front of an enemy pawn.",
+      "wrong": [
+        {
+          "move": "Bd6",
+          "why": "6.e5 forks the knight on f6 and the bishop on d6."
+        },
+        {
+          "move": "Bc5",
+          "why": "6.dxc5 — the bishop lands on a square your opponent's pawn attacks."
+        }
+      ],
+      "hint": "For each square, ask what a White pawn push would hit.",
+      "objective": "Blunder-check your developing move against pawn forks and pawn attacks.",
+      "tags": [
+        "blunder-check",
+        "fork"
+      ]
+    },
+    {
+      "id": "04-10",
+      "type": "blunder-check",
+      "difficulty": 4,
+      "fen": "r1bqkbnr/2p2ppp/p2p4/1p6/3pP3/1B6/PPP2PPP/RNBQK2R w KQkq - 0 8",
+      "question": "White to move. Black has just taken on d4. Recapturing with the queen looks natural. What is Black's strongest reply to it? Choose a safe move.",
+      "solution": [
+        "c3"
+      ],
+      "goal": "best",
+      "accept": [
+        "a4",
+        "Bd5",
+        "O-O"
+      ],
+      "explanation": "After 8.Qxd4? c5! the queen is attacked and must move, and then ...c4 traps the bishop on b3 behind Black's pawns (the 'Noah's Ark' trap). 8.c3 offers a pawn to open lines; 8.a4, attacking the b5 pawn, and 8.Bd5 are fine too. The habit to build: before an automatic recapture, look for the opponent's checks, captures and threats against the recapturing piece and against your other pieces.",
+      "wrong": [
+        {
+          "move": "Qxd4",
+          "why": "8...c5 and ...c4 trap the bishop on b3; you lose a piece."
+        }
+      ],
+      "hint": "After Qxd4, which Black pawn moves come with tempo?",
+      "objective": "Look at the opponent's strongest reply before an automatic recapture.",
+      "tags": [
+        "blunder-check",
+        "trapped-piece"
+      ]
+    },
+    {
+      "id": "04-11",
+      "type": "defense",
+      "difficulty": 1,
+      "fen": "r2qk2r/ppp2ppp/2np1n2/2b1p3/2B1P1b1/2PP1N1P/PP3PP1/RNBQ1RK1 b kq - 0 7",
+      "question": "Black to move. White has just played 7.h3. What does it attack? Make a safe move.",
+      "solution": [
+        "Bh5"
+      ],
+      "goal": "best",
+      "accept": [
+        "Be6",
+        "Bd7",
+        "Bc8",
+        "Bxf3"
+      ],
+      "explanation": "The first scan question is 'what does the last move attack?' The h3-pawn now hits your bishop on g4, and the bishop has no defender except the knight on f6, which only recaptures a pawn. Retreat it (7...Bh5 keeps the pin) or exchange it. Castling first, 7...O-O??, just loses the bishop to 8.hxg4.",
+      "wrong": [
+        {
+          "move": "O-O",
+          "why": "8.hxg4 and you have lost a bishop for a pawn."
+        },
+        {
+          "move": "h5",
+          "why": "Offering the bishop does not work here: 8.hxg4 hxg4 9.Ng5 and Black's attack is too slow."
+        }
+      ],
+      "hint": "Which of your pieces does the h3-pawn attack?",
+      "objective": "Answer the question 'what does my opponent's last move attack?' every move.",
+      "tags": [
+        "threats",
+        "hanging-pieces"
+      ]
+    }
+  ]
+}

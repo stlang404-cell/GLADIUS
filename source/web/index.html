@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Elo Blueprint Interactive</title>
+<meta name="description" content="Interactive chess trainer for The Elo Blueprint: learn, solve, play, analyse, fix, repeat.">
+<meta name="theme-color" content="#1E1C1A">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Elo Blueprint">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-32.png" sizes="32x32">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="css/book-base.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="modulepreload" href="js/app.js">
+<link rel="modulepreload" href="vendor/chess.js">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="shell" class="shell">
+  <nav class="sidebar" aria-label="Main">
+    <div class="brand"><img src="icons/icon-192.png" alt="" width="34" height="34"><span><b>The Elo Blueprint</b><small>Interactive trainer</small></span></div>
+    <ul id="nav-side"></ul>
+  </nav>
+  <main id="main" tabindex="-1"><div class="boot">Loading…</div></main>
+  <nav class="tabbar" aria-label="Main"><ul id="nav-tabs"></ul></nav>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:2em">The Elo Blueprint Interactive needs JavaScript.</p></noscript>
+<script src="data/pieces.js"></script>
+<script src="data/book.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

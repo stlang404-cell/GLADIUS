@@ -1,0 +1,66 @@
+title: The Elo Blueprint
+subtitle: The Complete 400 → 1500 Chess Improvement System
+edition: First Edition
+version: "1.0.0"
+year: 2026
+publisher: Elo Blueprint Editions
+language: en
+identifier: urn:uuid:16ebdcfc-ea17-4ebb-92bf-c515e136f9ba
+front: [how-to-use]
+parts:
+  - num: 1
+    name: Part One
+    title: Stop Giving Things Away
+    stage: "400–600"
+    chapters: [1, 2, 3, 4, 5, 6]
+    test: T1
+    intro: >
+      At 400–600, games are decided by pieces left undefended and checkmates nobody saw
+      coming. This part removes those losses first. You will learn the complete rules, read
+      the board accurately, count exchanges, run a safety scan before every move, deliver the
+      basic checkmates, and open the game without walking into traps. None of it is glamorous.
+      All of it wins games immediately.
+  - num: 2
+    name: Part Two
+    title: See the Tactics
+    stage: "600–800"
+    chapters: [7, 8, 9, 10, 11, 12, 13]
+    test: T2
+    intro: >
+      Once you stop giving material away, the next rating jump comes from taking it. Tactics
+      are short forcing sequences that win material or deliver mate, and they follow a small
+      number of repeating patterns. This part teaches those patterns one at a time, then gives
+      you a compact, sound opening repertoire for both colours so your games start in positions
+      you understand.
+  - num: 3
+    name: Part Three
+    title: Calculate and Convert
+    stage: "800–1000"
+    chapters: [14, 15, 16, 17, 18]
+    test: T3
+    intro: >
+      Seeing a pattern is not the same as proving it works. This part builds a reliable
+      move-selection routine, accurate short calculation, the technique to turn winning positions
+      into wins, the resourcefulness to save bad ones, and the king-and-pawn endgame knowledge
+      that every later endgame rests on.
+  - num: 4
+    name: Part Four
+    title: Positional Judgment
+    stage: "1000–1200"
+    chapters: [19, 20, 21, 22, 23]
+    test: T4
+    intro: >
+      When there is no tactic, what do you do? This part answers the question with piece
+      activity, pawn structure, king safety, and simple planning, then adds the rook endgames
+      that decide more games than any other ending.
+  - num: 5
+    name: Part Five
+    title: The Complete Player
+    stage: "1200–1500"
+    chapters: [24, 25, 26, 27, 28]
+    test: T5
+    intro: >
+      The final part sharpens calculation for complex positions, deepens strategy and endgame
+      technique, and gives you the practical, psychological and analytical tools to keep
+      improving long after this book is finished.
+back: [glossary, references]

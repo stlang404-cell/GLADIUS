@@ -1,0 +1,204 @@
+{
+  "chapter": 27,
+  "title": "Practical Play and Psychology",
+  "exercises": [
+    {
+      "id": "27-01",
+      "type": "blunder-check",
+      "difficulty": 3,
+      "fen": "3r2k1/pp3ppp/1qn5/2pB4/8/8/PPQ2PPP/4R1K1 b - - 0 22",
+      "question": "Black to move. You are a pawn up and White has just put a bishop on d5 where only your rook attacks it. Is it a free piece? Find the best move.",
+      "solution": ["g6"],
+      "goal": "best",
+      "accept": ["Nb4"],
+      "explanation": "Before taking a gift, ask what the giver gains if you accept. After 22...Rxd5?? the rook leaves the back rank and 23.Re8# follows, because your king has no flight square. 22...g6 creates a flight square and keeps your extra pawn; only after that does the threat of ...Rxd5 become real. Nb4, chasing the bishop, is also fine.",
+      "wrong": [
+        {"move": "Rxd5", "why": "Takes the 'free' bishop and is mated at once by Re8#."},
+        {"move": "h6", "why": "Also makes a flight square, but after Qc4 Black cannot keep f7 guarded: Bxc6 and Qxf7 win the pawn back with an active queen."}
+      ],
+      "hint": "If your rook leaves d8, who guards e8?",
+      "objective": "Treat an unexpected 'free' piece as a question: check what your opponent gains if you take it.",
+      "tags": ["blunder-check", "back-rank", "practical"]
+    },
+    {
+      "id": "27-02",
+      "type": "blunder-check",
+      "difficulty": 2,
+      "fen": "4r1k1/pp2qppp/8/8/3N4/1QP5/PP3PPP/3R2K1 w - - 0 24",
+      "question": "White to move. You won a knight a few moves ago and want to keep pressing. What does Black threaten, and what is your best move?",
+      "solution": ["Nf3"],
+      "goal": "best",
+      "accept": ["h3", "g3", "h4"],
+      "explanation": "Black threatens 24...Qe1+! 25.Rxe1 Rxe1#, because your king has no flight square. Nf3 guards e1 and blocks nothing important; a flight square with h3, g3 or h4 also solves the problem. Once the back rank is safe, your extra piece decides the game at leisure.",
+      "wrong": [
+        {"move": "Nf5", "why": "Attacks the queen, but 24...Qe1+ 25.Rxe1 Rxe1 is mate."},
+        {"move": "Qxb7", "why": "Grabs a pawn and walks into the same mate: 24...Qe1+ 25.Rxe1 Rxe1#."}
+      ],
+      "hint": "Look at the e-file and at your king's flight squares.",
+      "objective": "After winning material, scan for the opponent's checks and back-rank tricks before pressing on.",
+      "tags": ["blunder-check", "back-rank", "practical"]
+    },
+    {
+      "id": "27-03",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r1q2rk1/1b3pp1/p2p3p/1p1Np3/4P3/2P5/PP1Q1PPP/R4RK1 w - - 0 18",
+      "question": "White to move. Your higher-rated opponent has just offered a draw. Before you answer, look at the board: is there a reason to keep playing?",
+      "solution": ["Ne7+", "Kh7", "Nxc8"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "A draw offer is information, not an instruction: always look at the position before replying. Here 18.Ne7+ forks king and queen. After 18...Kh7 (or 18...Kh8) 19.Nxc8 you have won the queen for a knight, and the game is no longer close to a draw.",
+      "wrong": [
+        {"move": "Nb6", "why": "Forks queen and rook, but Black's queen simply moves and the knight on a8 is lost later; it wins far less than the check."},
+        {"move": "Rfd1", "why": "A reasonable-looking move that misses the fork; the position stays roughly balanced."}
+      ],
+      "hint": "Which square attacks both g8 and c8?",
+      "objective": "When offered a draw, run your normal checks-captures-threats scan before answering.",
+      "tags": ["practical", "fork"]
+    },
+    {
+      "id": "27-04",
+      "type": "defense",
+      "difficulty": 4,
+      "fen": "7k/7p/7P/3q4/6R1/Q7/6P1/7K b - - 0 45",
+      "question": "Black to move. You are a rook down and White threatens mate. Your king has no moves and your pawn is blocked. Find the move that saves the game.",
+      "solution": ["Qxg2+"],
+      "goal": "draw",
+      "accept": ["Qd1+", "Qh5+"],
+      "explanation": "When you are lost, look for stalemate: your king has no legal move and your pawn cannot move, so if your queen disappears you have no moves at all. 45...Qxg2+! leaves White only Kxg2 or Rxg2, and both are stalemate because the rook on g4 (or g2) still covers g7 and g8. 45...Qd1+ and 45...Qh5+ also draw by the same idea: either White takes the queen and it is stalemate, or the checks never stop.",
+      "wrong": [
+        {"move": "Qf5", "why": "Natural centralizing, but 46.Qa1+ forces ...Qf6 and 47.Qxf6 is mate."},
+        {"move": "Qf3", "why": "Also allows 46.Qa1+ Qf6 47.Qxf6#; a quiet move gives White the time he needs."}
+      ],
+      "hint": "Count your legal moves if your queen were gone.",
+      "objective": "In a lost position, look for stalemate and perpetual-check resources before resigning.",
+      "tags": ["defense", "stalemate", "practical"]
+    },
+    {
+      "id": "27-05",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "2Q5/1R3ppk/7p/P7/8/7P/3q2PK/8 w - - 0 38",
+      "question": "White to move. You are a rook up and your a-pawn is ready to run. Black's queen is hovering near your king. Finish the game cleanly: mate in 3.",
+      "solution": ["Qf5+", "g6", "Qxf7+", "Kh8", "Qg7#"],
+      "goal": "mate",
+      "mate_in": 3,
+      "accept": [],
+      "explanation": "When you are winning, the most dangerous thing on the board is usually your opponent's counterplay, here perpetual check with ...Qd6+ and ...Qf4+. The safest way to stop checks is to give mate first. 38.Qf5+ g6 39.Qxf7+ Kh8 40.Qg7# works because the rook on b7 guards g7 once f7 has gone.",
+      "wrong": [
+        {"move": "a6", "why": "Relaxes: 38...Qd6+ starts a perpetual check that your king cannot escape."},
+        {"move": "Qc2+", "why": "Offers a queen trade that is not a trade: the black queen on d2 simply takes on c2."}
+      ],
+      "hint": "Checks first: which check also attacks f7?",
+      "objective": "When winning, eliminate the opponent's counterplay (here perpetual check) before pushing your own plan.",
+      "tags": ["practical", "mate-patterns", "conversion"]
+    },
+    {
+      "id": "27-06",
+      "type": "blunder-check",
+      "difficulty": 2,
+      "fen": "r1bqkb1r/pppn1ppp/5n2/3p2B1/3P4/2N5/PP2PPPP/R2QKBNR w KQkq - 0 6",
+      "question": "White to move. In a Queen's Gambit Declined your opponent's d5-pawn looks pinned and undefended: the knight on f6 cannot move without losing the queen. Is the pawn free? Choose your move.",
+      "solution": ["e3"],
+      "goal": "best",
+      "accept": ["Nf3", "Qc2"],
+      "explanation": "The 'pin' on f6 is not real, because Black has a counter-trick. After 6.Nxd5?? Nxd5! 7.Bxd8 Bb4+ 8.Qd2 Bxd2+ 9.Kxd2 Kxd8, Black has won a piece. Calm development with 6.e3 (or 6.Nf3 or 6.Qc2) keeps a pleasant position.",
+      "wrong": [
+        {"move": "Nxd5", "why": "Falls into the trap: 6...Nxd5! 7.Bxd8 Bb4+ and Black comes out a piece ahead."}
+      ],
+      "hint": "If you take on d5 and Black takes back with the knight, what checks does Black have?",
+      "objective": "Before taking a pawn that looks free, look for the opponent's in-between check.",
+      "tags": ["blunder-check", "opening-traps", "practical"]
+    },
+    {
+      "id": "27-07",
+      "type": "calculation",
+      "difficulty": 3,
+      "fen": "r1b1kb1r/pp3ppp/1qn1pn2/2pp4/3P1B2/2PBPN2/PP1N1PPP/R2QK2R b KQkq - 4 7",
+      "question": "Black to move. Your opponent is rated 300 points higher and has just played 7.Bd3, leaving the b2-pawn hanging. Many players assume a stronger opponent never blunders. Check it yourself: what is your best move?",
+      "solution": ["Qxb2"],
+      "goal": "best",
+      "accept": ["c4"],
+      "explanation": "Respect your opponent, but trust your calculation. White has no trap: after 7...Qxb2 the natural 8.Rb1 is met by 8...Qxc3, and Black is two pawns up with a safe queen. 7...c4, gaining space with tempo before taking b2, is just as good.",
+      "wrong": [
+        {"move": "Bd7", "why": "A timid developing move that lets White play Rb1 or Qb3; you leave a clean pawn on the table."},
+        {"move": "cxd4", "why": "Releases the tension and gives White time to cover b2; the extra pawn is gone."}
+      ],
+      "hint": "List White's best replies to ...Qxb2. Do any of them trap the queen?",
+      "objective": "Against stronger opponents, decide by calculation, not by reputation.",
+      "tags": ["practical", "calculation", "repertoire-black"]
+    },
+    {
+      "id": "27-08",
+      "type": "defense",
+      "difficulty": 4,
+      "fen": "3r4/pp2kpp1/8/7p/8/8/PP2KPP1/3R4 w - - 0 30",
+      "question": "White to move. You are a pawn down and Black's h-pawn is passed. Black has just offered a rook trade on the d-file. Which move gives you the best practical chances?",
+      "solution": ["Rc1"],
+      "goal": "best",
+      "accept": ["Rh1"],
+      "explanation": "When you are worse, avoid trades that lead to simple, lost endings, and keep pieces that can make trouble. After 30.Rxd8? Kxd8 the king and pawn ending is close to hopeless, because Black's outside passed h-pawn will drag your king away. 30.Rc1 keeps rooks on and heads for the c-file and the seventh rank; Rh1 (attacking the h-pawn) is a similar active idea.",
+      "wrong": [
+        {"move": "Rxd8", "why": "Trades into a king and pawn ending where Black's outside passed pawn should decide."}
+      ],
+      "hint": "Which ending would you rather defend: rooks on, or bare kings and pawns?",
+      "objective": "When worse, keep the pieces that give counterplay and avoid simplifying into a lost ending.",
+      "tags": ["practical", "defense", "rook-endgame"]
+    },
+    {
+      "id": "27-09",
+      "type": "conversion",
+      "difficulty": 2,
+      "fen": "r4rk1/pb1n1pp1/4p2p/q7/8/3Q4/PPB2PPP/R3R1K1 b - - 0 20",
+      "question": "Black to move. You are a piece up. Both a2 and g2 can be taken. What is the safest way to keep your advantage?",
+      "solution": ["Nf6"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "White has one idea left: Qh7#, with the bishop on c2 supporting the queen. 20...Nf6 covers h7, improves your worst piece and leaves White with nothing. Greedy captures lose instantly: winning extra pawns is worthless if your king is mated.",
+      "wrong": [
+        {"move": "Qxa2", "why": "Takes a pawn and allows 21.Qh7#."},
+        {"move": "Bxg2", "why": "Takes a pawn and allows 21.Qh7#."}
+      ],
+      "hint": "What is the only way White can still win this game?",
+      "objective": "When ahead, find and kill the opponent's last threat before collecting more material.",
+      "tags": ["conversion", "practical", "blunder-check"]
+    },
+    {
+      "id": "27-10",
+      "type": "mate",
+      "difficulty": 1,
+      "fen": "8/8/1p6/1P3p2/5P2/5k1p/4q2P/7K b - - 0 60",
+      "question": "Black to move. You have just queened and your clock is running low. White's king is boxed in and every white pawn is blocked. Mate in 1, and do not stalemate!",
+      "solution": ["Qf1#"],
+      "goal": "mate",
+      "mate_in": 1,
+      "accept": ["Qd1#", "Qe1#", "Qg2#"],
+      "explanation": "Every white pawn is blocked, so if the white king has no move and is not in check, it is stalemate. 60...Qf1# gives check along the first rank while your king and the h3-pawn cover g2. The moves that 'take away squares', ...Qf2 or ...Kf2, leave White with no legal move and no check: a draw.",
+      "wrong": [
+        {"move": "Qf2", "why": "Takes g1 and g2 without giving check: stalemate, a draw."},
+        {"move": "Kf2", "why": "Same mistake: White has no legal move and is not in check, so it is stalemate."}
+      ],
+      "hint": "Only consider checks.",
+      "objective": "When converting with a big material lead, give check or leave the opponent a move: avoid stalemate.",
+      "tags": ["stalemate", "conversion", "practical"]
+    },
+    {
+      "id": "27-11",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/5p2/8/4k3/8/4K3/8/8 b - - 0 60",
+      "question": "Black to move. Your opponent offers a draw. You have an extra pawn but the kings are face to face. Should you play on? Find the winning move.",
+      "solution": ["f6", "Kd3", "Kf4"],
+      "goal": "win",
+      "accept": ["Kf5"],
+      "explanation": "Before accepting a draw, check whether you have a clear way to win. Here you do: the kings stand in opposition with White to move after a pawn move, so 60...f6! (a spare tempo) forces the white king to step aside, and after 61.Kd3 Kf4 your king walks in front of the pawn. 60...Kf5, heading straight for the squares in front of the pawn, also wins.",
+      "wrong": [
+        {"move": "f5", "why": "Pushes too far: after 61.Kf3 White holds the opposition in front of the pawn and it is a draw."},
+        {"move": "Kd5", "why": "Lets 61.Kf4 put White's king in front of your pawn; a draw."}
+      ],
+      "hint": "Who wants to move here, and do you have a waiting move?",
+      "objective": "Use a spare pawn tempo to win the opposition, and do not accept draws in won endings.",
+      "tags": ["practical", "king-pawn-endgame", "opposition"]
+    }
+  ]
+}

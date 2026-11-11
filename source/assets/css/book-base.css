@@ -1,0 +1,103 @@
+/* The Elo Blueprint — shared book typography (PDF, EPUB, web reader) */
+:root { --ink:#2A2724; --ink-soft:#57514A; --gold:#B08D2E; --gold-text:#7E6219; --paper:#FCFAF5;
+        --rule:#E3D9C4; --tint:#F5EFE2; --green:#2F7D4F; --red:#A8352A; --blue:#2E5E8C; }
+body { font-family: "Source Serif 4", "Source Serif Pro", Georgia, serif; color: #2A2724; line-height: 1.5;
+       hyphens: auto; -webkit-hyphens: auto; }
+h1, h2, h3, h4 { font-family: "Cormorant Garamond", "Source Serif 4", Georgia, serif; color: #2A2724;
+                 font-weight: 600; line-height: 1.15; hyphens: manual; -webkit-hyphens: manual; }
+h2 { font-size: 1.75em; margin: 1.4em 0 0.4em; border-bottom: 1px solid #E3D9C4; padding-bottom: 0.15em; }
+h3 { font-size: 1.32em; margin: 1.2em 0 0.3em; }
+h4 { font-size: 1.1em; margin: 1em 0 0.2em; }
+p { margin: 0 0 0.62em; }
+a { color: #7E6219; text-decoration: none; }
+strong { font-weight: 600; }
+ul, ol { margin: 0.2em 0 0.8em; padding-left: 1.4em; }
+li { margin-bottom: 0.22em; }
+table { border-collapse: collapse; width: 100%; margin: 0.8em 0 1.1em; font-size: 0.9em; }
+th, td { border-bottom: 1px solid #E3D9C4; padding: 0.35em 0.5em; text-align: left; vertical-align: top; }
+th { font-family: Inter, sans-serif; font-weight: 600; font-size: 0.85em; letter-spacing: 0.02em;
+     background: #F5EFE2; }
+code { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 0.86em; }
+
+/* chapter opener */
+.chapter-kicker { font-family: Inter, sans-serif; text-transform: uppercase; letter-spacing: 0.18em;
+                  font-size: 0.72em; color: #7E6219; font-weight: 600; margin: 0 0 0.6em; }
+.stage-badge { margin-left: 1em; padding: 0.15em 0.6em; border: 1px solid #B08D2E; border-radius: 1em;
+               letter-spacing: 0.06em; color: #57514A; }
+.chapter-title { font-size: 2.9em; margin: 0 0 0.1em; font-weight: 600; border: none; }
+.chapter-subtitle { font-family: "Cormorant Garamond", Georgia, serif; font-style: italic; font-size: 1.45em;
+                    color: #57514A; margin: 0 0 1em; }
+.objectives { border-top: 2px solid #B08D2E; padding-top: 0.6em; margin: 1.2em 0 1em; }
+.obj-head, .hints-head, .sol-wrong-head { font-family: Inter, sans-serif; font-size: 0.72em; text-transform: uppercase;
+            letter-spacing: 0.14em; color: #7E6219; font-weight: 600; margin: 0 0 0.3em; }
+.objectives ul { margin-bottom: 0; }
+
+/* callout boxes */
+.box { margin: 1.1em 0; padding: 0.75em 1em 0.55em; background: #F5EFE2; border-left: 3px solid #B08D2E;
+       border-radius: 0 4px 4px 0; }
+.box p:last-child, .box ul:last-child, .box ol:last-child { margin-bottom: 0.2em; }
+.box-head { margin: 0 0 0.35em; }
+.box-label { font-family: Inter, sans-serif; font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.14em;
+             font-weight: 700; color: #7E6219; margin-right: 0.7em; }
+.box-title { font-weight: 600; }
+.box-cheat { background: #2A2724; color: #FBF8F1; border-left-color: #C9A227; }
+.box-cheat .box-label { color: #E2C46A; }
+.box-cheat a { color: #E2C46A; }
+.box-mistake { border-left-color: #A8352A; background: #F8ECE7; }
+.box-mistake .box-label { color: #A8352A; }
+.box-evidence { border-left-color: #2E5E8C; background: #ECF1F6; }
+.box-evidence .box-label { color: #2E5E8C; }
+.box-coach { border-left-color: #57514A; background: #F1EEE8; }
+.box-coach .box-label { color: #57514A; }
+.box-nextgame { border-left-color: #2F7D4F; background: #EAF3EC; }
+.box-nextgame .box-label { color: #2F7D4F; }
+.box-drill { border-left-color: #B08D2E; background: #FBF4E0; }
+
+/* diagrams */
+figure.diagram { margin: 1em auto 1.1em; text-align: center; }
+.board-wrap svg, .board-wrap img { width: 100%; height: auto; display: block; }
+figure.diagram figcaption { font-size: 0.86em; color: #57514A; margin-top: 0.4em; text-align: left;
+                            line-height: 1.38; font-style: italic; }
+.line { margin: 0.6em 0 0.9em; }
+.line .moves { font-weight: 600; background: #FFFFFF; border: 1px solid #E3D9C4; border-radius: 4px;
+               padding: 0.45em 0.7em; line-height: 1.7; hyphens: none; -webkit-hyphens: none; }
+.line-caption { font-size: 0.88em; color: #57514A; font-style: italic; }
+.mn { color: #7E6219; font-weight: 400; margin-right: 0.08em; }
+
+/* exercises */
+.ex-set-title { margin-top: 1.4em; }
+.ex-intro { font-size: 0.92em; color: #57514A; }
+.exercise { break-inside: avoid; page-break-inside: avoid; }
+.ex-head { font-family: Inter, sans-serif; font-size: 0.74em; margin: 0 0 0.25em; display: block; }
+.ex-num { font-weight: 700; color: #2A2724; margin-right: 0.6em; font-family: Inter, sans-serif; }
+.ex-type { text-transform: uppercase; letter-spacing: 0.1em; color: #7E6219; font-weight: 600; margin-right: 0.6em; }
+.ex-diff { color: #B08D2E; letter-spacing: 0.08em; }
+.ex-q { font-size: 0.92em; line-height: 1.38; margin-top: 0.3em; }
+.ex-diagram { margin: 0; }
+.sol-link, .back-link { font-family: Inter, sans-serif; font-size: 0.72em; color: #7E6219; white-space: nowrap; }
+.hints { margin-top: 1em; font-size: 0.85em; border-top: 1px solid #E3D9C4; padding-top: 0.5em; }
+.hints ul { list-style: none; padding-left: 0; }
+
+/* solutions */
+.solution { margin: 0 0 0.9em; padding-bottom: 0.6em; border-bottom: 1px solid #EDE5D3; break-inside: avoid; page-break-inside: avoid; }
+.sol-head { margin: 0 0 0.25em; }
+.sol-line { font-weight: 600; }
+.sol-expl { margin-bottom: 0.3em; }
+.sol-alt, .sol-obj { font-size: 0.88em; color: #57514A; margin-bottom: 0.2em; }
+.sol-obj span { font-family: Inter, sans-serif; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.1em; color: #7E6219; }
+.sol-wrong { font-size: 0.88em; }
+.sol-wrong ul { margin: 0 0 0.3em; }
+.back-link { margin-left: 0.8em; }
+
+/* part pages */
+.part-page { text-align: center; }
+.part-name { font-family: Inter, sans-serif; text-transform: uppercase; letter-spacing: 0.3em; color: #7E6219;
+             font-size: 0.8em; font-weight: 600; }
+.part-title { font-size: 3em; margin: 0.2em 0 0.2em; border: none; }
+.part-stage { font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.4em; font-style: italic; color: #57514A; }
+.part-intro { text-align: left; margin: 1.6em auto 1em; max-width: 30em; }
+.part-chapters { list-style: none; padding: 0; text-align: left; max-width: 30em; margin: 1em auto; }
+.part-chapters li { border-bottom: 1px solid #E3D9C4; padding: 0.3em 0; }
+
+/* glossary */
+.doc .gloss p { margin-bottom: 0.45em; }
