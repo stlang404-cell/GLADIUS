@@ -64,22 +64,22 @@
       "id": "23-03",
       "type": "endgame",
       "difficulty": 3,
-      "fen": "8/k7/8/3P4/4K3/8/r7/2R5 w - - 0 1",
-      "question": "White to move. The black king is far away on a7. Choose the move that keeps it out of the game.",
+      "fen": "8/4k3/8/8/2PK4/5r2/8/R7 w - - 0 1",
+      "question": "White to move. The black king on e7 wants to come to d7 and stop the c-pawn. Choose the move that keeps it out.",
       "solution": [
-        "Rb1"
+        "Rd1"
       ],
       "goal": "win",
       "accept": [],
-      "explanation": "Cut the king off first, push the pawn second. Rb1! puts a wall on the b-file: the black king cannot cross it, so it can never reach the d-pawn. White's king then escorts the pawn up the board while Black's rook alone cannot stop both king and pawn. Pushing at once with d6 lets the black king come back via b7 and c8.",
+      "explanation": "Cut the king off first, push the pawn second. Rd1! builds a wall on the d-file: the black king can never cross to the c-pawn's side of the board. White's king then walks forward with the pawn, and the black rook alone can only give checks until the king hides. Pushing c5 at once, or stepping forward with Kc5, lets ...Kd7 bring the black king in front of the pawn, and the position is a draw.",
       "wrong": [
         {
-          "move": "d6",
-          "why": "Pushing first lets the king return with ...Kb7 and ...Kc8 (or the rook checks), and the position is a draw."
+          "move": "c5",
+          "why": "Pushing first lets the king come across with ...Kd7 and ...Kc7; the pawn is blockaded and the game is drawn."
         },
         {
-          "move": "Kd4",
-          "why": "A natural king move, but after ...Kb7 the black king crosses towards the pawn and the game is drawn."
+          "move": "Kc5",
+          "why": "Natural, but after ...Kd7 the black king reaches the pawn first."
         }
       ],
       "hint": "Which file must the black king cross to reach the pawn?",
@@ -122,22 +122,22 @@
       "id": "23-05",
       "type": "endgame",
       "difficulty": 3,
-      "fen": "8/8/8/7K/4k3/4p3/8/2R5 w - - 0 1",
+      "fen": "8/8/8/K7/3k4/3p4/8/5R2 w - - 0 1",
       "question": "White to move. Rook against pawn: count the race and find the only winning move.",
       "solution": [
-        "Kg4"
+        "Kb4"
       ],
       "goal": "win",
       "accept": [],
-      "explanation": "In rook against pawn, the stronger side's king usually decides. Kg4! is the only move that brings the king close enough in time: after ...e2, Kg3 and Kf2 arrive just as the pawn reaches the second rank, and the rook can then win it with the king's help. Rook moves waste the one tempo White has, and after ...e2 and ...Kf3 the pawn costs White the rook.",
+      "explanation": "In rook against pawn, the stronger side's king usually decides. Kb4! is the only move that brings the king close enough in time: after ...d2, Kb3 and Kc2 arrive just as the pawn reaches the second rank, and the rook can then win it with the king's help. Rook moves waste the one tempo White has, and after ...d2 and ...Kc3 the pawn costs White the rook.",
       "wrong": [
         {
-          "move": "Re1",
-          "why": "The rook already controls the queening square from c1; this move wastes time and the king arrives too late."
+          "move": "Rd1",
+          "why": "The rook already controls the queening square from f1; this move wastes time and the king arrives too late."
         },
         {
-          "move": "Kg5",
-          "why": "Moving the king away from f3/e2 loses a tempo in the race, and Black draws."
+          "move": "Kb5",
+          "why": "Moving the king away from c3/d2 loses a tempo in the race, and Black draws."
         }
       ],
       "hint": "Which squares must the white king reach to help the rook?",
@@ -151,24 +151,24 @@
       "id": "23-06",
       "type": "endgame",
       "difficulty": 3,
-      "fen": "5k2/7R/3KP3/8/8/8/8/r7 b - - 0 1",
-      "question": "Black to move. White threatens e7+. Which move saves the game?",
+      "fen": "2k5/R7/3PK3/8/8/8/8/7r b - - 0 1",
+      "question": "Black to move. White threatens d7+. Which move saves the game?",
       "solution": [
-        "Ra6+"
+        "Rh6+"
       ],
       "goal": "draw",
       "accept": [
-        "Rd1+"
+        "Re1+"
       ],
-      "explanation": "Your king is on the short side of the pawn (the f-file side), so your rook has room on the long side to check from a distance. ...Ra6+ starts checking along the sixth rank from three files away; the white king cannot approach the rook without leaving the pawn. Checking from behind with ...Rd1+ also holds. Anything slow allows e7+ and the pawn promotes.",
+      "explanation": "Your king is on the short side of the pawn (the c-file side), so your rook has room on the long side to check from a distance. ...Rh6+ starts checking along the sixth rank from three files away; the white king cannot approach the rook without leaving the pawn. Checking from behind with ...Re1+ also holds. Anything slow allows d7+ and the pawn promotes.",
       "wrong": [
         {
-          "move": "Re1",
-          "why": "Getting behind the pawn is too slow; Rh8+ and Rd8 support the pawn and White wins."
+          "move": "Rd1",
+          "why": "Getting behind the pawn is too slow; Ra8+ and Re8 support the pawn and White wins."
         },
         {
-          "move": "Ra3",
-          "why": "This waits instead of checking; e7+ follows and the pawn queens."
+          "move": "Rh3",
+          "why": "This waits instead of checking; d7+ follows and the pawn queens."
         }
       ],
       "hint": "Checks force the white king to answer instead of pushing the pawn.",

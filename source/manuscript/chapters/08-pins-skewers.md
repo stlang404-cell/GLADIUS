@@ -94,8 +94,8 @@ Once a piece is pinned, it is a sitting target. The pinned piece cannot run, so 
 The most effective attacker is a pawn. A pawn is worth less than any piece, so if it attacks a pinned piece, the defender cannot solve the problem by "protecting" the piece: the pawn takes it anyway, and gives up only a pawn in return.
 
 ```board
-fen: r1bqr1k1/ppp2ppp/2n2n2/3p4/8/1Q1BB3/PPPN1PPP/R3K2R b KQ - 4 10
-caption: Black's rook on e8 pins the bishop on e3 to the white king. The pawn on d5 is ready to step forward and attack the pinned bishop. Exercise 08-04 asks you to find the move.
+fen: r1bqr1k1/ppp2ppp/2n2n2/3p4/Q7/3BB3/PPPN1PPP/R3K2R b KQ - 4 10
+caption: Black's rook on e8 pins the bishop on e3 to the white king. The pawn on d5 steps forward with ...d4, attacking the pinned bishop, and White cannot save it. Exercise 08-04 uses the same idea in a slightly different position.
 arrows: e8e1
 blue: d5d4
 squares: e3
@@ -293,7 +293,7 @@ In your next game, every time your opponent puts a bishop, rook or queen on a li
 Set up each position on a board or in any free chess app. Decide your answer before you move anything.
 
 1. **Absolute or relative?** Set up `r1bqkbnr/ppp2ppp/2np4/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4` and `rnbqkb1r/ppp2ppp/4pn2/3p2B1/2PP4/2N5/PP2PPPP/R2QKBNR b KQkq - 3 4`. For each, name the pinned piece and say whether it may legally move. Then find one way for the pinned side to break the pin.
-2. **Attack with a pawn.** Set up `r1bqr1k1/ppp2ppp/2n2n2/3p4/8/1Q1BB3/PPPN1PPP/R3K2R b KQ - 4 10`. Find Black's winning pawn move, then play every White reply you can think of and check that Black still wins a piece.
+2. **Attack with a pawn.** Set up `r1bqr1k1/ppp2ppp/2n2n2/3p4/Q7/3BB3/PPPN1PPP/R3K2R b KQ - 4 10`. Find Black's winning pawn move, then play every White reply you can think of and check that Black still wins a piece.
 3. **The pinned defender.** Set up `r3k2r/pp3ppp/6q1/8/8/4n3/PP3P1P/Q3R2K b kq - 0 30`. Explain to yourself why ...Qg2 is mate even though the knight on e3 is pinned.
 4. **Both traps.** Play through the Légal trap and the Elephant Trap from the start position three times each, once as the winner and once as the loser, until you can do it without the book.
 5. **Rook-ending skewer.** Set up `R7/P5k1/6p1/7p/4p2P/6P1/r4PK1/8 w - - 0 45`. Move the black king from g7 to f7 and find White's win. Then put it back on g7 and convince yourself that the same trick fails.

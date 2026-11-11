@@ -230,15 +230,17 @@ Typical moments to re-evaluate:
 * Your opponent creates a weakness of his own somewhere else.
 * A tactic appears.
 
-The Italian structure shows a typical switch. White's slow knight manoeuvre (Nbd2-f1-g3) is a good plan while the centre stays closed. But when Black plays ...d5, the centre opens, and White must deal with it at once.
+The Carlsbad structure shows a typical switch. White's minority attack is a good plan while Black's pawns stand on c6 and d5. But in the line shown in Step 3, Black answered with ...Ne4, and once White exchanges on e4 the pawn structure changes, and so must the plan.
 
 ```line
-fen: r2qr1k1/bpp2pp1/p1npbn1p/4p3/4P3/2PP1N1P/PPB2PP1/R1BQRNK1 b - - 5 12
-moves: 12...d5 13.exd5 Bxd5 14.Ng3
+fen: r1b1r1k1/1p2qppp/p1p3n1/3p4/PP1Pn3/2NBPN2/2Q2PPP/1R3RK1 w - - 0 15
+moves: 15.Bxe4 dxe4 16.Nd2
 check: engine
 diagram: end
-caption: After ...d5 the centre is open. White's knight still goes to g3, but now the priorities are the e-file and the d-pawn, not a slow kingside build-up.
+caption: After the exchanges on e4 the d5-pawn has gone, so the old target has changed. The knight and the queen on c2 now both hit the e4-pawn, Black must defend it (the engine's choice is ...f5), and White's new plan is to press against e4 and use the open d-file and the c5-square.
 ```
+
+Nothing was wrong with White's first plan. The position changed, and the checklist produced a new one.
 
 ## Worked example: planning a quiet Italian
 
@@ -264,7 +266,7 @@ diagram: end
 caption: A two-step plan carried out: prophylaxis with h3, then the knight heads for g3. White keeps the bishop with Bc2. Now Black's ...d5 break is the critical question (Exercise 22-03).
 ```
 
-Notice how short each plan was. h3 and Nbd2-f1-g3 took four moves. After that the position had changed (Black's bishop came to e6, offering a trade), so White re-evaluated and chose Bc2 to keep the bishop. That is planning at club level: a few purposeful moves, then look again.
+Notice how short each plan was. h3 and the first two steps of Nbd2-f1-g3 took three moves. Meanwhile the position changed (Black's bishop came to e6, offering a trade on b3), so White re-evaluated and chose Bc2 to keep the bishop. The knight will finish its journey to g3 next. That is planning at club level: a few purposeful moves, then look again.
 
 :::evidence Plans and pattern knowledge
 Research on chess expertise suggests that strong players recognise familiar structures quickly and retrieve typical plans for them, rather than calculating everything from scratch. The classic studies are Adriaan de Groot's *Thought and Choice in Chess* (1965, English edition) and William Chase and Herbert Simon's "Perception in Chess" (*Cognitive Psychology*, 1973). Practical consequence: learning a handful of standard structures and their plans pays off in many games.

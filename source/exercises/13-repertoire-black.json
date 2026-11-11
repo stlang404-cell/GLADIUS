@@ -1,0 +1,327 @@
+{
+  "chapter": 13,
+  "title": "Your Repertoire as Black",
+  "exercises": [
+    {
+      "id": "13-01",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "r1bqk1nr/pppp1ppp/2n5/2b1p1N1/2B1P3/8/PPPP1PPP/RNBQK2R b KQkq - 5 4",
+      "question": "Black to move. In your Giuoco Piano, White has just played 4.Ng5, attacking f7 twice. Do you have to defend?",
+      "solution": [
+        "Qxg5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Before defending against an attack, check whether the attacker is defended. The knight on g5 is not: White's c1 bishop is blocked by the d2 pawn, and the queen on d1 does not reach g5. 4...Qxg5 simply wins a piece, and the queen also eyes g2.",
+      "wrong": [
+        {
+          "move": "Nh6",
+          "why": "It defends f7 but misses that the knight on g5 is free to take."
+        },
+        {
+          "move": "d5",
+          "why": "Active, but it gives back the chance to win a whole piece at once."
+        }
+      ],
+      "hint": "Who protects the knight on g5?",
+      "objective": "Check whether an attacking piece is defended before you defend.",
+      "tags": [
+        "hanging-pieces",
+        "repertoire-black",
+        "opening-traps"
+      ]
+    },
+    {
+      "id": "13-02",
+      "type": "defense",
+      "difficulty": 1,
+      "fen": "r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3",
+      "question": "Black to move. White's queen and bishop both attack f7. Find a safe move that stops Scholar's Mate.",
+      "solution": [
+        "g6"
+      ],
+      "goal": "best",
+      "accept": [
+        "Qe7",
+        "Qf6"
+      ],
+      "explanation": "Qxf7 is threatened. 3...g6 blocks the queen's line to f7 and attacks the queen at the same time, so White must spend another move. 3...Qe7 and 3...Qf6 also defend f7. The natural developing move 3...Nf6?? loses at once to 4.Qxf7#.",
+      "wrong": [
+        {
+          "move": "Nf6",
+          "why": "It attacks the queen but does not defend f7: 4.Qxf7 is checkmate."
+        }
+      ],
+      "hint": "Count attackers and defenders on f7.",
+      "objective": "Defend against the Scholar's Mate pattern.",
+      "tags": [
+        "defense",
+        "repertoire-black",
+        "opening-traps"
+      ]
+    },
+    {
+      "id": "13-03",
+      "type": "opening",
+      "difficulty": 1,
+      "fen": "rnbqkbnr/pppp1ppp/8/8/3QP3/8/PPP2PPP/RNB1KBNR b KQkq - 0 3",
+      "question": "Black to move. In the Center Game, White has recaptured with the queen on d4. Play the repertoire move.",
+      "solution": [
+        "Nc6"
+      ],
+      "goal": "best",
+      "accept": [
+        "Nf6"
+      ],
+      "explanation": "White's queen came out early, so develop with tempo. 3...Nc6 attacks the queen, which has to move again, and you continue with ...Nf6, ...Bb4 and ...O-O. 3...Nf6 is also fine, but the knight on c6 gains a tempo immediately.",
+      "wrong": [
+        {
+          "move": "d6",
+          "why": "A passive pawn move that gives White time to develop; the queen stays in the centre unchallenged."
+        }
+      ],
+      "hint": "Which developing move attacks the queen?",
+      "objective": "Develop with tempo against an early queen.",
+      "tags": [
+        "repertoire-black",
+        "opening-principles"
+      ]
+    },
+    {
+      "id": "13-04",
+      "type": "opening",
+      "difficulty": 2,
+      "fen": "r1bqkb1r/pppp1p1p/2n2np1/4p3/2B1P3/1Q6/PPPP1PPP/RNB1K1NR b KQkq - 3 5",
+      "question": "Black to move. White's queen went h5, f3 and now b3, hitting f7 for the third time from a new direction. Find the strongest reply.",
+      "solution": [
+        "Nd4"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The knight jump attacks the queen and the c2 pawn, and also covers the b3-f7 diagonal against the queen. White's queen has to move again, and Black is far ahead in development. After 6.Qc3 d5 Black opens the centre with a big advantage; 6.Bxf7+ Ke7 only loses the bishop.",
+      "wrong": [
+        {
+          "move": "Bg7",
+          "why": "It develops but ignores the threat on f7: 6.Bxf7+ wins a pawn and drags the king out."
+        }
+      ],
+      "hint": "Can a developing move attack the queen and defend at the same time?",
+      "objective": "Punish an early queen sortie by developing with tempo.",
+      "tags": [
+        "repertoire-black",
+        "opening-traps",
+        "fork"
+      ]
+    },
+    {
+      "id": "13-05",
+      "type": "opening",
+      "difficulty": 2,
+      "fen": "r1bqkbnr/1pp2ppp/p1p5/4N3/4P3/8/PPPP1PPP/RNBQK2R b KQkq - 0 5",
+      "question": "Black to move. In the Exchange Ruy Lopez, White has just grabbed the e5 pawn with 5.Nxe5. Win back the pawn.",
+      "solution": [
+        "Qd4"
+      ],
+      "goal": "best",
+      "accept": [
+        "Qe7",
+        "Qg5"
+      ],
+      "explanation": "The pawn on e5 was not really hanging. 5...Qd4 forks the knight and the e4 pawn; after 6.Nf3 Qxe4+ 7.Qe2 Qxe2+ 8.Kxe2 material is level and Black has the bishop pair. 5...Qe7 and 5...Qg5 regain the pawn by similar double attacks.",
+      "wrong": [
+        {
+          "move": "Be6",
+          "why": "Calm development, but White simply keeps the extra pawn."
+        }
+      ],
+      "hint": "Find a queen move that attacks two things at once.",
+      "objective": "Use a queen fork to regain a gambit pawn.",
+      "tags": [
+        "fork",
+        "repertoire-black"
+      ]
+    },
+    {
+      "id": "13-06",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r1bqkb1r/pppn1ppp/5n2/3N2B1/3P4/8/PP2PPPP/R2QKBNR b KQkq - 0 6",
+      "question": "Black to move. In your Queen's Gambit Declined, White has just taken a pawn with 6.Nxd5??, trusting the pin on your f6 knight. Punish it.",
+      "solution": [
+        "Nxd5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The pin is not absolute: behind the f6 knight stands your queen, not your king. 6...Nxd5! wins a knight. If White takes the queen with 7.Bxd8, then 7...Bb4+ 8.Qd2 Bxd2+ 9.Kxd2 Kxd8 leaves Black a piece up. This is the Elephant Trap.",
+      "wrong": [
+        {
+          "move": "h6",
+          "why": "It attacks the bishop but lets White keep the extra pawn and the strong knight on d5."
+        },
+        {
+          "move": "c6",
+          "why": "It chases the knight, but White's knight escapes and White stays a pawn up."
+        }
+      ],
+      "hint": "Is the pin on f6 really absolute? What is behind the knight?",
+      "objective": "Break a relative pin when the attacker can be punished with a check.",
+      "tags": [
+        "pin",
+        "opening-traps",
+        "repertoire-black"
+      ]
+    },
+    {
+      "id": "13-07",
+      "type": "opening",
+      "difficulty": 3,
+      "fen": "r1bqkb1r/p1pp1ppp/2p2n2/4P3/8/8/PPP2PPP/RNBQKB1R b KQkq - 0 6",
+      "question": "Black to move. In the Scotch, White has played 6.e5, attacking your knight on f6. Find the move that keeps your position together.",
+      "solution": [
+        "Qe7"
+      ],
+      "goal": "best",
+      "accept": [
+        "Nd5"
+      ],
+      "explanation": "6...Qe7 pins the e5 pawn to the white king: the pawn cannot take on f6 at all, because that would expose the king on the e-file, and the queen attacks it. White has to defend with 7.Qe2, and after 7...Nd5 your knight is centralized and the e5 pawn remains a target. 6...Nd5 at once is also playable. The check 6...Bb4+? fails, because after 7.c3 the bishop is attacked and the knight on f6 still hangs.",
+      "wrong": [
+        {
+          "move": "Bb4+",
+          "why": "After 7.c3 both the bishop and the knight on f6 are attacked, and Black loses a piece."
+        },
+        {
+          "move": "Ng8",
+          "why": "Retreating to the back rank gives White a free lead in development."
+        }
+      ],
+      "hint": "Which move puts pressure on the e5 pawn while saving the knight's future?",
+      "objective": "Meet a pawn attack on your knight with counter-pressure.",
+      "tags": [
+        "repertoire-black",
+        "pin"
+      ]
+    },
+    {
+      "id": "13-08",
+      "type": "opening",
+      "difficulty": 3,
+      "fen": "r1bqk2r/pppp1ppp/2n2n2/8/2BPP3/5N2/PP1N1PPP/R2QK2R b KQkq - 0 8",
+      "question": "Black to move. In the Giuoco Piano main line you played ...Bb4+ and traded bishops on d2. Now strike at White's centre.",
+      "solution": [
+        "d5"
+      ],
+      "goal": "best",
+      "accept": [
+        "Nxe4"
+      ],
+      "explanation": "8...d5! attacks e4 before White can push e5 or d5. After 9.exd5 Nxd5 Black's knight sits on the blockading square in front of White's isolated d-pawn, and Black has equalized. Taking at once with 8...Nxe4 9.Nxe4 d5 is a similar idea. Slow moves like 8...O-O or 8...d6 let White build up with e5 or d5 and gain space.",
+      "wrong": [
+        {
+          "move": "Na5",
+          "why": "Chasing the bishop costs time; White keeps the big centre and Black's knight is offside."
+        }
+      ],
+      "hint": "Which pawn move hits e4?",
+      "objective": "Break up a big pawn centre with a timely pawn strike.",
+      "tags": [
+        "repertoire-black",
+        "pawn-structure",
+        "planning"
+      ]
+    },
+    {
+      "id": "13-09",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "rnbqkbnr/ppp2ppp/8/3pP3/4P3/8/PPPP2PP/RNBQKBNR b KQkq - 0 3",
+      "question": "Black to move. You met the King's Gambit with 2...d5, and White has just taken on e5 with 3.fxe5??. Punish it.",
+      "solution": [
+        "Qh4+"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "With the f-pawn gone, the e1-h4 diagonal is open. 3...Qh4+ forces 4.g3, and then 4...Qxe4+ forks the king and the rook on h1. After 5.Qe2 Qxh1 Black is a whole rook ahead.",
+      "wrong": [
+        {
+          "move": "dxe4",
+          "why": "A normal recapture, but it misses the chance to win a rook with a queen check and fork."
+        },
+        {
+          "move": "Nc6",
+          "why": "Development is good, but there is a forcing win available right now."
+        }
+      ],
+      "hint": "Which diagonal did White's f-pawn leave open?",
+      "objective": "Exploit the weakened e1-h4 diagonal with a check and fork.",
+      "tags": [
+        "fork",
+        "opening-traps",
+        "repertoire-black"
+      ]
+    },
+    {
+      "id": "13-10",
+      "type": "opening",
+      "difficulty": 4,
+      "fen": "r1bqk2r/pppp1ppp/2n2n2/8/1bBPP3/2N2N2/PP3PPP/R1BQK2R b KQkq - 2 7",
+      "question": "Black to move. In the Giuoco Piano main line, White blocked your check with 7.Nc3 instead of 7.Bd2. Find the move that grabs the initiative.",
+      "solution": [
+        "Nxe4"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "With the knight on c3 pinned by your bishop, the e4 pawn has lost a defender. 7...Nxe4 takes it, and after 8.O-O Bxc3 9.d5 Bf6 10.Re1 Ne7 11.Rxe4 d6 Black has a solid, equal position. The automatic strike 7...d5 is weaker here: after 8.exd5 Nxd5 9.O-O White's pieces are very active and the pins work against Black.",
+      "wrong": [
+        {
+          "move": "d5",
+          "why": "After 8.exd5 Nxd5 9.O-O White's development and the pressure on d5 and the e-file are dangerous."
+        },
+        {
+          "move": "d6",
+          "why": "Too slow: White plays O-O, e5 or d5 and the centre rolls forward with tempo."
+        }
+      ],
+      "hint": "White's knight on c3 is pinned. What does that mean for the e4 pawn?",
+      "objective": "Notice when a pin removes a defender and take the pawn it was guarding.",
+      "tags": [
+        "repertoire-black",
+        "pin",
+        "counting"
+      ]
+    },
+    {
+      "id": "13-11",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "r1bqk1nr/pppp1ppp/8/2b1n3/2BPP3/8/PPP2PPP/RNBQK2R b KQkq - 0 5",
+      "question": "Black to move. White tried the fork trick 4.Nxe5? Nxe5 5.d4, attacking your bishop and knight with one pawn. Keep your extra piece.",
+      "solution": [
+        "Bb4+"
+      ],
+      "goal": "best",
+      "accept": [
+        "Nxc4"
+      ],
+      "explanation": "Answer a fork with a check or a capture. 5...Bb4+ saves the bishop with tempo, and after 6.c3 the knight escapes by capturing: 6...Nxc4. Black keeps the extra piece. 5...Nxc4 first (6.dxc5) is also good. Simply retreating the bishop loses the knight on e5, and retreating the knight loses the bishop.",
+      "wrong": [
+        {
+          "move": "Bd6",
+          "why": "After 6.dxe5 Bxe5 7.Qd5 White's queen attacks f7 and e5 at once and wins material back."
+        },
+        {
+          "move": "Bb6",
+          "why": "The bishop is safe, but 6.dxe5 wins the knight and White has regained the piece."
+        }
+      ],
+      "hint": "Two pieces are attacked. Can one of them move with check?",
+      "objective": "Escape a pawn fork with a check that gains a tempo.",
+      "tags": [
+        "zwischenzug",
+        "fork",
+        "repertoire-black"
+      ]
+    }
+  ]
+}

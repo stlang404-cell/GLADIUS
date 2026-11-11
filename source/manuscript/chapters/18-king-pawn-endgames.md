@@ -71,7 +71,6 @@ A useful guideline: with any pawn except a rook pawn, if your king stands on the
 ```line
 fen: 4k3/8/4K3/4P3/8/8/8/8 w - - 0 1
 moves: 1.Kd6 Kd8 2.e6 Ke8 3.e7 Kf7 4.Kd7
-check: engine
 diagram: end
 caption: The king on the sixth controls the promotion path. After 4.Kd7 nothing stops e8=Q.
 ```
@@ -86,6 +85,8 @@ caption: The key squares of the e4-pawn are d6, e6 and f6. White's task is to ge
 squares: d6 e6 f6
 orientation: white
 ```
+
+The rule above covers pawns on their second, third and fourth ranks, which is where most of your real endings start. As the pawn advances further, the key squares move forward with it and become easier for the attacker to reach, but the method stays the same: name the squares your king needs, then fight for them.
 
 Thinking in key squares simplifies everything. You stop asking "can I push the pawn?" and start asking "can my king reach a key square?" The defender asks the mirror question: "can I keep the enemy king away from those squares?"
 
@@ -106,7 +107,6 @@ With Black to move, every king move gives up one of the key squares:
 ```line
 fen: 8/4k3/8/4K3/4P3/8/8/8 b - - 0 1
 moves: 1...Kd7 2.Kf6 Kd8 3.Kf7 Kc7 4.e5
-check: engine
 caption: Black stepped left, so White's king went right to f6 and then f7, controlling the pawn's path.
 ```
 
@@ -114,7 +114,25 @@ With White to move in the diagram, White can only shuffle; if 1.Kd5 Kd7 or 1.Kf5
 
 ### Defending: stay in front
 
-The defender's recipe is simple to say: keep your king directly in front of the pawn, and when the enemy king approaches, take the opposition. When you are pushed back, retreat straight backwards (for example from e7 to e8), not to the side, so that you can take the opposition again when the white king advances. If the pawn reaches the seventh rank with check and your king has to step to the side, aim for the square that leaves the attacker only a stalemating move.
+The defender's recipe is simple to say: keep your king directly in front of the pawn, and when the enemy king approaches, take the opposition. When you are pushed back, retreat straight backwards (for example from e7 to e8), not to the side, so that you can take the opposition again when the white king advances.
+
+Here is the drawn version of the opposition diagram, with White to move. Watch how Black always answers the white king by facing it.
+
+```line
+fen: 8/4k3/8/4K3/4P3/8/8/8 w - - 0 1
+moves: 1.Kd5 Kd7 2.e5 Ke7 3.e6 Ke8 4.Kd6 Kd8 5.e7+ Ke8 6.Ke6
+check: engine
+caption: Black kept the opposition every time the white king stepped forward. The final position is stalemate.
+```
+
+```board
+fen: 4k3/4P3/4K3/8/8/8/8/8 b - - 0 1
+caption: The defender's goal. Black to move has no legal move: stalemate. If White had played anything else on move 6, the black king would have captured the pawn.
+squares: e8
+orientation: white
+```
+
+This final picture is worth remembering. If you can reach it as the defender, you have drawn. If you are the attacker and you see it coming, you went wrong earlier: usually you pushed the pawn before the king had reached a key square.
 
 :::mistake Pushing the pawn too early
 When the attacking king is beside or behind its pawn, pushing usually throws away the spare tempo you need later for the opposition. Bring the king forward first. A pawn on its second or third rank is a reserve of waiting moves; do not spend them until you need them.
@@ -141,6 +159,8 @@ Real pawn endings usually have more than one pawn, and the kings fight over a ta
 
 Opposition also works at a distance: kings on the same file with three or five squares between them, with the other side to move, are in **distant opposition**. If you hold the distant opposition, you can usually turn it into the direct opposition as the kings approach.
 
+A quick way to check distant opposition on a file: count the squares between the kings. If the number is odd (one, three or five) and it is your opponent's move, you have the opposition. If it is even, or it is your move, you do not. The same counting works on ranks.
+
 When direct confrontation does not work, the attacker goes around. **Outflanking** means using the opposition on one side to step past the enemy king on the other side. Here is a typical case with blocked pawns.
 
 ```board
@@ -154,7 +174,6 @@ orientation: white
 ```line
 fen: 8/3k4/2p5/2P5/4K3/8/8/8 w - - 0 1
 moves: 1.Kf5 Kc8 2.Ke5 Kc7 3.Ke6 Kb8 4.Kd7
-check: engine
 diagram: end
 caption: The white king reached e6 and d7. Next comes Kd6 or Kxc6, and the c-pawn falls.
 ```
@@ -164,6 +183,8 @@ If Black answers 1.Kf5 with 1...Ke7, then 2.Ke5! puts Black in zugzwang: the bla
 ### Triangulation, simply
 
 That last idea has a name. **Triangulation** means making a small detour (often around three squares in a triangle) to lose a move on purpose, so that a position you want arises with the *opponent* to move. It works when your king has room to manoeuvre and the enemy king does not, because it must stay on a small set of defending squares.
+
+Why can one king lose a move and the other not? Usually because the defending king has only two good squares, and it must answer every attacking move by going to the matching square. The attacking king, with more room, can take a three-move route back to the same square while the defender can only shuttle between two. After the detour, the same position stands on the board, but with the defender to move.
 
 You do not need to memorize triangulation positions at this stage. Remember the question it answers: "This position wins if it were my opponent's move. Can my king waste a move, while theirs cannot?" When the answer is yes, look for a detour.
 
@@ -192,14 +213,13 @@ Let us run the thinking process on the diagram.
 
 First I count material: White has three pawns, Black two. Next I look for the decisive plan, not a single move. The black king is the only defender for both the a-pawn and the kingside pawns, so it cannot do both jobs.
 
-My candidate moves are 1.a5 (push the decoy) and 1.Ke4 or 1.Ke5 (approach the kingside first). Both ideas look good, so I calculate the most forcing one, 1.a5. Black's best reply is to go after the pawn: 1...Kc6. Now my king heads for the kingside: 2.Ke5 Kb5 3.Kf6. Black can grab the a-pawn, but it takes time, and the black king is far from the action.
+My candidate moves are 1.a5 (push the decoy) and 1.Ke4 (approach the kingside first). Both ideas look good, so I calculate the most forcing one, 1.a5. The natural reply is to go after the pawn: 1...Kc6. Now my king heads for the kingside: 2.Ke5 Kb5 3.Kf6. Black can grab the a-pawn, but it takes time, and the black king is far from the action.
 
 Then I check the race at the end. After my king takes on g6, the h5-pawn falls next, and my h-pawn is much closer to queening than anything Black has. The plan works.
 
 ```line
 fen: 8/8/3k2p1/7p/P2K3P/6P1/8/8 w - - 0 1
 moves: 1.a5 Kc6 2.Ke5 Kb5 3.Kf6 Ka6 4.Kxg6
-check: engine
 diagram: end
 caption: The decoy worked. White's king has entered Black's pawns and the h5-pawn falls next.
 ```
@@ -230,7 +250,6 @@ orientation: white
 ```line
 fen: 7k/ppp5/8/PPP5/8/8/8/7K w - - 0 1
 moves: 1.b6 cxb6 2.a6 bxa6 3.c6
-check: engine
 diagram: end
 caption: After 3.c6 the c-pawn runs to c8. If 1...axb6, then 2.c6! bxc6 3.a6 works the same way.
 ```
@@ -252,9 +271,10 @@ orientation: white
 ```line
 fen: 5k2/8/8/7p/P7/8/8/K7 w - - 0 1
 moves: 1.a5 h4?! 2.a6 h3 3.a7 h2 4.a8=Q+
-check: engine
 caption: White queens with check, and after the king moves, Qxh1 or simply covering h1 stops the black pawn. Black's best was to give up the race, but the result is the same.
 ```
+
+Counting races is also how you decide *whether* to race at all. Sometimes the right move is not to push your own pawn but to bring your king one step closer to the enemy pawn first, entering its square, and only then run. Compare the two plans by counting both: how many moves until each side queens, and can either king catch the other pawn along the way? If both pawns queen, ask what the resulting queen ending looks like; an extra pawn or a queen that arrives with check usually decides it.
 
 :::mistake Forgetting the second step
 Counting "who queens first" is not enough. Check whether the first new queen gives check or controls the other pawn's queening square, and whether the other pawn can queen with check. One extra tempo there flips the result.
@@ -274,6 +294,16 @@ Your quick checklist before the trade:
 4. Who will have the opposition when the kings meet?
 
 If you cannot answer these, keep the pieces and look for another way. Defending players should apply the same test in reverse: do not trade into a pawn ending just because you are tired of defending. You can see that in action in [Chapter 17](#ch-17).
+
+## Finding these ideas in your own games
+
+Pawn endings in your own games rarely look like textbook diagrams at first. They usually arise from a rook or minor-piece ending a few moves earlier, which is exactly where the important decision was made. When you analyze a game that reached a pawn ending, go back to the moment of the last trade and ask three questions.
+
+* **Was the trade calculated?** Did you (or your opponent) know the pawn ending was won, or was it a hopeful swap?
+* **Where did the tempo go?** Find the first move where a king went to the wrong side, or a pawn was pushed while the king was still behind it. In most lost pawn endings there is exactly one such moment.
+* **Which pattern was hiding?** Square, opposition, rook pawn, outside passer, breakthrough. Name it and record it in your mistake journal under "endgame".
+
+A useful habit during the game: whenever only kings and pawns are left, slow down. The position is simple enough that a few minutes of counting will usually tell you the truth, and one careless move can never be repaired.
 
 ## Practice at the board
 

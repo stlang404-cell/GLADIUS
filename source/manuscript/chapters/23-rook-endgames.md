@@ -17,7 +17,7 @@ next_game: When a rook endgame appears, ask first "Which rook is more active?" a
 
 You have traded queens, then minor pieces, and now each side has a rook and a handful of pawns. Maybe you are a pawn up and expect to win. Maybe you are a pawn down and expect to lose. At club level both expectations are often wrong, because rook endgames reward a few specific techniques much more than they reward material.
 
-Rook endgames are the endings you will reach most often, because rooks are usually the last pieces to be traded. The good news is that a small amount of knowledge goes a long way: two famous positions, a handful of rules of thumb and the habit of keeping your rook busy will save you many half-points and win you many more. This chapter gives you exactly that toolkit.
+Rook endgames are widely regarded as the most common type of endgame, because rooks are usually the last pieces to be traded. The good news is that a small amount of knowledge goes a long way: two famous positions, a handful of rules of thumb and the habit of keeping your rook busy will save you many half-points and win you many more. This chapter gives you exactly that toolkit.
 
 ## Why rook endgames are different
 
@@ -61,7 +61,7 @@ red: a8a6
 squares: a1 a8
 ```
 
-Why does it work? A rook behind its own passed pawn supports the pawn on every square of its journey and gains scope as the pawn advances. A rook in front of an enemy passed pawn is a blocker that loses scope as the pawn advances: with the pawn on a7, Black's rook has only one square left, and Black's king must stay near it to stop tricks. In the diagram the engine evaluates White as clearly winning: White's king walks to the kingside and eats pawns, because Black's rook and king are both busy with the a-pawn.
+Why does it work? A rook behind its own passed pawn supports the pawn on every square of its journey and gains scope as the pawn advances. A rook in front of an enemy passed pawn is a blocker that loses scope as the pawn advances: with the pawn on a7, Black's rook is chained to the a-file in front of it, and every move it makes must watch for tricks. In the diagram the engine evaluates White as clearly winning: White's king walks to the kingside and eats pawns, because Black's rook and king are both busy with the a-pawn.
 
 The same idea works in defence. If your opponent has a passed pawn, try to get your rook behind it, not in front of it. Exercise 23-07 shows a pawn-down position that is saved precisely by this.
 
@@ -104,7 +104,7 @@ red: a2a8
 squares: b8 d4
 ```
 
-White's problem is simple. If the king steps out with Kc8 or Ka7, the black rook checks it, and on c7 the black king is waiting. White's solution has two steps:
+White's problem is simple: the king cannot get out. The black king covers c7 and c8, and the black rook controls the a-file. Even if the king could step out, the rook would check it from the side. White's solution has two steps:
 
 1. **Drive the enemy king one more file away** with a check: Rd1+.
 2. **Build a bridge**: put the rook on the fourth rank, so that it can later block the rook's checks.
@@ -164,7 +164,7 @@ caption: The checks from behind never end. If the king runs to the rook, it leav
 The most common club-level loss in this ending is the passive rook on the back rank. If the white king is allowed to reach the sixth rank, the defence hangs by a thread: with White's king on d6, pawn on e5, rook on h7, and Black's rook on b8 and king on e8 (Black to move), only ...Rb6+ saves the game; every other move loses. Do not live that close to the edge. Third rank first; checks from behind when the pawn moves.
 :::
 
-What if your king is not on the queening square at all? Then step one is to get it there. Exercise 23-04 shows that a king one move away from the queening square can still save the game, provided it goes there at once and your rook does not try to do the king's job.
+What if your king is not on the queening square at all? Then step one is to get it there. Exercise 23-04 shows that a king that is not yet on the queening square can still save the game, provided it heads there at once and your rook does not try to do the king's job.
 
 ## Checking distance and the short side
 
@@ -185,7 +185,7 @@ squares: f8 a6
 orientation: black
 ```
 
-Here White threatens e7+. Black's king is on the short side, so the rook can check from the long side: 1...Ra6+ and the king has no good way to approach. Exercise 23-06 asks you to find this, and also shows that checking from behind with ...Rd1+ works. If the roles were reversed, with the king on the long side and the rook squeezed onto the short side, the checks would often come from too close.
+Here White threatens e7+. Black's king is on the short side, so the rook can check from the long side: 1...Ra6+ and the king has no good way to approach. Checking from behind with 1...Rd1+ also holds here. Exercise 23-06 shows the same idea with the pawn on the other side of the board. If the roles were reversed, with the king on the long side and the rook squeezed onto the short side, the checks would often come from too close.
 
 What commonly goes wrong: defenders send the king towards the "big" side because there seems to be more room there, and then the rook has nowhere to check from. Flip the instinct: king short, rook long.
 
