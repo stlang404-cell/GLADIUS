@@ -157,7 +157,7 @@ def main():
 
     # ---------------- documents
     lines += ["## 3. PDF documents", ""]
-    expect = {"THE-ELO-BLUEPRINT-COMPLETE.pdf": ["Contents", "Solutions", "Chapter"],
+    expect = {"THE-ELO-BLUEPRINT-COMPLETE.pdf": ["Contents", "Elo Blueprint", "Solutions"],
               "THE-ELO-CHEAT-SHEETS.pdf": ["Cheat", "checklist"],
               "THE-90-DAY-CHESS-ACCELERATOR.pdf": ["Day", "workbook"]}
     for name, words_ in expect.items():
@@ -182,7 +182,8 @@ def main():
     alog = LOGS / "app-tests.log"
     if alog.exists():
         t = alog.read_text()
-        res = [l for l in t.splitlines() if re.match(r"\s*(PASS|FAIL)", l)]
+        res = list(dict.fromkeys(re.sub(r"\s+\(\d+\.\ds\)$", "", l.rstrip()) for l in t.splitlines()
+                                 if re.match(r"\s*(PASS|FAIL)", l)))
         lines.append(f"- Playwright suite (`tools/test_app.js`): {sum('PASS' in l for l in res)} passed, "
                      f"{sum('FAIL' in l for l in res)} failed")
         lines += ["```"] + res + ["```"]

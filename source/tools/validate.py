@@ -289,9 +289,10 @@ def validate_exercise_file(path: pathlib.Path, data: dict, eng, rep: Report, dep
         except Exception:
             pass
         compiled["exercises"].append(validate_exercise(ex, where, eng, rep, depth))
-    out = ROOT / "build" / "compiled" / path.name
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(compiled, indent=1, ensure_ascii=False))
+    if eng is not None:  # only engine-checked data may feed the book and app builds
+        out = ROOT / "build" / "compiled" / path.name
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(compiled, indent=1, ensure_ascii=False))
     return compiled
 
 
