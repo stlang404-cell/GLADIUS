@@ -570,7 +570,7 @@ async function pieceAt(page, square) {
     await page.waitForSelector('#p-rating');
     assert(/742/.test(await page.textContent('#p-rating')), 'rating not persisted');
     for (const id of ['#p-rating', '#p-puzzles', '#p-engine', '#p-mastery']) assert(await page.isVisible(id), id);
-    assert(!/\belo\s*(estimate|≈)/i.test(await page.textContent('#main')), 'progress page shows an Elo estimate');
+    assert(!/(estimated|your)\s+(elo|rating)\s*(is|:|≈)?\s*~?\d{3,4}/i.test(await page.textContent('#main')), 'progress page shows an Elo estimate');
     await shot(page, 'iphone-progress');
     await goto(page, BASE, '/');
     assert(/Blunder-check every move/.test(await page.textContent('#goals')), 'goal not persisted');
@@ -582,7 +582,8 @@ async function pieceAt(page, square) {
     const file = path.join(SHOTS, '..', 'test-progress-export.json');
     await dl.saveAs(file);
     const exported = JSON.parse(fs.readFileSync(file, 'utf8'));
-    assert(exported.app === 'elo-blueprint-interactive' && exported.data.journal.length === 1, 'export content');
+    const before = await state(page);
+    assert(exported.app === 'elo-blueprint-interactive' && JSON.stringify(exported.data) === JSON.stringify(before), 'export content differs from stored progress');
     await page.click('#reset-progress');
     await page.click('.modal [data-ok]');
     await page.waitForTimeout(200);
@@ -593,7 +594,7 @@ async function pieceAt(page, square) {
     await page.click('.modal [data-ok]');
     await page.waitForTimeout(300);
     s = await state(page);
-    assert(s.journal.length === 1 && s.ex[exOk.id] && s.profile.ratings.length === 1, 'import did not restore');
+    assert(JSON.stringify(s) === JSON.stringify(before) && Object.keys(s.ex).length > 0, 'import did not restore');
     await shot(page, 'iphone-settings');
     fs.unlinkSync(file);
   });

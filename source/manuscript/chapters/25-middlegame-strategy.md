@@ -169,8 +169,8 @@ White's other plan in the Carlsbad is central: Nge2, f3 and e4, using the extra 
 
 ```board
 fen: r1bqrnk1/pp2bppp/2p2n2/3p2B1/3P4/2NBPP2/PPQ1N1PP/R4RK1 b - - 0 11
-caption: Black to move. White has chosen the central plan with Nge2 and f3, preparing e4. Black's best is to bring the knight to g6 at once and keep the pieces flexible; the routine trade ...Ne4 is impossible here because of fxe4.
-arrows: f8g6
+caption: Black to move. White has chosen the central plan with Nge2 and f3, preparing e4. Black keeps the pieces flexible, for example with ...g6 and ...Ne6 or ...Ng6; the routine trade ...Ne4 is impossible here because of fxe4.
+arrows: f8e6
 red: f3e4
 ```
 

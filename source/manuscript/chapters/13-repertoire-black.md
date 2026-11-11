@@ -65,7 +65,7 @@ check: engine
 caption: White has sacrificed a pawn for activity. Black castles next, plays ...Bf5 or ...Ng6, and stays solid.
 ```
 
-If this feels too sharp, coaching judgment: you may simply play 7...d5 instead of 7...Nxe4. It is less ambitious but follows the same idea of hitting e4 at once.
+If this feels too sharp, coaching judgment: memorize just the first moves, 7...Nxe4 and ...Bxc3 followed by ...Bf6, ...Ne7 and ...d6. The tempting 7...d5 is clearly weaker here: with White's knight on c3, opening the centre helps White's development.
 
 White sometimes plays 6.e5 instead of 6.cxd4, attacking your knight. Counterattack in the centre: 6...d5! 7.Bb5 Ne4, and your knight is active on e4.
 
@@ -255,9 +255,9 @@ Sometimes White then tries 5.Qb3?, attacking f7 a third time from a different an
 
 ```line
 fen: startpos
-moves: 1.e4 e5 2.Qh5 Nc6 3.Bc4 g6 4.Qf3 Nf6 5.Qb3? Nd4 6.Qc3 Nxe4
+moves: 1.e4 e5 2.Qh5 Nc6 3.Bc4 g6 4.Qf3 Nf6 5.Qb3? Nd4 6.Qc3? Nxe4
 check: engine
-caption: The knight on d4 hit the queen and c2; now the other knight takes e4 and attacks the queen yet again. White's queen has made five moves and Black has won a pawn with a huge lead in development.
+caption: The knight on d4 hit the queen and c2; now the other knight takes e4 and attacks the queen yet again. White's queen has made five moves and Black has won a pawn with a huge lead in development. (White's best was 6.Qd3, but Black is clearly better there too.)
 ```
 
 :::mistake Chasing the queen with pawns

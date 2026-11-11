@@ -286,7 +286,7 @@ arrows: e2e8 c6d8
 squares: d8 e8
 ```
 
-The best defence after 4.Qe2 is 4...Qe7 5.Qxe4 d6 6.d4 dxe5 7.dxe5, and White is a pawn up after the queen trade or a more pleasant position; you do not need to memorize more than that.
+The best defence after 4.Qe2 is 4...Qe7 5.Qxe4 d6 6.d4 dxe5 7.dxe5, and White keeps a small but lasting edge thanks to the better development; you do not need to memorize more than that.
 
 Two more Petrov sidelines:
 
