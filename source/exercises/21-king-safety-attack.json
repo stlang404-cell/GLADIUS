@@ -1,0 +1,207 @@
+{
+  "chapter": 21,
+  "title": "King Safety and Attacking the King",
+  "exercises": [
+    {
+      "id": "21-01",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "r4rk1/pp3ppp/2p1pn2/q7/3P3Q/2PB1R2/P4PPP/R5K1 w - - 0 20",
+      "question": "White to move. Your queen and bishop both aim at h7. Count its defenders and win material.",
+      "solution": ["Rxf6"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "h7 is attacked by the queen and the bishop and defended only by the knight on f6 (and the king). Rxf6 removes that defender. If Black recaptures with ...gxf6, Qxh7 is mate; so Black must play ...g6 and is simply a piece down. Moving the rook to g3 or pushing g4 first gives Black time for ...Qh5 or ...Nd5.",
+      "wrong": [
+        {"move": "Rg3", "why": "Black answers ...Kh8 or ...Qh5 and the knight on f6 holds everything."},
+        {"move": "g4", "why": "Too slow and weakening; Black trades queens or plays ...Nd5 and the attack fizzles."}
+      ],
+      "hint": "Which black piece is the only defender of h7?",
+      "objective": "Remove the last defender of a square next to the king.",
+      "tags": ["attack", "removing-defender", "king-safety"]
+    },
+    {
+      "id": "21-02",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "r1bq1rk1/pp1nbppp/4p3/3p2NQ/3P4/1BP5/PP1N1PPP/R3R1K1 b - - 0 12",
+      "question": "Black to move. White threatens Qxh7 mate. Find the defence that also wins material.",
+      "solution": ["Bxg5"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Defend by trading the attacker. The knight on g5 is the piece that makes Qxh7 mate possible, and your bishop on e7 can take it. After ...Bxg5 the threat is gone, and if Qxg5 then ...Qxg5 wins White's queen because nothing recaptures on g5. White is simply a piece down. Kicking the knight with ...h6 also defends but wins nothing, and ...g6?? allows Qxh7 mate anyway.",
+      "wrong": [
+        {"move": "h6", "why": "Defends, but after Ngf3 White is fine; you missed a free piece."},
+        {"move": "Nf6", "why": "Covers h7 but leaves the attacking knight on g5; White keeps the initiative."},
+        {"move": "g6", "why": "Qxh7 is still mate: g6 does not stop the queen and knight."}
+      ],
+      "hint": "Which attacking piece can you simply take?",
+      "objective": "Defend by exchanging the key attacking piece.",
+      "tags": ["defense", "king-safety", "hanging-pieces"]
+    },
+    {
+      "id": "21-03",
+      "type": "defense",
+      "difficulty": 1,
+      "fen": "r1b2rk1/pp1nnppp/3b4/3p4/3P3q/1NNB4/PPQ2PPP/R1B1R1K1 w - - 0 12",
+      "question": "White to move. Black threatens ...Qxh2+ and mate. Which pawn move defends best?",
+      "solution": ["g3"],
+      "goal": "only",
+      "accept": [],
+      "explanation": "Of the three pawn moves that meet the threat, g3 is the only good one: it blocks the bishop's diagonal *and* hits the queen with tempo, and the dark squares it weakens are covered by White's own pieces. White is even slightly better afterwards. h3 also stops the mate but lets Black regroup with ...Nf6 and ...Ng6, and f4 is a disaster: it opens the e1-a5 diagonal and the rook on e1 falls to ...Qxe1+.",
+      "wrong": [
+        {"move": "h3", "why": "Stops the mate but gains no time; Black keeps a comfortable attacking position."},
+        {"move": "f4", "why": "...Qxe1+ — the pawn move cut off the rook's protection and loses material at once."},
+        {"move": "Bxh7+", "why": "...Qxh7 Qxh7+ Kxh7 and you have given a bishop for a pawn."}
+      ],
+      "hint": "Which pawn move also attacks something?",
+      "objective": "Choose the defensive pawn move that weakens the king least and gains time.",
+      "tags": ["king-safety", "defense", "pawn-structure"]
+    },
+    {
+      "id": "21-04",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r1bq1rk1/pppn1ppp/2n1p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQ1RK1 w - - 0 9",
+      "question": "White to move. Check the conditions for the Greek gift sacrifice, then play it if it works.",
+      "solution": ["Bxh7+", "Kxh7", "Ng5+", "Kg8", "Qh5"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "All the conditions are there: bishop on d3, knight ready for g5, queen ready for h5, pawn on e5 keeping Black's knight off f6, and no black bishop on e7 to take on g5. After Bxh7+ Kxh7 Ng5+ Kg8 Qh5 White threatens Qh7 mate, and Black's only way out is to give back the queen with ...Qxg5. If 13...Kg6 instead, Qd3+ or Qg4 continues the attack.",
+      "wrong": [
+        {"move": "Ng5", "why": "Without the sacrifice, ...h6 kicks the knight and Black is fine."},
+        {"move": "a3", "why": "Gains the bishop pair but gives Black time for ...Be7 or ...f6; the chance is gone."}
+      ],
+      "hint": "Bishop d3, knight g5, queen h5 — is anything missing?",
+      "objective": "Recognize and execute the Greek gift sacrifice Bxh7+.",
+      "tags": ["attack", "mate-patterns", "king-safety"]
+    },
+    {
+      "id": "21-05",
+      "type": "defense",
+      "difficulty": 2,
+      "fen": "r4rk1/ppq1bppp/1np5/3p4/3P2b1/2PQ1N2/PPB2PPP/R1B1R1K1 b - - 0 13",
+      "question": "Black to move. White's queen and bishop threaten Qxh7 mate. Which pawn move weakens your king least?",
+      "solution": ["g6"],
+      "goal": "only",
+      "accept": [],
+      "explanation": "Only a move that blocks the b1-h7 diagonal stops the mate. ...g6 does it and keeps the pawn shield almost intact; the dark squares around the king are covered by the bishop on e7. ...f5 also blocks, but it leaves e6 and e5 weak for ever and White's knight jumps to e5. ...h6?? does not block anything: Qh7 is mate.",
+      "wrong": [
+        {"move": "h6", "why": "Qh7 is mate — moving the h-pawn does not cut the diagonal."},
+        {"move": "f5", "why": "Blocks the diagonal but weakens e6 and e5; after Ne5 Black's position is very hard."},
+        {"move": "Bf5", "why": "Qxf5: the bishop is simply lost."}
+      ],
+      "hint": "Which squares lie between the bishop on c2 and h7?",
+      "objective": "Pick the defensive pawn move that creates the fewest new weaknesses.",
+      "tags": ["king-safety", "defense", "pawn-structure"]
+    },
+    {
+      "id": "21-06",
+      "type": "defense",
+      "difficulty": 2,
+      "fen": "r1bq1rk1/pp1nbppp/2n1p3/3p2NQ/3P4/1BN5/PPP2PPP/R1B1R1K1 b - - 0 12",
+      "question": "Black to move. White threatens Qxh7 mate. Find the best defence.",
+      "solution": ["h6"],
+      "goal": "best",
+      "accept": ["Nf6"],
+      "explanation": "Here the trade on g5 is not the answer: after ...Bxg5 Bxg5 White's bishop arrives with tempo on the queen. Instead ...h6 asks the knight where it is going. Nxf7 Rxf7 does not work for White, and after Nf3 Black plays ...Nf6 and the attack has run out of pieces. ...Nf6, hitting the queen, is equally good. ...g6?? allows Qxh7 mate.",
+      "wrong": [
+        {"move": "Bxg5", "why": "Bxg5 recaptures with tempo on the queen, and White's dark-squared bishop joins the attack."},
+        {"move": "g6", "why": "Qxh7 is mate: the g-pawn move does not stop queen and knight."}
+      ],
+      "hint": "Compare the two ways of getting rid of the knight on g5.",
+      "objective": "Defend by challenging the attacking pieces, choosing the version that does not help the opponent develop.",
+      "tags": ["defense", "king-safety", "calculation"]
+    },
+    {
+      "id": "21-07",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1b1k2r/ppqnbppp/2p1pn2/6N1/3P4/1BP5/PP2QPPP/RNB1R1K1 w kq - 0 12",
+      "question": "White to move. Black's king is still in the centre and the e6 pawn is pinned against it. Strike.",
+      "solution": ["Nxf7"],
+      "goal": "win",
+      "accept": ["Bxe6"],
+      "explanation": "With the king on e8, the pawn on e6 is pinned by the queen on e2, and f7 is guarded only by the king. Nxf7! Kxf7 runs into Qxe6+ Kf8 Qf7 mate, so Black must castle and leave the knight on f7, after which Qxe6 wins more material and keeps the attack. Bxe6, the same idea in a different order, is just as strong. Nxe6 is the wrong piece: after ...fxe6 Qxe6 the knight on d7 defends and White has only some pawns for the piece.",
+      "wrong": [
+        {"move": "Nxe6", "why": "...fxe6 Qxe6 and the f7 square is no longer a target; White's attack is far weaker."}
+      ],
+      "hint": "Which black pawn cannot move, and which square does only the king defend?",
+      "objective": "Punish a king left in the centre with a sacrifice on f7 or e6.",
+      "tags": ["attack", "king-safety", "pin"]
+    },
+    {
+      "id": "21-08",
+      "type": "strategy",
+      "difficulty": 3,
+      "fen": "r4rk1/1b1nbppp/p2ppn2/qp6/3NP3/2N1BP2/PPPQB1PP/1K1R3R b - - 0 13",
+      "question": "Black to move. The kings have castled on opposite sides. Choose your plan move.",
+      "solution": ["b4"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "With opposite-side castling, the side whose pawn storm arrives first usually wins. ...b4 hits the knight on c3, the defender of e4, and opens lines toward White's king; after Nb3 Qc7 Black's attack is well ahead of White's. Developing moves like ...Rfc8 or ...Nc5 are too slow — White plays Nd5 and starts his own play.",
+      "wrong": [
+        {"move": "Rfc8", "why": "Too slow: Nd5! hits the queen and the e7-bishop and White takes over."},
+        {"move": "Nc5", "why": "Nd5 again: Black has to trade pieces and his attack is gone."}
+      ],
+      "hint": "Which pawn can attack a defender of White's king or centre?",
+      "objective": "In opposite-side castling positions, launch the pawn storm without delay.",
+      "tags": ["attack", "king-safety", "planning"]
+    },
+    {
+      "id": "21-09",
+      "type": "strategy",
+      "difficulty": 3,
+      "fen": "r4rk1/1bq1bpp1/p1nppn1p/1p6/4P1PP/2NBBN2/PPPQ1P2/2KR3R w - - 0 14",
+      "question": "White to move. Kings on opposite wings, and Black's pawn on h6 is a hook for your pawns. Choose the best plan move.",
+      "solution": ["g5"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The pawn on h6 gives White a target to bite on: g5 attacks the knight on f6 and opens the g- and h-files. After ...hxg5 hxg5 the rook on h1 is already on an open file pointed at Black's king, and the knight must leave f6. Safety moves such as Kb1 lose a tempo in a race, a3 weakens White's own king, and Bxh6 is a premature sacrifice.",
+      "wrong": [
+        {"move": "Kb1", "why": "A useful move in quiet positions, but in a pawn race Black plays ...b4 and gets there first."},
+        {"move": "a3", "why": "Gives Black's pawns a hook: ...b4 opens lines against your own king."},
+        {"move": "Bxh6", "why": "...gxh6 and the attack is not ready; White has just given away a piece."}
+      ],
+      "hint": "Which pawn move attacks a defender of Black's king?",
+      "objective": "Use the opponent's advanced pawn as a hook for your pawn storm.",
+      "tags": ["attack", "king-safety", "pawn-structure"]
+    },
+    {
+      "id": "21-10",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "r1bq1rk1/pp1n1ppp/2pb1n2/3p4/3Pp3/1QP1P3/PPBNNPPP/R1B2RK1 b - - 0 11",
+      "question": "Black to move. Your bishop, knight and queen are all pointed at White's king. Is there a sacrifice?",
+      "solution": ["Bxh2+", "Kxh2", "Ng4+", "Kg3", "Qg5"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The Greek gift works for Black too. The pawn on e4 keeps White's knight off f3, and no white piece can take a knight on g4. After ...Bxh2+ Kxh2 Ng4+ the king cannot go back to g1 because ...Qh4 mates soon, so Kg3 is forced, and ...Qg5 threatens ...Nxe3+ and ...Qh5. Slow moves such as ...Qc7 or ...Re8 give White time for h3 or f3, and the chance is gone.",
+      "wrong": [
+        {"move": "Qc7", "why": "Lines up on h2 but gives White time for h3 or f3 to defend."},
+        {"move": "Re8", "why": "Too slow; White breaks with f3 and the e4 pawn is no longer a strong point."}
+      ],
+      "hint": "Can any white piece take a knight on g4?",
+      "objective": "Recognize the Greek gift sacrifice from the black side.",
+      "tags": ["attack", "mate-patterns", "calculation"]
+    },
+    {
+      "id": "21-11",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "r1b1k1nr/pp3ppp/1qn1p3/3p4/1b1P4/2NB1N2/PPP1QPPP/R1B1R1K1 w kq - 0 10",
+      "question": "White to move. Black's king is still on e8 and the e-file is half-open. Punish it.",
+      "solution": ["Nxd5"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The king in the centre makes Black's pawn on e6 pinned: it cannot recapture on d5 because the queen on e2 is staring at e8. So Nxd5 wins a pawn and attacks the queen on b6 and the bishop on b4 at the same time. After ...Qd8 Nxb4 Nxb4 Bb5+ White keeps a big lead in development against the uncastled king. Grabbing on h7 instead loses a bishop and the attack.",
+      "wrong": [
+        {"move": "Bxh7", "why": "...Bxc3 bxc3 Rxh7 and you have lost a piece."},
+        {"move": "Qe3", "why": "A quiet move that lets Black castle; the pin on e6 disappears and with it your chance."}
+      ],
+      "hint": "Which black pawn cannot move because of the queen on e2?",
+      "objective": "Exploit pins and open lines against a king that has not castled.",
+      "tags": ["king-safety", "pin", "attack"]
+    }
+  ]
+}
