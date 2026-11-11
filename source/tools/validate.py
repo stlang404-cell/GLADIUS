@@ -354,7 +354,10 @@ def validate_markdown(path: pathlib.Path, eng, rep: Report, depth: int):
                     if node:
                         evm = eng.eval_move(bb, mv, min(depth, 16))
                         drop = min(node[0]["cp"], MATE_SCORE - 2000) - min(evm["cp"], MATE_SCORE - 2000)
-                        if drop > LINE_DROP and ann not in ("?", "??", "?!"):
+                        # long mating lines: the best move is a forced mate but the single-move search
+                        # only sees "+8": both are decisive, so this is not an instructional error
+                        decisive = node[0]["mate"] is not None and node[0]["mate"] > 0 and evm["cp"] >= 800
+                        if drop > LINE_DROP and ann not in ("?", "??", "?!") and not decisive:
                             rep.err(where, f"{bb.fullmove_number}{'.' if bb.turn else '...'}{san} loses "
                                            f"{drop / 100:.2f} (engine {bb.san(chess.Move.from_uci(node[0]['move']))} "
                                            f"{fmt(node[0]['cp'])} vs {fmt(evm['cp'])}); annotate with ?/?? if intended")
