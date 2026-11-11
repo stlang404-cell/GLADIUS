@@ -292,7 +292,15 @@ class Renderer:
         intro = intro or ("Set up each position on a board or solve it from the diagram. Decide on your move "
                           "<em>and</em> the opponent's best reply before you check. Record your result: "
                           "first-try correct, correct after the hint, or missed.")
-        cards = "".join(self.exercise_card(ex) for ex in s["exercises"])
+        cl = [self.exercise_card(ex) for ex in s["exercises"]]
+        if self.mode == "pdf":
+            rows = []
+            for i in range(0, len(cl), 2):
+                pair = cl[i:i + 2] + ([""] if len(cl[i:i + 2]) == 1 else [])
+                rows.append("<tr>" + "".join(f'<td class="ex-cell">{c}</td>' for c in pair) + "</tr>")
+            cards = f'<table class="ex-table">{"".join(rows)}</table>'
+        else:
+            cards = "".join(cl)
         hints = "".join(f'<li><span class="ex-num">{ex_label(ex["id"])}</span> {md_inline(ex["hint"])}</li>'
                         for ex in s["exercises"] if ex.get("hint"))
         hints_html = (f'<div class="hints"><p class="hints-head">Hints</p><ul>{hints}</ul></div>' if hints else "")

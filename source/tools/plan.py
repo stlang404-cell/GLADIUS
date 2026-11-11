@@ -17,7 +17,7 @@ import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from book import BUILD, Book  # noqa: E402
+from book import BUILD, Book, ex_label  # noqa: E402
 
 STAGES = [
     {"stage": 1, "range": "400–600", "days": (1, 21), "test": "T1",
@@ -76,7 +76,7 @@ def split(seq, k):
 
 def time_options(kind, ex_ids, ch=None, game=True):
     """Concrete task lists for the 15/30/60/90-minute options."""
-    exs = ", ".join(ex_ids) if ex_ids else "your review queue"
+    exs = ("exercises " + ", ".join(ex_label(e) for e in ex_ids)) if ex_ids else "your review queue"
     if kind == "study":
         return {
             "15": [("solve", f"Solve {exs} (write your answer before checking)."),
@@ -153,17 +153,17 @@ def main():
                        "chapters": sorted(set(week_chapters)), "test": test, "check_exercises": rec_ids}
                 opts = {
                     "15": [("test" if test else "review", f"Take the Stage {st['stage']} Test ({test}) — no moving pieces."
-                            if test else f"Weekly check: re-solve {', '.join(rec_ids[:4]) or 'this week’s misses'}.")],
+                            if test else f"Weekly check: re-solve {', '.join(ex_label(e) for e in rec_ids[:4]) or 'this week’s misses'}.")],
                     "30": [("test" if test else "review", f"Take the Stage {st['stage']} Test ({test})." if test
-                            else f"Weekly check: re-solve {', '.join(rec_ids) or 'this week’s misses'} cold."),
+                            else f"Weekly check: re-solve {', '.join(ex_label(e) for e in rec_ids) or 'this week’s misses'} cold."),
                            ("fix", "Update your weakness list (top 3 categories by frequency × cost).")],
                     "60": [("test" if test else "review", f"Take the Stage {st['stage']} Test ({test}) (30 min)." if test
-                            else f"Weekly check: {', '.join(rec_ids) or 'this week’s misses'} (20 min)."),
+                            else f"Weekly check: {', '.join(ex_label(e) for e in rec_ids) or 'this week’s misses'} (20 min)."),
                            ("analyze", "Re-read your journal entries from this week (10 min)."),
                            ("fix", "Update the weakness list and choose next week's remedial focus (10 min)."),
                            ("play", "Play one slow game with no new material — just the checklist (20 min).")],
                     "90": [("test" if test else "review", f"Take the Stage {st['stage']} Test ({test}) (35 min)." if test
-                            else f"Weekly check: {', '.join(rec_ids) or 'this week’s misses'} (25 min)."),
+                            else f"Weekly check: {', '.join(ex_label(e) for e in rec_ids) or 'this week’s misses'} (25 min)."),
                            ("analyze", "Re-read this week's journal; replay your games quickly (15 min)."),
                            ("fix", "Update the weakness list; schedule remedial work (10 min)."),
                            ("play", "Play one slow game and analyse it (40 min).")],

@@ -75,9 +75,10 @@ body { margin: 0; background: #FCFAF5; }
 .test-set { break-before: page; }
 .test-set > .exercise-set { break-before: auto; }
 .test-set .ex-set-title { bookmark-level: 2; string-set: runhead content(text); font-size: 2.4em; }
-.ex-grid { font-size: 0; }
-.exercise { display: inline-block; width: 47.5%; vertical-align: top; margin: 0 4.9% 0.32in 0; font-size: 10.2pt; }
-.exercise:nth-child(2n) { margin-right: 0; }
+.ex-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; margin: 0; font-size: 10.2pt; }
+.ex-table td.ex-cell { width: 50%; vertical-align: top; border: none; padding: 0 0.15in 0.14in 0; }
+.ex-table td.ex-cell + td.ex-cell { padding: 0 0 0.14in 0.15in; }
+.ex-table tr { break-inside: avoid; page-break-inside: avoid; }
 .exercise .ex-diagram { width: 100%; }
 figure.diagram { width: 3.35in; }
 .exercise figure.diagram { width: 100%; }
