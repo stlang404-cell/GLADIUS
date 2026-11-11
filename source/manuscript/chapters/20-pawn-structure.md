@@ -112,6 +112,12 @@ This is a good example of a weakness with compensation. Black gets space, a soli
 The freeing break is the right idea, but only when you have counted the pieces on the file it opens. A typical error is ...d5 played one move too early: after exd5 Nxd5 Nxd5 the d-file opens and a black piece on d7 or d8 is suddenly loose. Prepare the break with a rook on the file first.
 :::
 
+### Using a hole
+
+A hole is only a weakness if a piece can use it. The ideal occupant is a knight, for the reasons you met in [Chapter 19](#ch-19): on a hole it cannot be chased by pawns, and from a central hole such as d5 or e6 (d4 or e3 for Black) it attacks squares deep in the enemy camp. Bishops and rooks can use holes too — a rook on a hole on the seventh rank, for example — but the knight is the classic tenant.
+
+The plan against a hole has three steps. First, **control** the square with as many pieces as you can, so that the opponent cannot fill it with a pawn break such as ...d5. Second, **exchange** the defender that could take your piece there — often a knight on f6 or a bishop that covers the square. Third, **occupy** it, preferably with a knight supported by a pawn. If you are the side with the hole, you have the mirror plan: keep a minor piece that guards it, and prepare the pawn break that removes it.
+
 ## Passed pawns
 
 A **passed pawn** has no enemy pawn in front of it on its own file or the two adjacent files. Nothing but pieces can stop it, which is why passed pawns win endgames.

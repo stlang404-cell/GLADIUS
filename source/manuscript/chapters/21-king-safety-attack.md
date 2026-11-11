@@ -224,7 +224,7 @@ The fourth point deserves an example. Go back to the Dragon position from earlie
 
 ```board
 fen: r1bq1rk1/pp2ppbp/2np1np1/8/3NP3/2N1BP2/PPPQ2PP/2KR1B1R b - - 4 9
-caption: Black to move. Instead of waiting for Bh6 and h4-h5, Black opens the centre with ...d5, where White's king on c1 and pieces on d-file are more exposed than Black's.
+caption: Black to move. Instead of waiting for Bh6 and h4-h5, Black strikes in the centre with ...d5 and fights for the initiative before White's storm arrives.
 arrows: d6d5
 orientation: black
 ```

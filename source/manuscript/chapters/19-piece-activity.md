@@ -179,6 +179,16 @@ Two practical rules follow:
 
 Space is an advantage only if you use it. Pawns pushed too far can become targets, and space is not worth weakening your own king for.
 
+## Improving a piece: three typical routes
+
+Knowing that a piece is badly placed is half the job; the other half is finding the route. Three routes come up again and again, and it pays to know them by heart.
+
+* **The knight tour to an outpost.** A knight needs two or three moves to travel anywhere useful, so plan the whole trip. Nb1-d2-f1-g3-f5 in the Ruy Lopez, or Nc3-e2-g3 to reach f5, are classic examples. Ask before you start: will the square still be available when I arrive, and what does my opponent do with the three tempi?
+* **The bishop outside the chain.** A bishop behind its own pawns can often be rerouted: Bc1-d2-e1-h4 in some closed positions, or ...Bc8-d7-e8-h5 for Black in the French. If no route exists, look for a trade.
+* **The rook to the open file — or the file that will open.** If no file is open yet, place the rook behind the pawn you intend to advance, so that the file opens with your rook already on it.
+
+The common thread is patience. A quiet three-move plan that turns your worst piece into a good one is often worth more than a one-move threat that your opponent parries easily. Your opponent at this level will rarely stop such a plan, because he is usually busy with his own threats — or with none at all.
+
 ## Worked example: getting the knight to its outpost
 
 Let us put the chapter together in one position. Follow the thinking, not just the moves.
