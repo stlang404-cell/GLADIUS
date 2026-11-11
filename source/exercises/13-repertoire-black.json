@@ -93,13 +93,13 @@
       "type": "opening",
       "difficulty": 2,
       "fen": "r1bqkb1r/pppp1p1p/2n2np1/4p3/2B1P3/1Q6/PPPP1PPP/RNB1K1NR b KQkq - 3 5",
-      "question": "Black to move. White's queen went h5, f3 and now b3, hitting f7 for the third time from a new direction. Find the strongest reply.",
+      "question": "Black to move. White's queen went h5, f3 and now b3, lining up behind the bishop against f7 once more. Find the strongest reply.",
       "solution": [
         "Nd4"
       ],
       "goal": "best",
       "accept": [],
-      "explanation": "The knight jump attacks the queen and the c2 pawn, and also covers the b3-f7 diagonal against the queen. White's queen has to move again, and Black is far ahead in development. After 6.Qc3 d5 Black opens the centre with a big advantage; 6.Bxf7+ Ke7 only loses the bishop.",
+      "explanation": "5...Nd4 develops with an attack on the queen and the c2 pawn (with ...Nxc2+ as a further threat against king and rook). White's queen has to move yet again. After 6.Qc3 Nxe4 the queen is attacked once more and Black wins a pawn with a huge lead in development; 6.Bxf7+ Ke7 only loses the bishop, because the queen is still attacked and the bishop on f7 falls next.",
       "wrong": [
         {
           "move": "Bg7",

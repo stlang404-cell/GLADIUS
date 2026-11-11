@@ -138,10 +138,7 @@ White sacrifices a pawn to gain time for c3 and d4. Take it and put the bishop o
 fen: startpos
 moves: 1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5 4.b4 Bxb4 5.c3 Ba5 6.d4 d6 7.Qb3 Qd7 8.dxe5 Bb6 9.Nbd2 Na5
 check: engine
-diagram: end
-caption: Black has kept the extra pawn and defended f7. The knight on a5 hits White's light-squared bishop and queen.
-orientation: black
-arrows: a5c4 a5b3
+caption: White has regained the pawn on e5, but Black has defended f7 safely, and the knight on a5 hits White's light-squared bishop and queen. Black has a comfortable game.
 ```
 
 The two key defensive moves to know are **...d6** (supporting e5 and opening the c8 bishop) and **...Qd7** or **...Qe7** against the queen attack on f7. If you do not want to learn a gambit, 4...Bb6 (declining the pawn) is also perfectly playable.
@@ -217,10 +214,7 @@ The main line is 5.Nxc6 bxc6 6.e5, chasing the knight. The key moves are **6...Q
 fen: startpos
 moves: 1.e4 e5 2.Nf3 Nc6 3.d4 exd4 4.Nxd4 Nf6 5.Nxc6 bxc6 6.e5 Qe7 7.Qe2 Nd5 8.c4 Nb6 9.Nd2 Qe6 10.b3 a5
 check: engine
-diagram: end
 caption: Black's queen blockades in front of the e5 pawn and the a-pawn begins to annoy White's queenside. Both sides have chances.
-orientation: black
-arrows: a5a4
 ```
 
 If you prefer something calmer, White's other moves let you develop simply:
@@ -261,9 +255,9 @@ Sometimes White then tries 5.Qb3?, attacking f7 a third time from a different an
 
 ```line
 fen: startpos
-moves: 1.e4 e5 2.Qh5 Nc6 3.Bc4 g6 4.Qf3 Nf6 5.Qb3? Nd4 6.Qc3 d5
+moves: 1.e4 e5 2.Qh5 Nc6 3.Bc4 g6 4.Qf3 Nf6 5.Qb3? Nd4 6.Qc3 Nxe4
 check: engine
-caption: Black's knight hits the queen and c2, and ...d5 opens lines with a big lead in development. White's queen has made four moves and achieved nothing.
+caption: The knight on d4 hit the queen and c2; now the other knight takes e4 and attacks the queen yet again. White's queen has made five moves and Black has won a pawn with a huge lead in development.
 ```
 
 :::mistake Chasing the queen with pawns
