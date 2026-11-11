@@ -8,7 +8,7 @@ stage: "1000–1200"
 skills: [planning, evaluation, prophylaxis, pawn-structure, piece-activity]
 objectives:
   - Evaluate a position with a short checklist instead of a vague feeling.
-  - Find targets: weak pawns, weak squares, bad pieces and an exposed king.
+  - "Find targets: weak pawns, weak squares, bad pieces and an exposed king."
   - Choose a plan from the pawn structure, and improve your worst piece.
   - Ask "What does my opponent want?" and stop it when it matters (prophylaxis).
   - Make short, concrete plans of two or three moves, and change them when the position changes.

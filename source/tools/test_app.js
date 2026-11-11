@@ -111,7 +111,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function ymd(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function addDays(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return ymd(d); }
-const TODAY = ymd(new Date());
+const today = () => ymd(new Date()); // evaluated on use (tests may run across midnight)
 
 function watchErrors(page, bucket) {
   page.on('console', (m) => { if (m.type() === 'error') bucket.push('console: ' + m.text()); });
@@ -186,11 +186,11 @@ async function pieceAt(page, square) {
   const exHint = exList.find((e) => e.hint) || exList[0];
 
   // =================================================================== routes, both viewports
-  const routes = ['/', '/progress', '/read', chapter ? `/read/ch/${chapter.n}` : null, ...book.docs.map((d) => `/read/doc/${d.slug}`),
+  const routes = ['/', '/progress', '/read', ...book.chapters.map((c) => `/read/ch/${c.n}`), ...book.docs.map((d) => `/read/doc/${d.slug}`),
     '/solve', exOk ? `/solve/set/${exOk.set}` : null, '/solve/review', '/solve/mixed', '/play', '/games', '/games/import', '/analysis', '/journal', '/plan', '/settings', '/more', '/about',
     '/read/ch/999', '/nonexistent'].filter(Boolean);
   for (const [vpName, vp] of [['iphone', IPHONE], ['desktop', DESKTOP]]) {
-    await test(`[${vpName}] every route renders without console errors (${routes.length} routes)`, async () => {
+    await test(`[${vpName}] every route renders without console errors or horizontal overflow (${routes.length} routes)`, async () => {
       const ctx = await newCtx(vp);
       const page = await ctx.newPage();
       const errs = [];
@@ -201,6 +201,8 @@ async function pieceAt(page, square) {
         await page.waitForTimeout(150);
         const txt = await page.textContent('#main');
         assert(!/Something went wrong/.test(txt), `route ${r} crashed: ${txt.slice(0, 200)}`);
+        const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        assert(over <= 1, `route ${r} overflows horizontally by ${over}px`);
       }
       // layout: tab bar on phones, sidebar on desktop
       const tab = await page.isVisible('.tabbar');
@@ -229,7 +231,7 @@ async function pieceAt(page, square) {
     assert(/Day 1/.test(await page.textContent('#today')), 'plan day 1 not shown after setting start date');
     await page.locator('#today .tasks input[type=checkbox]').first().check();
     const s = await state(page);
-    assert(s.settings.startDate === TODAY && Object.keys(s.plan.checks['1'] || {}).length === 1, 'task tick not stored');
+    assert(s.settings.startDate === today() && Object.keys(s.plan.checks['1'] || {}).length === 1, 'task tick not stored');
     await shot(page, 'iphone-dashboard');
   });
 
@@ -239,7 +241,7 @@ async function pieceAt(page, square) {
         const s = JSON.parse(localStorage.getItem('elo-blueprint'));
         s.settings.startDate = st; s.activity = {}; if (act) s.activity[act] = { ex: 1 };
         localStorage.setItem('elo-blueprint', JSON.stringify(s));
-      }, [addDays(TODAY, -daysAgo), activeDaysAgo === null ? null : addDays(TODAY, -activeDaysAgo)]);
+      }, [addDays(today(), -daysAgo), activeDaysAgo === null ? null : addDays(today(), -activeDaysAgo)]);
       await page.reload(); await page.waitForSelector('#today');
       return (await page.locator('#catchup').count()) ? page.textContent('#catchup') : '';
     };
@@ -252,9 +254,9 @@ async function pieceAt(page, square) {
     await page.click('#restart-week');
     await page.waitForTimeout(200);
     const s = await state(page);
-    const day = Math.round((new Date(TODAY + 'T12:00:00') - new Date(s.settings.startDate + 'T12:00:00')) / 864e5) + 1;
+    const day = Math.round((new Date(today() + 'T12:00:00') - new Date(s.settings.startDate + 'T12:00:00')) / 864e5) + 1;
     assert(day % 7 === 1, 'restart week should put today at a week start, got day ' + day);
-    await page.evaluate((t) => { const s = JSON.parse(localStorage.getItem('elo-blueprint')); s.settings.startDate = t; s.activity = {}; localStorage.setItem('elo-blueprint', JSON.stringify(s)); }, TODAY);
+    await page.evaluate((t) => { const s = JSON.parse(localStorage.getItem('elo-blueprint')); s.settings.startDate = t; s.activity = {}; localStorage.setItem('elo-blueprint', JSON.stringify(s)); }, today());
   });
 
   await test('reader renders a chapter with boards; moves open a position viewer', async () => {
@@ -283,6 +285,7 @@ async function pieceAt(page, square) {
     }
     const ob = await page.getAttribute('article.book figure.diagram .open-board', 'href');
     assert(ob && ob.startsWith('#/analysis?fen='), 'Open on board missing');
+    await page.$eval('#mark-complete', (e) => e.scrollIntoView({ block: 'center' }));
     await page.click('#mark-complete');
     assert((await state(page)).read[chapter.n], 'lesson not marked complete');
     return augmented && !realBook.chapters.length ? 'synthetic chapter' : `chapter ${chapter.n}, ${figs} boards`;
@@ -309,7 +312,7 @@ async function pieceAt(page, square) {
     const s = await state(page);
     const r = s.ex[exOk.id];
     assert(r && r.attempts === 1 && r.firstTry === true && r.last === 'ok', 'record ' + JSON.stringify(r));
-    assert(r.due === addDays(TODAY, 1), 'first success should schedule +1 day, got ' + r.due);
+    assert(r.due === addDays(today(), 1), 'first success should schedule +1 day, got ' + r.due);
     return `${exOk.id} (${exOk.solution.length} plies)`;
   });
 
@@ -342,7 +345,7 @@ async function pieceAt(page, square) {
     }
     await page.waitForSelector('#fb-head');
     const r = (await state(page)).ex[exWrong.id];
-    assert(r.firstTry === false && r.last === 'fail' && r.due === addDays(TODAY, 1), 'record ' + JSON.stringify(r));
+    assert(r.firstTry === false && r.last === 'fail' && r.due === addDays(today(), 1), 'record ' + JSON.stringify(r));
     return `${exWrong.id}: ${w.move}`;
   });
 
@@ -363,7 +366,7 @@ async function pieceAt(page, square) {
     await goto(page, BASE, '/solve');
     const before = Number(await page.textContent('#due-count'));
     assert(before === 0, 'nothing should be due today, got ' + before);
-    await page.evaluate((d) => localStorage.setItem('elo-debug-today', d), addDays(TODAY, 1));
+    await page.evaluate((d) => localStorage.setItem('elo-debug-today', d), addDays(today(), 1));
     await goto(page, BASE, '/solve');
     const due = Number(await page.textContent('#due-count'));
     assert(due >= 2, 'expected ≥2 due tomorrow, got ' + due);
@@ -380,7 +383,7 @@ async function pieceAt(page, square) {
     await page.waitForSelector('#fb-head');
     const r = (await state(page)).ex[first];
     const prevStep = first === exOk.id ? 0 : -1;
-    const expect = prevStep === 0 ? addDays(TODAY, 1 + 3) : addDays(TODAY, 1 + 1);
+    const expect = prevStep === 0 ? addDays(today(), 1 + 3) : addDays(today(), 1 + 1);
     assert(r.due === expect, `after review success ${first} due ${r.due}, expected ${expect}`);
     await shot(page, 'iphone-review');
     await page.evaluate(() => localStorage.removeItem('elo-debug-today'));
@@ -552,8 +555,8 @@ async function pieceAt(page, square) {
     const s = await state(page);
     assert(s.journal.length === 1, 'journal entry missing');
     const j = s.journal[0];
-    assert(j.fen && j.played && j.best && j.category && j.date === TODAY, 'entry fields ' + JSON.stringify(j));
-    assert(s.personal[j.exId] && s.ex[j.exId].due === TODAY, 'personal exercise not scheduled today');
+    assert(j.fen && j.played && j.best && j.category && j.date === today(), 'entry fields ' + JSON.stringify(j));
+    assert(s.personal[j.exId] && s.ex[j.exId].due === today(), 'personal exercise not scheduled today');
     await goto(page, BASE, '/solve');
     assert(Number(await page.textContent('#due-count')) >= 1, 'review queue does not include the journal item');
     await goto(page, BASE, '/journal');

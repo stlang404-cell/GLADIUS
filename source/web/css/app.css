@@ -376,3 +376,10 @@ h2 { border-bottom: 0; padding-bottom: 0; }
 .book h2 { border-bottom: 1px solid #E3D9C4; padding-bottom: .15em; }
 .book .chapter-subtitle { line-height: 1.25; }
 .book .chapter-title { line-height: 1.05; }
+/* keep focused / scrolled-to elements clear of the fixed tab bar on phones */
+@media (max-width: 899px) { html { scroll-padding-bottom: calc(var(--tab-h) + var(--safe-b) + 16px); } }
+/* long tokens (FEN strings, URLs) must never widen the page on phones */
+.book { overflow-wrap: break-word; }
+.book code { overflow-wrap: anywhere; word-break: break-all; }
+#main { overflow-x: clip; }
+.summary ul { display: inline-block; text-align: left; margin: 0 auto; }
