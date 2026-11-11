@@ -61,52 +61,56 @@
       "id": "12-03",
       "type": "tactic",
       "difficulty": 1,
-      "fen": "rnbqkbnr/pppp2pp/8/4p3/4P3/8/PPPP1PPP/RNBQKB1R w KQkq - 0 4",
-      "question": "White to move. Black played the Damiano Defence (2...f6?), you took on e5, and Black recaptured 3...fxe5?. Punish it.",
+      "fen": "r1bqk1nr/ppp1bppp/8/4p3/2B1P3/8/PPP2PPP/RNBQK2R w KQkq - 0 7",
+      "question": "White to move. Against the Philidor (2...d6 3.d4) Black played 3...Nd7 4.Bc4 Be7?, and after 5.dxe5 Nxe5? 6.Nxe5 dxe5 both f7 and the e5-pawn are weak. Punish it.",
       "solution": [
-        "Qh5+"
+        "Qh5"
       ],
       "goal": "win",
       "accept": [],
-      "explanation": "The f-pawn has left the e8-h5 diagonal, so the queen checks on h5. After 4...g6 5.Qxe5+ forks the king and the rook on h8; after 4...Ke7 5.Qxe5+ Kf7 6.Bc4+ the black king is hunted in the open. Either way White wins material with a decisive attack.",
+      "explanation": "After the trades on e5 the black pawn on e5 has no defender, and f7 is guarded only by the king. 7.Qh5! attacks both at once: it threatens 8.Qxf7+ (your bishop on c4 supports it) and 8.Qxe5. Black cannot cover everything: 7...g6 8.Qxe5 wins the pawn and hits the rook on h8, while 7...Nf6 or 7...Qd7 allows 8.Qxf7+ and the black king is dragged into the open. Trading queens with 7.Qxd8+? throws the chance away.",
       "wrong": [
         {
-          "move": "d4",
-          "why": "A good developing move, but it gives Black time to cover the diagonal; you have a piece less and must strike now."
+          "move": "Qxd8+",
+          "why": "Trading queens removes your attacker; Black has an easy game after 7...Bxd8."
+        },
+        {
+          "move": "Qd5",
+          "why": "It also eyes f7, but 7...Qxd5 simply trades queens."
         }
       ],
-      "hint": "Which diagonal did 2...f6 open?",
-      "objective": "Punish a weakened king diagonal with a queen check.",
+      "hint": "Find one queen move that attacks two weak points.",
+      "objective": "Look for a queen move that hits two loose targets (f7 and an unprotected pawn) at once.",
       "tags": [
         "opening-traps",
         "repertoire-white",
-        "king-safety"
+        "fork"
       ]
     },
     {
       "id": "12-04",
       "type": "tactic",
       "difficulty": 2,
-      "fen": "rnbqkb1r/pppp1ppp/5n2/4N3/8/8/PPPPQPPP/RNB1KB1R w KQkq - 2 5",
-      "question": "White to move. In the Petrov, Black played the copycat 3...Nxe4?!, you answered 4.Qe2, and Black retreated 4...Nf6??. Win material.",
+      "fen": "r3kb1r/pppn1ppp/4pn2/q4b2/2BP4/2N2N2/PPPB1PPP/R2QK2R w KQkq - 2 8",
+      "question": "White to move. Against the Scandinavian (2...Qxd5 3.Nc3 Qa5 4.d4 Nf6 5.Nf3 Bf5 6.Bc4 e6 7.Bd2) Black has played the natural 7...Nbd7?! instead of the careful 7...c6. Win material.",
       "solution": [
-        "Nc6+"
+        "Nd5"
       ],
       "goal": "win",
       "accept": [],
-      "explanation": "The knight on e5 stands between your queen on e2 and Black's king on e8. Moving it with a threat gives a discovered check, and from c6 the knight also attacks the queen on d8. Black must deal with the check, and 6.Nxd8 wins the queen.",
+      "explanation": "Your bishop on d2 is aimed at the queen on a5, and only your own knight on c3 is in the way. 8.Nd5! moves it with threats of its own: now the bishop attacks the queen, and the knight hits c7 (Nxc7+ would fork king and rook), b6 and f6. Every queen move either lands on a square the knight or bishop covers or allows Nxc7+, so Black's best is to give the queen for two pieces, for example 8...Qxd2+ 9.Qxd2 exd5. That is why 7...c6, taking d5 and b5 away from the knight, is the standard move.",
       "wrong": [
         {
-          "move": "Qe3",
-          "why": "There is no point in a slow move; the discovered check wins the queen right now."
+          "move": "Qe2",
+          "why": "Natural development, but it gives Black time for ...c6 and the chance is gone."
         },
         {
-          "move": "d4",
-          "why": "Natural development, but it misses that the e-file is lined up against Black's king."
+          "move": "Nb5",
+          "why": "It also uncovers the bishop, but after 8...Qb6 the queen is safe and still guards c7."
         }
       ],
-      "hint": "Your queen and Black's king are on the same file. What happens if the knight moves away with a threat?",
-      "objective": "Recognize the discovered-check pattern on the e-file.",
+      "hint": "What happens to the queen on a5 if the knight on c3 moves away with a threat?",
+      "objective": "Spot a discovered attack on the queen by moving the piece that blocks your bishop.",
       "tags": [
         "discovered-attack",
         "opening-traps",
@@ -147,29 +151,29 @@
       "id": "12-06",
       "type": "opening",
       "difficulty": 2,
-      "fen": "rnb1kbnr/ppppq1pp/5p2/4N3/4P3/8/PPPP1PPP/RNBQKB1R w KQkq - 1 4",
-      "question": "White to move. Against the Damiano Defence (2...f6?) you took on e5, and Black, instead of 3...fxe5?, played the better 3...Qe7, attacking your knight. Where should the knight go?",
+      "fen": "rnbqkb1r/ppp2ppp/3p1n2/4N3/4P3/8/PPPP1PPP/RNBQKB1R w KQkq - 0 4",
+      "question": "White to move. Against the Petrov (2...Nf6) you took on e5, and Black has correctly answered 3...d6, attacking your knight. Where should it go?",
       "solution": [
         "Nf3"
       ],
       "goal": "best",
       "accept": [
-        "Nc4",
-        "Ng4"
+        "Nd3",
+        "Nc4"
       ],
-      "explanation": "The knight must retreat, and Black will regain the pawn with ...Qxe4+. 4.Nf3 is the cleanest: after 4...Qxe4+ 5.Be2 White is ahead in development and Black's queen and king stand awkwardly. 4.Nc4 and 4.Ng4 are also good. The mistake is to leave the knight on e5 and protect it, because ...d6 then chases it away anyway.",
+      "explanation": "The knight must leave e5, and Black will then win back the pawn with ...Nxe4. 4.Nf3 is the repertoire move: after 4...Nxe4 5.d4 d5 6.Bd3 White develops easily and keeps a small lead. Do not try to hold the knight with 4.d4?, because after 4...dxe5 5.dxe5 Qxd1+ 6.Kxd1 Nxe4 you are a piece down for a pawn. The sacrifice 4.Nxf7?! (the Cochrane Gambit) gives a knight for two pawns, and Black's king usually survives.",
       "wrong": [
         {
           "move": "d4",
-          "why": "After 4...d6 the knight is attacked by a pawn and must move anyway, and Black's queen takes on e4 with check."
+          "why": "4...dxe5 5.dxe5 Qxd1+ 6.Kxd1 Nxe4 and you have lost a knight for a pawn."
         },
         {
-          "move": "Nc3",
-          "why": "It ignores the attacked knight; 4...Qxe5 wins a piece."
+          "move": "Nxf7",
+          "why": "The Cochrane Gambit: a knight for two pawns, and Black keeps the extra piece."
         }
       ],
-      "hint": "Your knight is attacked. Which retreat keeps your position harmonious?",
-      "objective": "Keep the extra development when the opponent regains a gambit pawn.",
+      "hint": "The knight is attacked by a pawn. Which retreat keeps it safe and pointed at the centre?",
+      "objective": "Retreat an attacked knight to its best square instead of propping it up with a pawn.",
       "tags": [
         "repertoire-white",
         "opening-principles"

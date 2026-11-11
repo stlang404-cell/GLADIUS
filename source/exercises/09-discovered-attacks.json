@@ -64,28 +64,28 @@
       "id": "09-03",
       "type": "opening",
       "difficulty": 2,
-      "fen": "rnbqkb1r/pppp1ppp/5n2/4N3/8/8/PPPPQPPP/RNB1KB1R w KQkq - 2 5",
-      "question": "White to move. In the Petrov, Black played 3...Nxe4?, and after 4.Qe2 retreated with 4...Nf6??. Punish it.",
+      "fen": "r1b1kb1r/p1p1qppp/2pp1n2/4P3/8/8/PPP1QPPP/RNB1KB1R w KQkq - 0 8",
+      "question": "White to move. In the Scotch (1.e4 e5 2.Nf3 Nc6 3.d4 exd4 4.Nxd4 Nf6 5.Nxc6 bxc6 6.e5 Qe7 7.Qe2), Black attacked your e5-pawn with 7...d6?. Punish it.",
       "solution": [
-        "Nc6+",
-        "Qe7",
-        "Nxe7"
+        "exf6",
+        "Qxe2+",
+        "Bxe2"
       ],
       "goal": "win",
       "accept": [],
-      "explanation": "Your queen on e2 and the black king on e8 share the e-file, and only your knight stands between them. Any knight move gives check, so choose the square that also attacks the queen: Nc6+ hits d8. The d7 pawn cannot take, because capturing does not answer the check. After ...Qe7 Nxe7 (or Qxe7+) White has won the queen for a knight.",
+      "explanation": "The two queens face each other on the e-file with only your e5-pawn between them. 8.exf6! captures the knight and at the same time uncovers your queen's attack on Black's queen: a discovered attack. Black must deal with the queen first, 8...Qxe2+ 9.Bxe2, and only then can take back on f6 with 9...gxf6, so White has won a knight for a pawn. The point to remember: when a pawn or piece masks a line, look at what it can capture as it moves away.",
       "wrong": [
         {
-          "move": "Ng6+",
-          "why": "Also a discovered check, but it only goes after the rook on h8, and after ...Be7 Nxh8 the knight may be trapped."
+          "move": "exd6",
+          "why": "It opens lines but wins nothing: after 8...cxd6 the game is level."
         },
         {
-          "move": "d4",
-          "why": "A normal developing move that misses the chance to win the queen."
+          "move": "Bf4",
+          "why": "It defends the e5-pawn but misses that the pawn can capture with a discovered attack."
         }
       ],
-      "hint": "Which knight move gives check and also attacks the black queen?",
-      "objective": "Recognize the discovered check trap on the open e-file.",
+      "hint": "Your pawn stands between the two queens. What can it capture?",
+      "objective": "Use a pawn capture to unmask a discovered attack on the queen.",
       "tags": [
         "discovered-attack",
         "opening-traps"

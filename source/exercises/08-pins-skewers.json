@@ -126,36 +126,33 @@
       "id": "08-05",
       "type": "defense",
       "difficulty": 3,
-      "fen": "rn1qkbnr/ppp2p1p/3p2p1/4N3/2B1P1b1/2N5/PPPP1PPP/R1BQK2R b KQkq - 0 5",
-      "question": "Black to move. You pinned White's knight to the queen with ...Bg4, and White has just played Nxe5, offering the queen. What is the best reply?",
+      "fen": "rnbqkb1r/ppp2ppp/3p4/8/4n3/5N2/PPPPQPPP/RNB1KB1R b KQkq - 1 5",
+      "question": "Black to move. In the Petrov (1.e4 e5 2.Nf3 Nf6 3.Nxe5 d6 4.Nf3 Nxe4), White has played 5.Qe2. Your knight on e4 is pinned to your king, and d2-d3 is coming. Find the only move that saves the knight.",
       "solution": [
-        "dxe5"
+        "Qe7"
       ],
-      "goal": "best",
-      "accept": [
-        "Be6"
-      ],
-      "explanation": "The knight on f3 was only pinned to the queen, not to the king, so it was allowed to move, and White has set the Legal trap. If you take the queen, Bxf7+ Ke7 Nd5 is checkmate. Instead, take the knight with ...dxe5 (or block the f7 diagonal with ...Be6); after ...dxe5 Qxg4 White is only a pawn up, which is far better than being mated.",
+      "goal": "only",
+      "accept": [],
+      "explanation": "Your e-pawn has gone, so the e-file is open between White's queen and your king: the knight on e4 is pinned and may not move. White threatens 6.d3, attacking a piece that cannot run away. 5...Qe7! puts your queen on the file, so the knight is now only pinned to a defended queen: after 6.d3 Nf6 the queens face each other and the game is level. 5...d5? defends the knight but leaves it pinned, so 6.d3 wins it for a pawn, and 5...Be7? blocks the file but leaves the knight undefended against 6.Qxe4.",
       "wrong": [
         {
-          "move": "Bxd1",
-          "why": "Greed: Bxf7+ Ke7 Nd5 is checkmate."
-        },
-        {
           "move": "d5",
-          "why": "Counter-attacks the bishop, but after Qxg4 White has won the bishop on g4 and stays clearly better."
+          "why": "It defends the knight but does not break the pin: 6.d3 wins it for a pawn."
         },
         {
-          "move": "Bg7",
-          "why": "Ignores the knight: Nxg4 leaves Black a piece down."
+          "move": "f5",
+          "why": "It supports the knight, but it stays pinned and 6.d3 still wins it."
+        },
+        {
+          "move": "Be7",
+          "why": "It breaks the pin, but now nothing defends the knight: 6.Qxe4."
         }
       ],
-      "hint": "Before you take the queen, look at every check White would have afterwards.",
-      "objective": "Remember that a relatively pinned piece may still move; check what it threatens.",
+      "hint": "Defending a pinned piece is not enough when a pawn can attack it. Which piece can step onto e7?",
+      "objective": "Break an absolute pin before the opponent can attack the pinned piece with a pawn.",
       "tags": [
         "defense",
-        "pin",
-        "blunder-check"
+        "pin"
       ]
     },
     {
@@ -318,29 +315,26 @@
       "id": "08-11",
       "type": "blunder-check",
       "difficulty": 1,
-      "fen": "r1bqkb1r/pppn1ppp/5n2/3p2B1/3P4/2N5/PP2PPPP/R2QKBNR w KQkq - 0 6",
-      "question": "White to move. Black's knight on f6 is pinned to the queen and the pawn on d5 looks loose. Is it safe to take? Play the right move.",
+      "fen": "rn1qkbnr/ppp2ppp/8/3Pp3/6b1/5N2/PPPP1PPP/RNBQKB1R w KQkq - 1 4",
+      "question": "White to move. After 1.e4 e5 2.Nf3 d5 3.exd5, Black has pinned your knight to your queen with 3...Bg4. The e5-pawn has no defender. Is it safe to take? Play a good move.",
       "solution": [
-        "e3"
+        "Nc3"
       ],
       "goal": "best",
       "accept": [
-        "Nf3",
-        "Qc2"
+        "h3",
+        "Be2",
+        "Bb5+"
       ],
-      "explanation": "The pawn on d5 is a trap. The pin on f6 is only relative, so after Nxd5? the knight simply takes back with ...Nxd5!, and if Bxd8 then ...Bb4+ wins back the queen with a piece to spare. Run the safety scan instead: develop with e3, Nf3 or Qc2 and keep the pin.",
+      "explanation": "The pin is only relative, so the knight is allowed to move, but count what stands behind it: after 4.Nxe5?? Bxd1 Black has won your queen for a pawn. Unlike Légal's trap, there is no mate to make up for it, because you have no bishop on c4 and no knight on c3. Leave the pawn and develop with 4.Nc3, or ask the bishop a question with 4.h3, or break the pin with 4.Be2: you stay a healthy pawn up.",
       "wrong": [
         {
-          "move": "Nxd5",
-          "why": "Falls into the Elephant Trap: ...Nxd5 Bxd8 Bb4+ and Black ends up a piece ahead."
-        },
-        {
-          "move": "Bxf6",
-          "why": "Gives up the bishop pair for nothing; Black recaptures and is comfortable."
+          "move": "Nxe5",
+          "why": "4...Bxd1 wins your queen for a pawn."
         }
       ],
-      "hint": "If you take on d5, can the 'pinned' knight on f6 move?",
-      "objective": "Do not count on a relative pin when deciding whether a capture is safe.",
+      "hint": "If the knight on f3 moves, what can the bishop on g4 take?",
+      "objective": "Before moving a pinned piece, check what is standing behind it.",
       "tags": [
         "blunder-check",
         "pin",

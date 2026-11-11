@@ -102,26 +102,26 @@
       "id": "17-04",
       "type": "defense",
       "difficulty": 2,
-      "fen": "r1bqk2r/pppp1ppp/2n2n2/2b1P3/2Bp4/2P2N2/PP3PPP/RNBQK2R b KQkq - 0 6",
-      "question": "Black to move. White's e-pawn attacks your knight. What is the best response?",
+      "fen": "rnbqkb1r/pppp1ppp/5n2/4p3/4PP2/2N5/PPPP2PP/R1BQKBNR b KQkq - 0 3",
+      "question": "Black to move. In the Vienna Gambit (1.e4 e5 2.Nc3 Nf6 3.f4), White's f-pawn attacks e5, and fxe5 would also hit your knight. What is the best response?",
       "solution": [
         "d5"
       ],
       "goal": "best",
       "accept": [],
-      "explanation": "Instead of retreating, Black counter-attacks the bishop on c4 and claims the centre. After 7.Bb5 (or 7.exf6 dxc4) Black's knight can jump to e4 with an active game, and if 7.exf6 dxc4 Black has won back the material with open lines. A passive retreat like ...Ng8 leaves Black behind in development.",
+      "explanation": "Instead of defending e5 passively, strike back in the centre. 3...d5! attacks the e4-pawn: after 4.fxe5 Nxe4 your knight sits on a strong central square and the f-pawn's advance has only loosened White's king. Guarding e5 with 3...Nc6? fails to 4.fxe5 Nxe5 5.d4, and White's pawns chase your knights back. Developing the bishop with 3...Bc5? ignores the threat: 4.fxe5 drives the knight away and wins the e5-pawn.",
       "wrong": [
         {
-          "move": "Ng8",
-          "why": "Safe but passive: White keeps a big centre and a lead in development."
+          "move": "Nc6",
+          "why": "After 4.fxe5 Nxe5 5.d4 White's centre pawns drive your knights back."
         },
         {
-          "move": "Ng4",
-          "why": "Goes for f2 but 7.cxd4 leaves the knight offside and the bishop on c5 attacked."
+          "move": "Bc5",
+          "why": "It ignores the threat: 4.fxe5 hits the knight and Black loses the e5-pawn with a bad position."
         }
       ],
-      "hint": "Which white piece can you attack in return?",
-      "objective": "Answer an attack on a piece with a counter-attack when one is available.",
+      "hint": "Which white pawn can you attack in return?",
+      "objective": "Answer an attack in the centre with a counter-strike when one is available.",
       "tags": [
         "defense",
         "threats",

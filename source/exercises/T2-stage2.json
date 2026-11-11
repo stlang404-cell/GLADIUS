@@ -225,19 +225,37 @@
       "id": "T2-13",
       "type": "opening",
       "difficulty": 2,
-      "fen": "r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3",
-      "question": "Black to move. White threatens Qxf7#. Find the most principled defence.",
-      "solution": ["g6"],
-      "goal": "best",
-      "accept": ["Qe7"],
-      "explanation": "The queen on h5 and the bishop on c4 both aim at f7, which only the king defends. 3...g6 attacks the queen and blocks its path, so White has to lose time retreating, and Black can follow with ...Nf6 and ...Bg7. 3...Qe7 also defends f7, but it blocks the f8-bishop.",
-      "wrong": [
-        {"move": "Nf6", "why": "The natural developing move loses on the spot: 4.Qxf7#."},
-        {"move": "d5", "why": "A pawn sacrifice that does not stop the threat for long; after Bxd5 Black is simply worse."}
+      "fen": "rnbqk1nr/pppp1ppp/8/2b1p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3",
+      "question": "Black to move. After 1.e4 e5 2.Bc4 Bc5 3.Qh5, White's queen attacks f7 (together with the bishop on c4) and the e5-pawn at the same time. Find the move that meets both threats.",
+      "solution": [
+        "Qe7"
       ],
-      "hint": "Can you defend f7 and attack the queen at the same time?",
-      "objective": "Defend against an early queen-and-bishop attack on f7.",
-      "tags": ["opening-traps", "opening-principles", "threats"]
+      "goal": "best",
+      "accept": [
+        "Qf6"
+      ],
+      "explanation": "White has two threats: 4.Qxf7# and 4.Qxe5+, which would also hit your bishop on c5 and the rook on h8. 3...Qe7 defends both f7 and e5 (3...Qf6 does the same). 3...g6? blocks the attack on f7 but drops e5: 4.Qxe5+ forks king and rook. Natural developing moves such as 3...Nf6?? or 3...Nc6?? ignore f7 and allow 4.Qxf7#.",
+      "wrong": [
+        {
+          "move": "Nf6",
+          "why": "It attacks the queen but ignores f7: 4.Qxf7#."
+        },
+        {
+          "move": "g6",
+          "why": "It saves f7 but drops e5: 4.Qxe5+ forks your king and the rook on h8."
+        },
+        {
+          "move": "Nc6",
+          "why": "It guards e5 but not f7: 4.Qxf7#."
+        }
+      ],
+      "hint": "List both of White's threats before you choose a move.",
+      "objective": "Find the one move that parries two threats at once.",
+      "tags": [
+        "opening-traps",
+        "threats",
+        "fork"
+      ]
     },
     {
       "id": "T2-14",

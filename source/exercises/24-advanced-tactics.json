@@ -40,28 +40,31 @@
       "id": "24-02",
       "type": "blunder-check",
       "difficulty": 3,
-      "fen": "r1bqkb1r/pppn1ppp/5n2/3p2B1/3P4/2N5/PP2PPPP/R2QKBNR w KQkq - 0 6",
-      "question": "White to move. The d5 pawn looks loose: the knight on f6 is pinned to the queen, so Nxd5 seems to win a pawn. Play the right move.",
+      "fen": "r1bqkb1r/ppppnppp/5n2/1B2p3/4P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 1 5",
+      "question": "White to move. In the Ruy Lopez Black played 3...Nf6 4.d3 Ne7?!, and the e5-pawn is suddenly undefended. 5.Nxe5 seems to win a pawn. Play the right move.",
       "solution": [
-        "e3"
+        "O-O"
       ],
       "goal": "best",
       "accept": [
-        "Nf3",
-        "Qc2"
+        "c3",
+        "Nc3",
+        "Bc4",
+        "d4",
+        "Ba4"
       ],
-      "explanation": "The pin is an illusion. After 6.Nxd5?? Nxd5! 7.Bxd8 Black has the in-between check 7...Bb4+, and after 8.Qd2 Bxd2+ 9.Kxd2 Kxd8 Black has won a piece. A normal developing move such as 6.e3 keeps a comfortable game.",
+      "explanation": "Blunder-check the capture by looking at Black's forcing replies after it. 5.Nxe5? c6! attacks the bishop on b5, and when it retreats (6.Ba4 or 6.Bc4), 6...Qa5+ is a check that also hits the knight on e5, so Black wins a piece. 6.Nxf7 Kxf7 7.Ba4 only gives two pawns for the knight. This is the Mortimer Trap. Calm development such as 5.O-O, 5.c3 or 5.Nc3 keeps a pleasant game.",
       "wrong": [
         {
-          "move": "Nxd5",
-          "why": "Nxd5! Bxd8 Bb4+ and Black regains the queen with an extra piece."
+          "move": "Nxe5",
+          "why": "5...c6! and after the bishop retreats, 6...Qa5+ forks your king and the knight on e5."
         }
       ],
-      "hint": "Before taking, look at every check your opponent would have after the exchanges.",
+      "hint": "After Nxe5 c6 and a bishop retreat, which black check hits two things?",
       "objective": "Blunder-check a capture by looking for the opponent's in-between check.",
       "tags": [
         "blunder-check",
-        "zwischenzug",
+        "fork",
         "opening-traps"
       ]
     },

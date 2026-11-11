@@ -374,57 +374,60 @@
       "id": "T1-13",
       "type": "blunder-check",
       "difficulty": 3,
-      "fen": "rnb1kbnr/pp2pppp/1q6/2pp4/3P1B2/2N1P3/PPP2PPP/R2QKBNR b KQkq - 2 4",
-      "question": "Black to move. The b2-pawn has no defender. Is it safe to take? Play the right move.",
+      "fen": "r1b2rk1/pp1n1ppp/2p2q2/8/3P4/2NB4/PP2QPPP/R2R2K1 b - - 0 14",
+      "question": "Black to move. White's d4-pawn has no pawn or knight defending it, and your queen attacks it. Is it safe to take? Play the right move.",
       "solution": [
-        "Nf6"
+        "Nb6"
       ],
       "goal": "best",
       "accept": [
-        "e6",
-        "cxd4"
+        "h6",
+        "Qd6",
+        "Qf4"
       ],
-      "explanation": "Before grabbing, ask what White can do afterwards. After 4...Qxb2? 5.Nxd5! (or 5.Nb5) White threatens Nc7+ forking king and rook, and Rb1 will trap or chase your queen; Black loses material. 4...Nf6 develops and keeps the centre covered, with a normal game.",
+      "explanation": "Run the safety scan on the position after the capture: what checks would White have? After 14...Qxd4?? 15.Bxh7+! Kxh7 16.Rxd4 the bishop's check uncovers the rook on d1, and your queen is lost. The pawn was defended by the rook standing behind the bishop. Develop instead with 14...Nb6, freeing the bishop on c8 and watching d5; the game is level.",
       "wrong": [
         {
-          "move": "Qxb2",
-          "why": "5.Nxd5! threatens Nc7+ and Rb1; the queen is far from home and Black loses material."
+          "move": "Qxd4",
+          "why": "15.Bxh7+! Kxh7 16.Rxd4: the check uncovers the rook and your queen is lost."
         }
       ],
-      "hint": "After ...Qxb2, look at White's knight jumps and rook moves.",
-      "objective": "Blunder-check a pawn grab with the queen (Chapters 4 and 6).",
+      "hint": "After ...Qxd4, which white move is a check, and what would it uncover?",
+      "objective": "Blunder-check a pawn grab with the queen by looking at the opponent's checks after it (Chapters 4 and 6).",
       "tags": [
         "blunder-check",
-        "opening-principles"
+        "threats"
       ]
     },
     {
       "id": "T1-14",
       "type": "tactic",
       "difficulty": 3,
-      "fen": "r1bqk1nr/pppp1ppp/2n5/2b1p1N1/2B1P3/8/PPPP1PPP/RNBQK2R b KQkq - 5 4",
-      "question": "Black to move. White has just played 4.Ng5, moving the same piece twice to attack f7. Punish it.",
+      "fen": "rnbqkb1r/ppp2ppp/4p3/3pP3/2P1n3/2N2P2/PP1P2PP/R1BQKBNR b KQkq - 0 5",
+      "question": "Black to move. After 1.c4 Nf6 2.Nc3 e6 3.e4 d5 4.e5 Ne4, White has attacked your knight with 5.f3?. Before you retreat, run the safety scan: checks first.",
       "solution": [
-        "Qxg5"
+        "Qh4+",
+        "g3",
+        "Nxg3"
       ],
       "goal": "win",
       "accept": [],
-      "explanation": "Run the scan on White's last move: what defends the knight on g5? Nothing. Your queen sees g5 along d8-e7-f6-g5 because the e-pawn has moved. 4...Qxg5 wins a piece, and f7 is defended by the king for now. Attacking moves made with undefended pieces often just lose the piece.",
+      "explanation": "5.f3 opened the e1-h4 diagonal next to White's king, and your queen can use it at once. After 5...Qh4+ 6.g3 Nxg3! the knight cannot be taken safely, because 7.hxg3 Qxh1 wins a whole rook, and Black is winning in any case. 6.Ke2 is no better: 6...Qf2+ 7.Kd3 dxc4+ and the white king is hunted in the middle of the board. The attacked knight did not need to retreat; a check came first.",
       "wrong": [
         {
-          "move": "Nh6",
-          "why": "Defends f7, but you had a free knight to take."
+          "move": "Nxc3",
+          "why": "A normal reply, but it misses the queen check that wins material."
         },
         {
-          "move": "d5",
-          "why": "Counter-attacks the bishop but leaves the knight on g5 untouched and the position messy."
+          "move": "Nc5",
+          "why": "Retreating gives White a big centre for free; you missed 5...Qh4+."
         }
       ],
-      "hint": "Is the knight on g5 defended?",
-      "objective": "Punish an undefended attacking piece in the opening (Chapters 4 and 6).",
+      "hint": "Which diagonal did 5.f3 open next to White's king?",
+      "objective": "Scan checks first: a pawn move next to the king can open a diagonal for a queen check (Chapters 4 and 6).",
       "tags": [
-        "hanging-pieces",
-        "opening-traps"
+        "opening-traps",
+        "threats"
       ]
     },
     {

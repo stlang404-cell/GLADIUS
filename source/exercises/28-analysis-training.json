@@ -106,27 +106,33 @@
       "id": "28-04",
       "type": "opening",
       "difficulty": 2,
-      "fen": "r1bqkb1r/p1pp1ppp/2p2n2/4P3/8/8/PPP2PPP/RNBQKB1R b KQkq - 0 6",
-      "question": "Black to move. From a student's game in the Scotch, your repertoire as Black (illustrative): after 6.e5 the student played 6...Ng4?, hoping to win the e5-pawn later. What should Black play instead?",
+      "fen": "r1bq1rk1/2p1bppp/p1np1n2/1p2p3/4P3/1BP2N1P/PP1P1PP1/RNBQR1K1 b - - 0 9",
+      "question": "Black to move. From a student's game in the Closed Ruy Lopez, your repertoire as Black (illustrative): after 9.h3 the student played 9...Bg4?, a move that works in many other openings. What should Black play instead?",
       "solution": [
-        "Qe7"
+        "Na5"
       ],
       "goal": "best",
       "accept": [
-        "Nd5"
+        "Bb7",
+        "Re8",
+        "h6",
+        "Nb8"
       ],
-      "explanation": "6...Qe7 is the main move: the queen attacks e5 and pins the pawn to the white king, so exf6 is now illegal. 6...Nd5, putting the knight on a central square, is also a standard and playable reply. The student's 6...Ng4? simply hangs the knight to 7.Qxg4, because the d1-queen sees g4. Journal category: opening (with a hanging-piece cause: no blunder-check).",
+      "explanation": "9...Na5 is the classical plan: the knight hits the bishop on b3, and after 10.Bc2 c5 Black gains space on the queenside (9...Bb7, 9...Re8 and 9...Nb8 are also main lines). The student's 9...Bg4? simply drops a piece to 10.hxg4 Nxg4, because White's last move h3 was played to stop exactly this pin. Journal category: opening (with a hanging-piece cause: the opponent's last move was not checked).",
       "wrong": [
         {
-          "move": "Ng4",
-          "why": "Hangs the knight: 7.Qxg4."
+          "move": "Bg4",
+          "why": "10.hxg4 and Black has only a pawn for the piece."
+        },
+        {
+          "move": "Nxe4",
+          "why": "10.Rxe4 and you are simply a piece down for a pawn."
         }
       ],
-      "hint": "Which black piece can attack e5 and pin it at the same time?",
-      "objective": "Know the key replies in your repertoire, and blunder-check knight moves to the edge of the board.",
+      "hint": "What did White's last move, h3, take away from you?",
+      "objective": "Know the main plan in your repertoire, and always ask what the opponent's last move prevents.",
       "tags": [
         "repertoire-black",
-        "pin",
         "blunder-check"
       ]
     },

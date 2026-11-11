@@ -6,24 +6,29 @@
       "id": "14-01",
       "type": "blunder-check",
       "difficulty": 1,
-      "fen": "rn1qkbnr/ppp2p1p/3p2p1/4N3/2B1P1b1/2N5/PPPP1PPP/R1BQK2R b KQkq - 0 5",
-      "question": "Black to move. White has just played 5.Nxe5 and left the queen on d1 en prise. Run your blunder check before you grab it, then play the best move.",
+      "fen": "r1bqkb1r/ppp2ppp/2n2n2/3Pp1N1/2B5/8/PPPP1PPP/RNBQK2R b KQkq - 0 5",
+      "question": "Black to move. In the Two Knights Defence (1.e4 e5 2.Nf3 Nc6 3.Bc4 Nf6 4.Ng5 d5 5.exd5), taking back on d5 with the knight looks completely natural. Run your blunder check first, then play the best move.",
       "solution": [
-        "dxe5"
+        "Na5"
       ],
       "goal": "best",
       "accept": [
-        "Be6"
+        "b5",
+        "Nd4"
       ],
-      "explanation": "Before taking the queen, ask what White's checks would be afterwards. After 5...Bxd1?? 6.Bxf7+ Ke7 7.Nd5# is Légal's mate: the queen was bait. Taking the knight with 5...dxe5 removes one of the mating pieces; after 6.Qxg4 Black is only a pawn down and fully in the game. 5...Be6 also avoids the mate.",
+      "explanation": "Before recapturing, ask what White's forcing replies would be. After 5...Nxd5? White has 6.Nxf7! Kxf7 7.Qf3+, the Fried Liver Attack: your king is dragged into the open and the pinned knight on d5 is attacked again. 5...Na5! instead hits the bishop on c4, and after 6.Bb5+ c6 7.dxc6 bxc6 Black gets quick development for the pawn. 5...b5 and 5...Nd4 are sharp alternatives that also avoid the trap.",
       "wrong": [
         {
-          "move": "Bxd1",
-          "why": "6.Bxf7+ Ke7 7.Nd5# — the free queen costs you the game."
+          "move": "Nxd5",
+          "why": "6.Nxf7! Kxf7 7.Qf3+ — the Fried Liver Attack, and your king is in great danger."
+        },
+        {
+          "move": "Bg4",
+          "why": "It attacks the queen, but 6.Nxf7 forks your queen and rook first."
         }
       ],
-      "hint": "If you take the queen, which white moves would be checks?",
-      "objective": "Check the opponent's forcing replies before accepting a gift.",
+      "hint": "If you take on d5, which white sacrifice on f7 becomes possible?",
+      "objective": "Check the opponent's forcing replies before making a 'natural' recapture.",
       "tags": [
         "blunder-check",
         "opening-traps",
@@ -34,28 +39,31 @@
       "id": "14-02",
       "type": "defense",
       "difficulty": 1,
-      "fen": "r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3",
-      "question": "Black to move. White's queen and bishop both aim at f7. What is the best way to meet the threat?",
+      "fen": "6k1/pp3ppp/1q6/8/8/2P2Q2/PPr2PPP/4R1K1 b - - 0 25",
+      "question": "Black to move. Your rook has reached the second rank, and both b2 and f2 look tempting. First ask what White is threatening, then play the best move.",
       "solution": [
         "g6"
       ],
       "goal": "best",
       "accept": [
-        "Qe7",
-        "Nh6"
+        "h6"
       ],
-      "explanation": "Step one of the routine is always 'what does my opponent want?' Here it is Qxf7#. 3...g6 blocks nothing but attacks the queen and gains time; after the queen retreats Black develops with ...Nf6 and ...Bg7. 3...Qe7 also defends f7 safely. The natural developing move 3...Nf6?? ignores the threat.",
+      "explanation": "Step one of the routine is 'what does my opponent want?' Your back rank has no defender: the queen on b6 and the rook on c2 are far away, and your king has no flight square, so White threatens Re8#. That is why 25...Qxb2?? and 25...Rxb2?? both lose at once to 26.Re8#. 25...g6 (or 25...h6) gives the king an escape square; after that White has no threat, and the pressure on b2 and f2 is still yours.",
       "wrong": [
         {
-          "move": "Nf6",
-          "why": "4.Qxf7# — a developing move that does not answer the threat is not a candidate."
+          "move": "Qxb2",
+          "why": "26.Re8# — the free pawn does not count if you are mated."
+        },
+        {
+          "move": "Rxb2",
+          "why": "26.Re8# — nothing can block or capture on the back rank."
         }
       ],
-      "hint": "First name White's threat, then list the moves that stop it.",
-      "objective": "Start every move by asking what the opponent threatens.",
+      "hint": "What would Re8+ do?",
+      "objective": "Start every move by asking what the opponent threatens, even when you have tempting captures.",
       "tags": [
         "threats",
-        "opening-traps",
+        "back-rank",
         "candidate-moves"
       ]
     },
@@ -93,27 +101,29 @@
       "id": "14-04",
       "type": "strategy",
       "difficulty": 2,
-      "fen": "r1bqkbnr/pppp1ppp/8/4p3/2BnP3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4",
-      "question": "White to move. Black has just played 3...Nd4, leaving the e5-pawn defended by nobody. Your first idea is 4.Nxe5. Compare it with at least one other candidate and play the best move.",
+      "fen": "r3kb1r/p1ppqppp/b1p5/3nP3/2P5/8/PP2QPPP/RNB1KB1R w KQkq - 1 9",
+      "question": "White to move. In the Scotch (1.e4 e5 2.Nf3 Nc6 3.d4 exd4 4.Nxd4 Nf6 5.Nxc6 bxc6 6.e5 Qe7 7.Qe2 Nd5 8.c4) Black has played 8...Ba6, and the knight on d5 is attacked by your c-pawn. Your first idea is 9.cxd5. Compare it with at least one other candidate and play the best move.",
       "solution": [
-        "Nxd4"
+        "b3"
       ],
       "goal": "best",
       "accept": [
-        "O-O"
+        "Nd2",
+        "Qe4",
+        "g3"
       ],
-      "explanation": "The free pawn is the first natural move, but checking Black's best reply refutes it: 4.Nxe5? Qg5! hits the knight and g2 at once, and 5.Nxf7? Qxg2 6.Rf1 Qxe4+ 7.Be2 Nf3# is a well-known trap. The calm 4.Nxd4 exd4 5.O-O (or 4.O-O) leaves Black with an awkward pawn on d4 and White with a lead in development.",
+      "explanation": "The 'free' knight is a trap. The bishop on a6 is aimed at your queen on e2, and only the c4-pawn stands between them, so the pawn is pinned. If it captures, 9.cxd5? Bxe2 10.Bxe2 Qxe5, Black has won the queen for a knight. The main line is 9.b3, defending c4 so that Black's knight has to move and the pin causes no harm; 9.Nd2 and 9.Qe4 are also fine. Your first idea is only a candidate until you have checked the opponent's best reply.",
       "wrong": [
         {
-          "move": "Nxe5",
-          "why": "4...Qg5! forks e5 and g2; the extra pawn is gone and your king is in danger."
+          "move": "cxd5",
+          "why": "The c4-pawn was pinned to your queen: 9...Bxe2 wins the queen for a knight."
         }
       ],
-      "hint": "After 4.Nxe5, what is Black's most forcing reply?",
+      "hint": "What stands behind the c4-pawn on the diagonal from a6?",
       "objective": "Compare candidates by looking at the opponent's best reply, not your hoped-for one.",
       "tags": [
         "candidate-moves",
-        "opening-traps",
+        "pin",
         "blunder-check"
       ]
     },
@@ -212,28 +222,29 @@
       "id": "14-08",
       "type": "strategy",
       "difficulty": 4,
-      "fen": "r1bqkbnr/2p2ppp/p2p4/1p6/3pP3/1B6/PPP2PPP/RNBQK2R w KQkq - 0 8",
-      "question": "White to move. Recapturing the pawn with 8.Qxd4 looks automatic. Compare candidates and play the best move.",
+      "fen": "r4rk1/2pqb1pp/p1n1p3/1p1pP3/4n3/1BP5/PP3PPP/RNBQR1K1 w - - 0 13",
+      "question": "White to move. In the Open Ruy Lopez Black played 11...Qd7?, and after 12.Nxe6 fxe6 the knight on e4 looks safely protected by the d5-pawn. The natural move is 13.f3, kicking it. Compare candidates and play the best move.",
       "solution": [
-        "a4"
+        "Rxe4"
       ],
       "goal": "best",
-      "accept": [
-        "c3",
-        "Bd5"
-      ],
-      "explanation": "8.Qxd4? walks into the Noah's Ark trap: 8...c5 9.Qd5 Be6 10.Qc6+ Bd7 11.Qd5 c4 and the bishop on b3 is trapped. Instead, 8.a4 strikes at the b5-pawn that supports the trap (8.c3, offering a pawn for development, and 8.Bd5 are also fine). A recapture is a critical moment: check the opponent's best reply before you play it.",
+      "accept": [],
+      "explanation": "Ask what the d5-pawn is doing. It guards the knight on e4, but it also blocks the d-file between your queen and Black's unprotected queen on d7. 13.Rxe4! exploits this double duty: if 13...dxe4, the d-file opens and 14.Qxd7 wins the queen; if Black does not take back, White has simply won a knight. The automatic 13.f3? allows 13...Bc5+ with active play for Black. This is the Tarrasch Trap: before playing the obvious move, check the captures.",
       "wrong": [
         {
-          "move": "Qxd4",
-          "why": "8...c5! and ...c4 traps the bishop on b3 — you lose a piece for two pawns."
+          "move": "f3",
+          "why": "13...Bc5+ and Black's pieces come to life; the chance to win material is gone."
+        },
+        {
+          "move": "Be3",
+          "why": "Natural development, but 13...Nxe5 wins a pawn for Black."
         }
       ],
-      "hint": "After 8.Qxd4 c5, where can your queen go, and what about the bishop on b3?",
-      "objective": "Treat automatic recaptures as critical moments and check the opponent's reply.",
+      "hint": "Which black pawn has two jobs at once?",
+      "objective": "Treat the obvious move as one candidate among several: first check captures that overload a defender.",
       "tags": [
         "candidate-moves",
-        "trapped-piece",
+        "overloading",
         "opening-traps"
       ]
     },

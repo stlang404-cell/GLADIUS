@@ -36,30 +36,32 @@
       "id": "15-02",
       "type": "calculation",
       "difficulty": 3,
-      "fen": "r1bqkb1r/pppn1ppp/5n2/3N2B1/3P4/8/PP2PPPP/R2QKBNR b KQkq - 0 6",
-      "question": "Black to move. White has just played 6.Nxd5, apparently winning a pawn because your knight on f6 is pinned to the queen. Calculate, and punish the mistake.",
+      "fen": "rnbqk2r/ppp2ppp/3b4/8/2PNn3/8/PP2PPPP/RNBQKB1R b KQkq - 1 6",
+      "question": "Black to move. In the Fajarowicz Gambit (1.d4 Nf6 2.c4 e5 3.dxe5 Ne4 4.Nf3 d6 5.exd6 Bxd6), White has just centralised the knight with 6.Nd4?. It is defended by the queen. Calculate, and win material.",
       "solution": [
-        "Nxd5"
+        "Bb4+",
+        "Nd2",
+        "Qxd4"
       ],
       "goal": "win",
       "accept": [],
-      "explanation": "The pin is an illusion. After 6...Nxd5! 7.Bxd8 Black has the in-between check 7...Bb4+, and after 8.Qd2 Bxd2+ 9.Kxd2 Kxd8 Black is a whole piece up. If White does not take the queen, Black is simply a knight up. To see this you must visualise the position after 7.Bxd8 and look for checks there.",
+      "explanation": "Your bishop on d6 stands between your queen and the knight on d4. Move it with check: 6...Bb4+! The check must be answered first, and every answer puts a piece on d2, cutting the line between White's queen and the knight. After 7.Nd2 Qxd4 (or 7.Bd2 Nxd2 8.Nxd2 Qxd4) Black has won a knight. To find it you must look one move past the check and ask what the reply blocks.",
       "wrong": [
         {
-          "move": "c6",
-          "why": "Too slow: White keeps the pawn and the pin."
+          "move": "Qf6",
+          "why": "It eyes f2, but after 7.Nf3 White simply keeps the extra pawn."
         },
         {
-          "move": "h6",
-          "why": "Kicking the bishop lets White exchange on f6 and stay a pawn up."
+          "move": "Qh4",
+          "why": "It threatens f2, but 7.g3 defends and nothing has been won."
         }
       ],
-      "hint": "If White takes your queen, what check do you have?",
-      "objective": "Calculate to the end of a capture sequence and look for in-between checks there.",
+      "hint": "Your bishop is in front of your queen. Can it move with check?",
+      "objective": "Use an in-between check to cut a defender's line before capturing.",
       "tags": [
         "calculation",
         "zwischenzug",
-        "opening-traps"
+        "discovered-attack"
       ]
     },
     {
@@ -311,31 +313,31 @@
       "id": "15-11",
       "type": "calculation",
       "difficulty": 1,
-      "fen": "r1bqkbnr/1pp2ppp/p1p5/4N3/4P3/8/PPPP1PPP/RNBQK2R b KQkq - 0 5",
-      "question": "Black to move. White has just taken your e5-pawn with 5.Nxe5. Find the forcing move that wins it back.",
+      "fen": "rnbqkb1r/pp1p1ppp/4pn2/4N1B1/2Pp4/8/PP2PPPP/RN1QKB1R b KQkq - 1 5",
+      "question": "Black to move. After 1.d4 Nf6 2.c4 e6 3.Nf3 c5 4.Bg5 cxd4, White has jumped into the centre with 5.Ne5?. Find the forcing move that wins material.",
       "solution": [
-        "Qd4",
-        "Nf3",
-        "Qxe4+"
+        "Qa5+",
+        "Bd2",
+        "Qxe5"
       ],
-      "goal": "best",
-      "accept": [
-        "Qe7",
-        "Qg5"
-      ],
-      "explanation": "Forcing moves first: 5...Qd4! attacks the knight on e5 and the pawn on e4 at once. After 6.Nf3 Qxe4+ 7.Qe2 Qxe2+ material is level and Black has the bishop pair. 5...Qe7 and 5...Qg5 are double attacks too. A quiet developing move such as 5...Bd6 leaves Black simply a pawn down.",
+      "goal": "win",
+      "accept": [],
+      "explanation": "Forcing moves first, and queen checks are the most forcing of all. 5...Qa5+! checks the king along the a5-e1 diagonal (White's d-pawn has gone) and attacks the knight on e5 along the fifth rank, with the bishop on g5 behind it. White must answer the check, for example 6.Bd2 or 6.Nd2, and then 6...Qxe5 wins a whole piece. A developing move such as 5...Nc6 lets White off the hook.",
       "wrong": [
         {
-          "move": "Bd6",
-          "why": "Developing is nice, but you stay a pawn down; there was a double attack."
+          "move": "Nc6",
+          "why": "Natural development, but you miss the queen check that wins a piece."
+        },
+        {
+          "move": "Qc7",
+          "why": "It attacks the knight, but there is no check: 6.Nf3 and White is fine."
         }
       ],
-      "hint": "Which queen move attacks two things?",
-      "objective": "Scan queen moves for double attacks that regain material.",
+      "hint": "Which queen move gives check and attacks the knight at the same time?",
+      "objective": "Scan queen checks for double attacks that win material.",
       "tags": [
         "calculation",
-        "fork",
-        "repertoire-black"
+        "fork"
       ]
     }
   ]
