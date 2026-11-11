@@ -34,7 +34,7 @@
     {
       "id": "22-02",
       "type": "strategy",
-      "difficulty": 2,
+      "difficulty": 3,
       "fen": "r1bqr1k1/pp2bppp/2p2nn1/3p2B1/3P4/2NBPN2/PPQ2PPP/1R3RK1 w - - 10 12",
       "question": "White to move. Read the pawn structure and choose a plan move.",
       "solution": [
@@ -94,7 +94,7 @@
     {
       "id": "22-04",
       "type": "strategy",
-      "difficulty": 3,
+      "difficulty": 4,
       "fen": "r1b2rk1/pp1nqppp/2p1p3/8/2BP4/2R1PN2/PP3PPP/3Q1RK1 b - - 0 12",
       "question": "Black to move. Black's position is solid but cramped. Which piece is Black's worst, and which move frees it?",
       "solution": [
@@ -150,7 +150,7 @@
     {
       "id": "22-06",
       "type": "strategy",
-      "difficulty": 3,
+      "difficulty": 4,
       "fen": "rn1qr1k1/pp3pp1/4b2p/2pn4/1b1P4/2NQP1B1/PP2BPPP/R3K1NR w KQ - 0 12",
       "question": "White to move. Ask first: what does Black want to do next? Then find the move that stops it.",
       "solution": [
@@ -183,7 +183,7 @@
     {
       "id": "22-07",
       "type": "strategy",
-      "difficulty": 2,
+      "difficulty": 3,
       "fen": "r1bqr1k1/pp2bppp/2p2nn1/3p2B1/1P1P4/2NBPN2/P1Q2PPP/1R3RK1 b - - 0 12",
       "question": "Black to move. White has started the minority attack with b4. Choose a sensible plan move.",
       "solution": [
@@ -238,6 +238,66 @@
       "tags": [
         "open-file",
         "planning"
+      ]
+    },
+    {
+      "id": "22-09",
+      "type": "quiet",
+      "difficulty": 2,
+      "fen": "r4rk1/ppqn1ppp/2pb1n2/3p2B1/3P2b1/2PB1N2/PPQN1PPP/R4RK1 w - - 2 11",
+      "question": "White to move. The structure is symmetrical and nothing is hanging. Choose a useful quiet move.",
+      "solution": [
+        "h3"
+      ],
+      "goal": "best",
+      "accept": [
+        "Rfe1",
+        "Rae1"
+      ],
+      "explanation": "In a quiet, symmetrical position, small improvements decide. h3 asks the g4-bishop a question: it must take on f3 (giving White the bishop pair), or retreat, and the white king gets luft for later. Putting a rook on the half-open e-file with Rfe1 or Rae1 is an equally sensible plan. The Greek-gift sacrifice Bxh7+ fails here, because the knight on f6 simply recaptures on h7.",
+      "wrong": [
+        {
+          "move": "Bxh7+",
+          "why": "The f6-knight guards h7: after ...Nxh7 White has given a bishop for a pawn and has no attack."
+        }
+      ],
+      "hint": "Which black piece is slightly loose, and what small move questions it?",
+      "objective": "Find a quiet improving move when nothing forcing is available.",
+      "tags": [
+        "quiet-move",
+        "planning",
+        "attack"
+      ]
+    },
+    {
+      "id": "22-10",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r1bqr1k1/pp3pp1/2n2n1p/2bp4/3N4/2N1B1P1/PP2PPBP/2RQ1RK1 w - - 4 13",
+      "question": "White to move. Black has just played ...Bc5, attacking your d4-knight. Before you think about plans, check for tactics. Win material.",
+      "solution": [
+        "Nxc6",
+        "bxc6",
+        "Bxc5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Tactics come before strategy. The knight on d4 stands between your e3-bishop and the black bishop on c5. Nxc6! moves it with a threat (the queen on d8) and uncovers the attack on c5 at the same time. After ...bxc6 Bxc5 White has won a whole piece. Retreating the knight, or protecting it, wastes the chance.",
+      "wrong": [
+        {
+          "move": "Nb3",
+          "why": "Retreating gives up the discovered attack; Black's bishop simply goes back or trades, and material stays equal."
+        },
+        {
+          "move": "Nxd5",
+          "why": "After ...Nxd5 Bxd5 Bxd4 Black is fine; the wrong piece was captured."
+        }
+      ],
+      "hint": "What would the e3-bishop attack if the knight on d4 moved away?",
+      "objective": "Check for tactics before choosing a plan; spot a discovered attack.",
+      "tags": [
+        "discovered-attack",
+        "blunder-check"
       ]
     },
     {

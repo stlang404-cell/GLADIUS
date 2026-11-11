@@ -104,30 +104,30 @@
     },
     {
       "id": "28-04",
-      "type": "blunder-check",
+      "type": "opening",
       "difficulty": 2,
-      "fen": "rn1qkbnr/ppp2p1p/3p2p1/4N3/2B1P1b1/2N5/PPPP1PPP/R1BQK2R b KQkq - 0 5",
-      "question": "Black to move. From a student's game (illustrative): White has just played 5.Nxe5, leaving the queen on d1 'hanging'. The student took it. What should Black play instead?",
+      "fen": "r1bqkb1r/p1pp1ppp/2p2n2/4P3/8/8/PPP2PPP/RNBQKB1R b KQkq - 0 6",
+      "question": "Black to move. From a student's game in the Scotch, your repertoire as Black (illustrative): after 6.e5 the student played 6...Ng4?, hoping to win the e5-pawn later. What should Black play instead?",
       "solution": [
-        "dxe5"
+        "Qe7"
       ],
       "goal": "best",
       "accept": [
-        "Be6"
+        "Nd5"
       ],
-      "explanation": "This is Legal's mate pattern: after 5...Bxd1?? 6.Bxf7+ Ke7 7.Nd5# the queen was bait. 5...dxe5 6.Qxg4 leaves Black a pawn down, which is unpleasant but playable. The real mistake was earlier: 4...g6? did not attend to the pin on f3 and the weak f7-square. Journal category: opening.",
+      "explanation": "6...Qe7 is the main move: the queen attacks e5 and pins the pawn to the white king, so exf6 is now illegal. 6...Nd5, putting the knight on a central square, is also a standard and playable reply. The student's 6...Ng4? simply hangs the knight to 7.Qxg4, because the d1-queen sees g4. Journal category: opening (with a hanging-piece cause: no blunder-check).",
       "wrong": [
         {
-          "move": "Bxd1",
-          "why": "Takes the bait: 6.Bxf7+ Ke7 7.Nd5# is mate."
+          "move": "Ng4",
+          "why": "Hangs the knight: 7.Qxg4."
         }
       ],
-      "hint": "If you take the queen, which white pieces can reach f7 and d5?",
-      "objective": "Treat a 'free' queen as a question, and trace an opening disaster back to the earlier move that caused it.",
+      "hint": "Which black piece can attack e5 and pin it at the same time?",
+      "objective": "Know the key replies in your repertoire, and blunder-check knight moves to the edge of the board.",
       "tags": [
-        "opening-traps",
-        "blunder-check",
-        "mate-patterns"
+        "repertoire-black",
+        "pin",
+        "blunder-check"
       ]
     },
     {
@@ -231,7 +231,7 @@
         "Kg8",
         "Qh5"
       ],
-      "goal": "win",
+      "goal": "best",
       "accept": [],
       "explanation": "This is the Greek gift sacrifice. The checklist is all there: bishop aimed at h7, a knight that can reach g5 with check, the queen able to reach h5, and no black knight on f6 to defend. After 10.Bxh7+ Kxh7 11.Ng5+ Kg8 12.Qh5, mate on h7 is threatened and Black must give up material (12...Qxg5 13.Bxg5). If 11...Kg6, the attack continues with h4-h5 or Qg4. Journal category: missed-win.",
       "wrong": [
@@ -250,7 +250,8 @@
         "attack",
         "king-safety",
         "calculation"
-      ]
+      ],
+      "review_note": "Goal 'best' rather than 'win': at depth 16 the engine rates Bxh7+ about +3.6 to +3.9 and the slower Ng5 about +2.1 to +2.3 depending on the run, so the 'win' uniqueness margin of 1.50 is borderline; Bxh7+ is consistently the top move."
     },
     {
       "id": "28-09",
@@ -317,32 +318,35 @@
     },
     {
       "id": "28-11",
-      "type": "opening",
+      "type": "mate",
       "difficulty": 3,
-      "fen": "rn1qkb1r/ppp2ppp/5n2/4p3/2B1P3/5Q2/PPP2PPP/RNB1K2R w KQkq - 2 7",
-      "question": "White to move. From a student's game in the 3.d4 Philidor (illustrative): White played 7.Nc3 here. Black's f7-pawn is defended only by the king, and b7 is not defended at all. Find the most testing move.",
+      "fen": "4r1k1/pp1q1ppp/8/8/8/4Q3/P1r2PPP/4R1K1 w - - 0 28",
+      "question": "White to move. From a student's game (illustrative): White, a rook down, played 28.Qxa7?? and was mated by 28...Rxe1#. What should White have played? Mate in 2.",
       "solution": [
-        "Qb3"
+        "Qxe8+",
+        "Qxe8",
+        "Rxe8#"
       ],
-      "goal": "best",
+      "goal": "mate",
+      "mate_in": 2,
       "accept": [],
-      "explanation": "7.Qb3! attacks f7 (together with the bishop) and b7 at the same time; Black cannot cover both comfortably and usually has to give up a pawn. Development with 7.Nc3 is natural but lets Black finish developing in peace. In your journal, this is an 'opening' entry with a simple fix: after ...Bxf3 exchanges, check for queen double attacks on f7 and b7.",
+      "explanation": "Both kings have weak back ranks, so the first player to use the e-file wins. Black's rook on e8 is defended only by the queen. 28.Qxe8+! Qxe8 29.Rxe8# exploits that single defender. The student's notes said 'I was lost anyway, so I grabbed a pawn': a time-psychology cause behind a missed-mate result. Journal category: missed-mate.",
       "wrong": [
         {
-          "move": "Nc3",
-          "why": "Natural development, but Black gets time for ...Bc5 and ...O-O; the chance to win material is gone."
+          "move": "Qxa7",
+          "why": "Grabs a pawn and walks into 28...Rxe1#."
         },
         {
-          "move": "O-O",
-          "why": "Safe, but again Black is allowed to consolidate."
+          "move": "h3",
+          "why": "Makes a flight square, but 28...Rxe3 simply wins the queen."
         }
       ],
-      "hint": "Which queen move hits two undefended targets?",
-      "objective": "Look for double attacks on f7 and b7 in open games, and record repeated opening misses.",
+      "hint": "Count the defenders of e8.",
+      "objective": "Look for checks first, especially on an open file where both back ranks are weak.",
       "tags": [
-        "repertoire-white",
-        "opening-principles",
-        "fork"
+        "back-rank",
+        "overloading",
+        "mate-patterns"
       ]
     }
   ]

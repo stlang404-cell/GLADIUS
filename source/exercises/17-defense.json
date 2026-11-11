@@ -1,0 +1,345 @@
+{
+  "chapter": 17,
+  "title": "Defense and Resourcefulness",
+  "exercises": [
+    {
+      "id": "17-01",
+      "type": "defense",
+      "difficulty": 1,
+      "fen": "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 3 3",
+      "question": "Black to move. White's queen and bishop both aim at f7. What is the best response?",
+      "solution": [
+        "Nf6"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "White threatens Qxf7#. Nf6 blocks the queen's line to f7 and develops a piece at the same time, so it is both defence and progress. Moves that ignore the threat lose at once, and that includes counter-attacks: a threat against the queen is useless when the opponent can give mate.",
+      "wrong": [
+        {
+          "move": "Nd4",
+          "why": "Attacks the queen, but 4.Qxf7# comes first. A counter-threat must be bigger than the threat."
+        },
+        {
+          "move": "d6",
+          "why": "Natural developing move that ignores the threat: 4.Qxf7#."
+        }
+      ],
+      "hint": "Name White's threat before you look at your own ideas.",
+      "objective": "Spot a mate threat on f7 and meet it with a defending move that also develops.",
+      "tags": [
+        "defense",
+        "threats",
+        "opening-traps"
+      ]
+    },
+    {
+      "id": "17-02",
+      "type": "defense",
+      "difficulty": 1,
+      "fen": "3r2k1/pR3ppp/8/8/8/8/P4PPP/6K1 w - - 0 1",
+      "question": "White to move. The a7-pawn is hanging. Is it safe to take? Play the right move.",
+      "solution": [
+        "g3"
+      ],
+      "goal": "best",
+      "accept": [
+        "f3",
+        "Kf1",
+        "h3",
+        "h4",
+        "g4"
+      ],
+      "explanation": "Before grabbing, check your opponent's threats: Black threatens Rd1#, because White's king has no escape square behind its pawns. A quiet move such as g3 (or h3, f3, Kf1) removes the back-rank problem, and the a7-pawn will still be there next move. 1.Rxa7?? Rd1# is the classic back-rank disaster.",
+      "wrong": [
+        {
+          "move": "Rxa7",
+          "why": "1...Rd1# - the king is trapped on the back rank."
+        },
+        {
+          "move": "Rb8",
+          "why": "Offering a trade on a square that is not defended: 1...Rxb8 wins a whole rook."
+        }
+      ],
+      "hint": "What does Black's rook threaten?",
+      "objective": "Check the opponent's threat before taking material, and make luft against back-rank mate.",
+      "tags": [
+        "defense",
+        "back-rank",
+        "blunder-check"
+      ]
+    },
+    {
+      "id": "17-03",
+      "type": "defense",
+      "difficulty": 1,
+      "fen": "r1bq1rk1/ppp2ppp/2n2n2/3pp3/1b1P4/P3PN2/1PPQBPPP/RNB1K2R w KQ - 0 1",
+      "question": "White to move. Your opponent just played ...Bb4, attacking your queen. What is the best response?",
+      "solution": [
+        "axb4"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "Run the defensive menu in order and start with captures: can you take the attacker? Yes, the a3-pawn simply captures the bishop. After 1.axb4 Nxb4 White has won a bishop for a pawn. Moving the queen away is safe but gives Black's mistake back.",
+      "wrong": [
+        {
+          "move": "Qxb4",
+          "why": "Captures the attacker with the wrong piece: 1...Nxb4 and the queen is gone."
+        },
+        {
+          "move": "Nc3",
+          "why": "Blocks the attack, but leaves the bishop alive and lets Black play ...Ne4 with pressure; you missed a free piece."
+        }
+      ],
+      "hint": "Captures first: what can take the attacker?",
+      "objective": "When a piece is attacked, check first whether you can capture the attacker safely.",
+      "tags": [
+        "defense",
+        "hanging-pieces",
+        "counting"
+      ]
+    },
+    {
+      "id": "17-04",
+      "type": "defense",
+      "difficulty": 2,
+      "fen": "r1bqk2r/pppp1ppp/2n2n2/2b1P3/2Bp4/2P2N2/PP3PPP/RNBQK2R b KQkq - 0 6",
+      "question": "Black to move. White's e-pawn attacks your knight. What is the best response?",
+      "solution": [
+        "d5"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "Instead of retreating, Black counter-attacks the bishop on c4 and claims the centre. After 7.Bb5 (or 7.exf6 dxc4) Black's knight can jump to e4 with an active game, and if 7.exf6 dxc4 Black has won back the material with open lines. A passive retreat like ...Ng8 leaves Black behind in development.",
+      "wrong": [
+        {
+          "move": "Ng8",
+          "why": "Safe but passive: White keeps a big centre and a lead in development."
+        },
+        {
+          "move": "Ng4",
+          "why": "Goes for f2 but 7.cxd4 leaves the knight offside and the bishop on c5 attacked."
+        }
+      ],
+      "hint": "Which white piece can you attack in return?",
+      "objective": "Answer an attack on a piece with a counter-attack when one is available.",
+      "tags": [
+        "defense",
+        "threats",
+        "opening-principles"
+      ]
+    },
+    {
+      "id": "17-05",
+      "type": "defense",
+      "difficulty": 2,
+      "fen": "4r1k1/pp2rp1p/8/8/8/1P6/q2Q1PPP/6K1 w - - 0 1",
+      "question": "White to move. You are two rooks down and Black threatens to finish you off. Which move saves the game?",
+      "solution": [
+        "Qg5+",
+        "Kh8",
+        "Qf6+"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "The black king has no g-pawn and its own rooks block e7 and e8. That makes perpetual check: 1.Qg5+ Kh8 2.Qf6+ Kg8 3.Qg5+, and if 1...Kf8 2.Qh6+ Kg8 3.Qg5+. Black cannot interpose and cannot escape, so it is a draw by repetition. Anything slower loses to Black's attack on f2 and the back rank.",
+      "wrong": [
+        {
+          "move": "h3",
+          "why": "Making luft is too slow when you are two rooks down: 1...Qxd2 and Black wins easily."
+        },
+        {
+          "move": "Qd8",
+          "why": "1...Rxd8 - the queen is lost and there is no check to follow."
+        }
+      ],
+      "hint": "Checks first. Where can the black king go?",
+      "objective": "Use perpetual check to save a lost position when the enemy king is exposed.",
+      "tags": [
+        "perpetual",
+        "defense",
+        "practical"
+      ]
+    },
+    {
+      "id": "17-06",
+      "type": "defense",
+      "difficulty": 2,
+      "fen": "2r4k/5Q1p/7P/8/8/8/PP6/1K6 b - - 0 1",
+      "question": "Black to move. White threatens Qg7#. Which move saves the game?",
+      "solution": [
+        "Rc1+"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "Look at the black king: it has no legal move (f7-queen covers g8 and g7) and the h7-pawn is blocked. If Black can get rid of the rook, it is stalemate. 1...Rc1+! forces 2.Kxc1, because a1 and c2 are also covered by the rook, and Black has no legal move: stalemate. Every normal defence loses to mate on g7 or f8.",
+      "wrong": [
+        {
+          "move": "Rg8",
+          "why": "2.Qf6+ Rg7 3.Qxg7# - the rook only delays the mate."
+        },
+        {
+          "move": "Rc7",
+          "why": "2.Qf8# - the back rank is unguarded."
+        }
+      ],
+      "hint": "Your king cannot move. Can you make your rook disappear?",
+      "objective": "Spot a stalemate resource when your king has no legal moves.",
+      "tags": [
+        "stalemate",
+        "defense",
+        "practical"
+      ]
+    },
+    {
+      "id": "17-07",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "3r4/5pk1/6p1/7p/7P/4P1P1/4KP2/3R4 b - - 0 1",
+      "question": "Black to move. You are a pawn down. White offers a rook trade on the d-file. What is the best move?",
+      "solution": [
+        "Rb8"
+      ],
+      "goal": "best",
+      "accept": [
+        "Rc8",
+        "Ra8",
+        "Re8"
+      ],
+      "explanation": "Rook endings with all pawns on one side are often drawn even a pawn down, because the defending rook stays active. The pawn ending is different: after 1...Rxd1? 2.Kxd1 the white king and the extra pawn win by force. So keep the rooks: move your rook off the d-file to an open file (b8, c8 or a8) and stay active.",
+      "wrong": [
+        {
+          "move": "Rxd1",
+          "why": "2.Kxd1 gives White a winning pawn ending; trading pieces helps the side with more pawns."
+        }
+      ],
+      "hint": "Which ending is easier to defend: rook ending or pawn ending?",
+      "objective": "Avoid trading into a lost pawn ending when you are behind; keep the pieces that give you counterplay.",
+      "tags": [
+        "defense",
+        "rook-endgame",
+        "king-pawn-endgame"
+      ]
+    },
+    {
+      "id": "17-08",
+      "type": "defense",
+      "difficulty": 4,
+      "fen": "r1b2rk1/ppp2ppp/2nb4/3p4/3P3q/1BP5/PP1NQPPP/R1B2RK1 w - - 0 1",
+      "question": "White to move. Black threatens Qxh2#. Several moves defend. Find the strongest.",
+      "solution": [
+        "g3"
+      ],
+      "goal": "only",
+      "accept": [],
+      "explanation": "g3 blocks the bishop's diagonal to h2 and attacks the queen at the same time. Black cannot take on g3: 1...Bxg3? 2.hxg3 (or fxg3) and Black has simply lost a bishop. After 1...Qg5 White continues 2.Ne4, hitting the queen and the bishop again, so the defence gains time. h3 and Nf3 also stop the mate, but they defend without gaining anything.",
+      "wrong": [
+        {
+          "move": "h3",
+          "why": "Stops the mate but gains nothing: 1...Re8 and Black keeps the initiative."
+        },
+        {
+          "move": "Qh5",
+          "why": "1...Bxh2+! uncovers the black queen with check, and after 2.Kh1 Qxh5 Black has won the queen."
+        }
+      ],
+      "hint": "Defend with a move that also attacks.",
+      "objective": "Prefer a defence that gains a tempo over a purely passive one.",
+      "tags": [
+        "defense",
+        "threats",
+        "king-safety"
+      ]
+    },
+    {
+      "id": "17-09",
+      "type": "defense",
+      "difficulty": 4,
+      "fen": "8/8/8/3k4/7P/3BK3/8/8 b - - 0 1",
+      "question": "Black to move. White has a bishop and an h-pawn. Find the only move that draws.",
+      "solution": [
+        "Ke6"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "White's bishop is light-squared, but the h-pawn queens on h8, a dark square. If the black king reaches h8 (or g8/g7), the bishop can never drive it out: a fortress. 1...Ke6! heads for f7 and g8 in time, for example 2.h5 Kf7 3.h6 Kg8. Any move that does not run to the corner at once is too slow, because the pawn and bishop cut the king off.",
+      "wrong": [
+        {
+          "move": "Ke5",
+          "why": "Looks active, but after 2.h5 Kf6 3.h6 Kf7 4.Bh7! the bishop keeps the king out of g8 and the pawn queens."
+        },
+        {
+          "move": "Kc5",
+          "why": "Goes the wrong way; the h-pawn simply runs."
+        }
+      ],
+      "hint": "Which corner square can the bishop never attack?",
+      "objective": "Know the wrong-coloured bishop fortress and run your king to the corner in time.",
+      "tags": [
+        "defense",
+        "minor-piece-endgame",
+        "endgame-technique"
+      ]
+    },
+    {
+      "id": "17-10",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "6k1/p2RRppp/8/p1q5/8/1P4PP/1B5K/8 b - - 0 1",
+      "question": "Black to move. White's rooks on the seventh rank are about to win your f7-pawn and more. Which move saves the game?",
+      "solution": [
+        "Qf2+"
+      ],
+      "goal": "draw",
+      "accept": [
+        "Qc2+"
+      ],
+      "explanation": "Black is down material and White's rooks are rampaging, so look for checks. 1...Qf2+ 2.Kh1 Qf1+ 3.Kh2 Qf2+ repeats: the white king cannot escape and no white piece can block on g1 or g2. Qc2+ with checks along the second and first ranks also draws. Making luft with ...h6 or ...h5 is natural but too slow.",
+      "wrong": [
+        {
+          "move": "h6",
+          "why": "Luft is not enough: 2.Re8+ Kh7 and White's rooks and bishop win."
+        },
+        {
+          "move": "Kf8",
+          "why": "2.Rxf7+ Ke8 3.Rde7+ and White wins the queen."
+        }
+      ],
+      "hint": "The white king has very few squares. Checks!",
+      "objective": "Look for perpetual check with your queen when you are materially lost.",
+      "tags": [
+        "perpetual",
+        "defense"
+      ]
+    },
+    {
+      "id": "17-11",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "r1bq1rk1/ppp2ppp/1bn2n2/3p4/2B1N3/2PP1N2/PP3PPP/R1BQ1RK1 w - - 0 1",
+      "question": "White to move. Black's ...d5 attacks both your bishop and your knight. Find the only good move.",
+      "solution": [
+        "Nxf6+"
+      ],
+      "goal": "only",
+      "accept": [],
+      "explanation": "When two pieces are attacked, use one of them as a desperado. 1.Nxf6+ captures with check, so Black must recapture, and then the bishop is free to deal with d5: 1...Qxf6 2.Bxd5 and White has won a pawn. Saving one piece the slow way (Bb3 or Ng3) loses the other one.",
+      "wrong": [
+        {
+          "move": "Bxd5",
+          "why": "1...Qxd5 and the e4-knight is still attacked; at best White trades it off and ends up a bishop for a pawn down."
+        },
+        {
+          "move": "Ng3",
+          "why": "Saves the knight but 1...dxc4 wins the bishop."
+        }
+      ],
+      "hint": "Can one attacked piece take something with check?",
+      "objective": "Use a desperado capture with check when two of your pieces are attacked.",
+      "tags": [
+        "desperado",
+        "defense",
+        "zwischenzug"
+      ]
+    }
+  ]
+}

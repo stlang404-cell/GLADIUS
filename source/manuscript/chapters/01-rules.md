@@ -254,7 +254,7 @@ Notice what made castling possible: the knight left g1 and the bishop left f1. D
 
 You can do all of these with a physical set or any free analysis board. To load a position, use the "Set up position" or "Load FEN" option and paste the FEN.
 
-1. **Castling checklist.** Load `1r1q1rk1/p1p2ppp/2n1pn2/3p4/2bP1B2/2N1PN2/P1PQ1PPP/R3K2R w KQ - 0 10`. Try to castle kingside in the app: it should refuse. Castle queenside: it should accept. Now move the black bishop from c4 to b5 (in the board editor) and check kingside castling again. Explain to yourself why it is now legal.
+1. **Castling checklist.** Load `1r1q1rk1/p1p2ppp/2n1pn2/3p4/2bP1B2/2N1PN2/P1PQ1PPP/R3K2R w KQ - 0 10`. Try to castle kingside in the app: it should refuse. Castle queenside: it should accept. Now move the black bishop from c4 to d7 (in the board editor) and check kingside castling again. Explain to yourself why it is now legal.
 2. **En passant both ways.** From the starting position, play `1.e4 Nf6 2.e5 d5` and capture en passant. Then play `1.d4 e5 2.d5 c5` and check that `3.dxc6` is possible. Finally, in the same line, play a waiting move first and confirm the app no longer allows the capture.
 3. **Stalemate traps.** Load `7k/8/5K2/8/8/8/8/6Q1 w - - 0 1`. Find the mate in one, and also find the queen move that stalemates. Then load `8/8/8/8/8/5k2/5p1K/8 b - - 0 60` and play `f1=R`, then win the rook ending against a friend or an engine.
 4. **Perpetual check.** Set up a position where you have only a queen and your opponent has queen and rook, with your opponent's king a little exposed. Try to give checks forever. Notice how often the king can hide, and which pawn moves would have given it shelter.

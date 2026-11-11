@@ -17,13 +17,13 @@ This book is written for an adult or teenage player who:
 * wants a structured plan rather than random videos and puzzles;
 * is willing to do some real work: solving positions with a pencil, playing slower games, and looking honestly at their own mistakes.
 
-You do not need a coach, a club, or a paid subscription. A physical chess set or any free chess app is enough. If you are already above 1000, you can still use the book: skim the early chapters, take the stage tests, and start where the tests show gaps.
+You need no coach, club or subscription: a chess set or any free app is enough. If you are already above 1000, take the stage tests and start where they show gaps.
 
 ## The core loop: LEARN, SOLVE, PLAY, ANALYZE, FIX, REPEAT
 
 Every chapter plugs into the same six-step loop. The loop matters more than any single chapter, because reading alone does not change how you play. Here is what each step means in practice.
 
-**LEARN.** Read the chapter with a board in front of you. Set up every diagram and play through every move sequence. When the text says "First I check...", stop and do the check yourself before reading on. Plan on 45 to 90 minutes per chapter, split over two or three sittings if you like. A chapter you read on your phone while waiting for a bus has not been learned.
+**LEARN.** Read the chapter with a board in front of you. Set up every diagram and play through every move sequence. When the text says "First I check...", stop and do the check yourself before reading on. Plan on 45 to 90 minutes per chapter, in two or three sittings if you like.
 
 **SOLVE.** Each chapter ends with 11 exercises. Solve them as described below: honestly, without moving pieces, writing your answer down before you look. The exercises are where the chapter's idea moves from "I understood it" to "I can find it".
 
@@ -33,7 +33,7 @@ Every chapter plugs into the same six-step loop. The loop matters more than any 
 
 **FIX.** Turn each serious mistake into a one-line entry in a mistake journal: the date, the position (a FEN or a photo is fine), what you played, what was better, and a category such as *hanging piece*, *missed tactic*, *king safety* or *endgame*. After ten games, count the categories. The biggest category tells you which chapter to go back to. Chapter 28 shows the full method.
 
-**REPEAT.** Go round the loop again with the next chapter, and keep revisiting the mistakes you have already logged. Most improvement at this level comes from fixing the same two or three habits many times over, not from learning something new every day.
+**REPEAT.** Go round the loop again with the next chapter, and keep revisiting the mistakes you have logged. Most improvement at this level comes from fixing the same two or three habits many times over.
 
 :::key The loop in one sentence
 Learn an idea, drill it until you can find it, use it in real games, look honestly at what happened, and fix the pattern that cost you points.
@@ -59,7 +59,7 @@ The book is divided into five stages. The rating ranges are milestones that desc
 
 **Stage 4 (1000–1200): positional judgment.** Here you learn what to do when there is no tactic: improving your worst piece, understanding pawn structures, attacking a weakened king, making a plan, and handling the most common rook endgames.
 
-**Stage 5 (1200–1500): calculation, planning and endgame technique.** Harder tactics, longer calculation, middlegame strategy, technical endgames, practical decision-making under the clock, and a lifelong method for analyzing your own games.
+**Stage 5 (1200–1500): calculation, planning and endgame technique.** Harder tactics, middlegame strategy, technical endgames, practical play, and a lifelong method for analyzing your games.
 
 Each stage ends with a test of 15 positions. Use it as a checkpoint: it shows whether you can move on or which chapters to revisit.
 
@@ -95,7 +95,7 @@ Open a notebook or a notes file and give it two sections: "Exercises to review" 
 
 ## Using a board or a free app
 
-You can use this book with nothing more than a chess set. That is the best way to read the chapters, because moving real pieces with your hands helps you keep track of the position. A screen is equally good for the exercises, and it is the easiest way to play out positions afterwards.
+A physical set is the best way to read the chapters, because moving real pieces helps you keep track of the position. A screen works equally well for the exercises and for playing out positions.
 
 Every diagram and exercise in the book comes with a **FEN**, a single line of text that describes a position exactly. Chapter 2 explains how to read one. To load a FEN into a free app:
 
@@ -103,14 +103,14 @@ Every diagram and exercise in the book comes with a **FEN**, a single line of te
 2. Look for an option called "Set up position", "Load FEN", "Board editor" or similar.
 3. Paste or type the FEN and confirm. Check that the correct side is to move.
 
-Once a position is on the screen, you can do three useful things with it:
+Once a position is on the screen, you can:
 
 * **Solve first, then check.** Switch the engine off, solve the position, then switch the engine on to confirm your answer.
 * **Play it out against a friend.** Set up the position on a real board, and take the side that should be winning. Your friend defends. If you cannot win a "winning" position against a human, you have found something to practise.
-* **Play it out against an engine.** Many apps let you play from any position against a computer at a chosen strength. This is especially useful for the endgame chapters, where knowing the right idea is not enough until you can carry it out.
+* **Play it out against an engine.** Many apps let you play from any position against a computer at a chosen strength, which is especially useful for endgames.
 
 :::mistake Letting the engine think for you
-The engine is a tool for checking your thinking, not a substitute for it. If you open the engine before you have decided on your own move, you will feel that you understand the position and remember very little. Decide first, then check.
+If you open the engine before deciding on your own move, you will feel that you understand the position and remember very little. Decide first, then check.
 :::
 
 ## Play slow games
@@ -121,17 +121,17 @@ You do not need to play blitz or bullet at all to use this book. The book's rout
 * **Also excellent:** correspondence or "daily" chess, where you have a day or more per move. It is ideal for practising the full thinking routine without time pressure.
 * **Over the board:** if you play at a club, longer time limits are usually standard, which suits this book perfectly.
 
-Timed play is optional throughout. The rules about clocks are explained briefly in Chapter 1, and practical time management is covered in Chapter 27. Until then, give yourself enough time to think.
+Timed play is optional throughout. Clock rules are covered briefly in Chapter 1 and time management in Chapter 27.
 
 :::coach Fewer, better games
-Coaching judgment: three slow games that you analyze properly are worth more than thirty fast games that you never look at again. If you love fast chess, play it for fun, but keep a separate slow-game rating that you use to measure progress.
+Coaching judgment: three slow games that you analyze properly are worth more than thirty fast games you never look at again.
 :::
 
 ## Companion products
 
 The book is complete on its own. Three optional companions use the same positions and the same methods:
 
-* **The Cheat Sheets.** One printable page per chapter with the chapter's decision procedure, the same steps as the `cheat` box at the end of each chapter. Keep the current one next to your board while you play slow games, until the steps become automatic.
+* **The Cheat Sheets.** One printable page per chapter with the chapter's decision procedure, the same steps as the summary box at the end of each chapter. Keep the current one next to your board while you play slow games, until the steps become automatic.
 * **The 90-Day Accelerator workbook.** A day-by-day schedule that tells you which chapter to read, which exercises to solve, which games to play, and when to review your misses. Use it if you prefer to follow a plan rather than set your own pace.
 * **The Interactive Trainer.** The book's exercises in an app that lets you play the moves on screen, checks your answer, shows the hint and explanation, and schedules your review dates for you.
 
@@ -159,7 +159,7 @@ Charness, Tuffiash, Krampe, Reingold and Vasyukova (2005), "The role of delibera
 Chase and Simon (1973), "Perception in chess," *Cognitive Psychology*. Stronger players reconstructed briefly shown game positions far better than weaker players, but the advantage largely disappeared with randomly placed pieces. Expertise depends on recognizing familiar groups of pieces, often called **chunks**. This is why the book repeats key patterns many times in realistic positions.
 :::
 
-Everything else in this book, including the rating milestones, the 80% guideline and the order of the chapters, is coaching judgment. It is built on what usually works for improving players, but treat it as advice, not law. If something clearly does not work for you, adjust it.
+Everything else in this book, including the rating milestones, the 80% guideline and the order of the chapters, is coaching judgment: what usually works for improving players. Treat it as advice, not law, and adjust what clearly does not work for you.
 
 ## A quick word on notation
 

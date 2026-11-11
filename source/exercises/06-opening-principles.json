@@ -8,18 +8,29 @@
       "difficulty": 1,
       "fen": "rnbqkbnr/ppppp2p/5p2/6p1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3",
       "question": "White to move. Black opened with 1...f6 and 2...g5. Punish it at once.",
-      "solution": ["Qh5#"],
+      "solution": [
+        "Qh5#"
+      ],
       "goal": "mate",
       "mate_in": 1,
       "accept": [],
       "explanation": "Black's two pawn moves opened the diagonal h5-e8 and took away every way to block it. Qh5 is check, f7 and g6 cannot be filled by a Black piece, and the king has no flight square. This is Fool's Mate with colours reversed, and it is the clearest lesson in why the f- and g-pawns should usually stay at home early.",
       "wrong": [
-        {"move": "Bxg5", "why": "Wins a pawn, but you had checkmate in one move."},
-        {"move": "Nc3", "why": "A good developing move in general, but forcing moves come first and Qh5 ends the game."}
+        {
+          "move": "Bxg5",
+          "why": "Wins a pawn, but you had checkmate in one move."
+        },
+        {
+          "move": "Nc3",
+          "why": "A good developing move in general, but forcing moves come first and Qh5 ends the game."
+        }
       ],
       "hint": "Look along the diagonal from h5 to e8.",
       "objective": "Recognize the Fool's Mate pattern when the f- and g-pawns have moved.",
-      "tags": ["opening-traps", "mate-patterns"]
+      "tags": [
+        "opening-traps",
+        "mate-patterns"
+      ]
     },
     {
       "id": "06-02",
@@ -27,17 +38,32 @@
       "difficulty": 1,
       "fen": "r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3",
       "question": "Black to move. White's queen and bishop both aim at f7. Stop Scholar's Mate.",
-      "solution": ["g6"],
+      "solution": [
+        "g6"
+      ],
       "goal": "best",
-      "accept": ["Qe7", "Qf6"],
+      "accept": [
+        "Qe7",
+        "Qf6"
+      ],
       "explanation": "White threatens Qxf7#, and the queen also attacks e5. 3...g6 blocks the queen's attack on f7 and gains time by hitting the queen; after 4.Qf3 Nf6 Black develops with a good game. 3...Qe7 also defends f7 and e5. The move to avoid is the natural-looking 3...Nf6??, which develops but does nothing about f7.",
       "wrong": [
-        {"move": "Nf6", "why": "Attacks the queen but ignores the threat: 4.Qxf7# is checkmate."},
-        {"move": "d6", "why": "Defends e5 but not f7: 4.Qxf7# is checkmate."}
+        {
+          "move": "Nf6",
+          "why": "Attacks the queen but ignores the threat: 4.Qxf7# is checkmate."
+        },
+        {
+          "move": "d6",
+          "why": "Defends e5 but not f7: 4.Qxf7# is checkmate."
+        }
       ],
       "hint": "Ask what the queen threatens before you develop.",
       "objective": "Defend f7 correctly against an early queen and bishop battery.",
-      "tags": ["opening-traps", "threats", "defense"]
+      "tags": [
+        "opening-traps",
+        "threats",
+        "defense"
+      ]
     },
     {
       "id": "06-03",
@@ -45,17 +71,30 @@
       "difficulty": 2,
       "fen": "rnbqkbnr/pppp2pp/8/4p3/4P3/8/PPPP1PPP/RNBQKB1R w KQkq - 0 4",
       "question": "White to move. After 1.e4 e5 2.Nf3 f6? 3.Nxe5! Black took the knight with 3...fxe5. Punish the open king.",
-      "solution": ["Qh5+", "Ke7", "Qxe5+"],
+      "solution": [
+        "Qh5+",
+        "Ke7",
+        "Qxe5+"
+      ],
       "goal": "win",
       "accept": [],
       "explanation": "With the f-pawn gone, h5-e8 is wide open. 4.Qh5+ forces 4...Ke7 (4...g6 5.Qxe5+ forks king and rook on h8), and 5.Qxe5+ wins back the piece with a pawn and a king hunt still to come. Black's king is stuck in the centre with no pieces developed.",
       "wrong": [
-        {"move": "d4", "why": "Developing quietly lets Black keep the extra knight; the open diagonal needed to be used now."},
-        {"move": "Bc4", "why": "Aims at the king but gives Black time to play ...Nc6 and ...Nf6; you stay a piece down."}
+        {
+          "move": "d4",
+          "why": "Developing quietly lets Black keep the extra knight; the open diagonal needed to be used now."
+        },
+        {
+          "move": "Bc4",
+          "why": "Aims at the king but gives Black time to play ...Nc6 and ...Nf6; you stay a piece down."
+        }
       ],
       "hint": "Which checks do you have?",
       "objective": "Punish an early f-pawn move with a queen check on the opened diagonal.",
-      "tags": ["opening-traps", "king-safety"]
+      "tags": [
+        "opening-traps",
+        "king-safety"
+      ]
     },
     {
       "id": "06-04",
@@ -63,17 +102,28 @@
       "difficulty": 4,
       "fen": "r1bqkb1r/pppp1p1p/2n2np1/4p3/2B1P3/1Q6/PPPP1PPP/RNB1K1NR b KQkq - 3 5",
       "question": "Black to move. White's queen has moved three times (Qh5, Qf3, Qb3) and now hits f7 again. Find the developing move that attacks the queen and creates a threat of its own.",
-      "solution": ["Nd4"],
+      "solution": [
+        "Nd4"
+      ],
       "goal": "best",
       "accept": [],
-      "explanation": "5...Nd4! develops with gain of time: it attacks the queen on b3 and threatens ...Nxc2+, forking king and rook. The threat on f7 is only Qxf7+ Ke7, which does not mate, so Black can afford to counter-attack; after 6.Qc3 or 6.Qd1 White has wasted even more time, and after 6.Bxf7+ Ke7 the bishop is lost. Punishing an early queen means developing with threats against it.",
+      "explanation": "5...Nd4! develops with gain of time: it attacks the queen on b3 and threatens ...Nxc2+, forking king and rook. White has no good answer: 6.Qg3 allows 6...Nxc2+, 6.Qc3 runs into 6...Nxe4 hitting the queen again, and 6.Bxf7+ Ke7 leaves the bishop stranded. Punishing an early queen means developing with threats against it.",
       "wrong": [
-        {"move": "Qe7", "why": "Defends f7 and is playable, but it is passive and lets White's queen escape without further loss of time."},
-        {"move": "Bc5", "why": "Develops, but after Bxf7+ and the queen's retreat White has won a pawn and Black's king is exposed."}
+        {
+          "move": "Qe7",
+          "why": "Defends f7 and is playable, but it is passive and lets White's queen escape without further loss of time."
+        },
+        {
+          "move": "Bc5",
+          "why": "Natural development, but it misses the chance to hit the queen with tempo; White gets time to regroup with Ne2 and d3."
+        }
       ],
       "hint": "Can you develop a piece and attack the queen at the same time?",
       "objective": "Punish an early queen sortie by developing with gain of tempo.",
-      "tags": ["opening-principles", "opening-traps"]
+      "tags": [
+        "opening-principles",
+        "opening-traps"
+      ]
     },
     {
       "id": "06-05",
@@ -81,17 +131,30 @@
       "difficulty": 3,
       "fen": "rn1qkbnr/ppp2p1p/3p2p1/4N3/2B1P1b1/2N5/PPPP1PPP/R1BQK2R b KQkq - 0 5",
       "question": "Black to move. White has just played 5.Nxe5!, leaving the queen on d1 en prise. Do you take it?",
-      "solution": ["dxe5"],
+      "solution": [
+        "dxe5"
+      ],
       "goal": "best",
-      "accept": ["Be6"],
+      "accept": [
+        "Be6"
+      ],
       "explanation": "No. 5...Bxd1?? runs into Légal's Mate: 6.Bxf7+ Ke7 7.Nd5#. Black has to accept the loss of a pawn with 5...dxe5 6.Qxg4 and play on a pawn down; 5...Be6 is about as good. When an opponent offers you the queen, the first question is what their pieces can do to your king after you take.",
       "wrong": [
-        {"move": "Bxd1", "why": "6.Bxf7+ Ke7 7.Nd5# — Légal's Mate."},
-        {"move": "Nh6", "why": "Defends f7 but leaves the bishop on g4 and the pawn on f7 under fire; White wins a piece with Nxg4."}
+        {
+          "move": "Bxd1",
+          "why": "6.Bxf7+ Ke7 7.Nd5# — Légal's Mate."
+        },
+        {
+          "move": "Nh6",
+          "why": "Defends f7 but leaves the bishop on g4 and the pawn on f7 under fire; White wins a piece with Nxg4."
+        }
       ],
       "hint": "After ...Bxd1, list every check White has.",
       "objective": "Refuse a poisoned queen when your king is exposed (Légal's pattern).",
-      "tags": ["opening-traps", "blunder-check"]
+      "tags": [
+        "opening-traps",
+        "blunder-check"
+      ]
     },
     {
       "id": "06-06",
@@ -99,18 +162,31 @@
       "difficulty": 2,
       "fen": "rn1qkbnr/ppp2p1p/3p2p1/4N3/2B1P3/2N5/PPPP1PPP/R1BbK2R w KQkq - 0 6",
       "question": "White to move. Black has just grabbed your queen with 5...Bxd1. Show why that was a mistake.",
-      "solution": ["Bxf7+", "Ke7", "Nd5#"],
+      "solution": [
+        "Bxf7+",
+        "Ke7",
+        "Nd5#"
+      ],
       "goal": "mate",
       "mate_in": 2,
       "accept": [],
       "explanation": "This is Légal's Mate. 6.Bxf7+ forces 6...Ke7 (the only legal move), and 7.Nd5# finishes: the d5-knight gives check and covers f6, the e5-knight covers d7 and guards the bishop, and the bishop takes away e6 and e8. Three minor pieces against a king that has not moved its defenders out of the way are enough.",
       "wrong": [
-        {"move": "Kxd1", "why": "Recapturing leaves you a queen for a bishop down; you had mate in two."},
-        {"move": "Nxf7", "why": "Forks queen and rook but there is no queen left there to fork; Bxf7+ first leads to mate."}
+        {
+          "move": "Kxd1",
+          "why": "Recapturing leaves you a queen for a bishop down; you had mate in two."
+        },
+        {
+          "move": "Nxf7",
+          "why": "Forks queen and rook but there is no queen left there to fork; Bxf7+ first leads to mate."
+        }
       ],
       "hint": "Check first: which piece can give check with a capture?",
       "objective": "Execute Légal's Mate.",
-      "tags": ["opening-traps", "mate-patterns"]
+      "tags": [
+        "opening-traps",
+        "mate-patterns"
+      ]
     },
     {
       "id": "06-07",
@@ -118,17 +194,28 @@
       "difficulty": 2,
       "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p1N1/2B1P3/8/PPPP1PPP/RNBQK2R b KQkq - 5 4",
       "question": "Black to move. White's knight and bishop both attack f7 (the Two Knights with 4.Ng5). What is Black's soundest reply?",
-      "solution": ["d5"],
+      "solution": [
+        "d5"
+      ],
       "goal": "best",
       "accept": [],
       "explanation": "White threatens Nxf7, forking queen and rook. 4...d5! blocks the bishop's line to f7 and hits e4, which is why it is the main move. After 5.exd5 Black should play 5...Na5 and not 5...Nxd5?, which allows the Fried Liver attack 6.Nxf7. This is one reason the book's repertoire chooses 3...Bc5 instead of 3...Nf6 (see Chapter 13).",
       "wrong": [
-        {"move": "Nxe4", "why": "Counter-attacks, but 5.Bxf7+ Ke7 leaves Black's king stuck in the centre."},
-        {"move": "Qe7", "why": "Defends f7 but blocks the bishop on f8 and allows Bxf7+ anyway; Black's position becomes passive and loose."}
+        {
+          "move": "Nxe4",
+          "why": "Counter-attacks, but 5.Bxf7+ Ke7 leaves Black's king stuck in the centre."
+        },
+        {
+          "move": "Qe7",
+          "why": "Defends f7 but blocks the bishop on f8 and allows Bxf7+ anyway; Black's position becomes passive and loose."
+        }
       ],
       "hint": "Can you block the bishop's diagonal instead of defending f7 directly?",
       "objective": "Meet a double attack on f7 by blocking the bishop's diagonal.",
-      "tags": ["opening-traps", "threats"]
+      "tags": [
+        "opening-traps",
+        "threats"
+      ]
     },
     {
       "id": "06-08",
@@ -136,17 +223,30 @@
       "difficulty": 2,
       "fen": "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 3 3",
       "question": "Black to move. White threatens Qxf7#. Find the move that defends and develops.",
-      "solution": ["Nf6"],
+      "solution": [
+        "Nf6"
+      ],
       "goal": "best",
-      "accept": ["Qf6"],
+      "accept": [
+        "Qf6"
+      ],
       "explanation": "Here the queen is on f3, so 3...Nf6 is exactly right: the knight blocks the f-file and stands on its best square. Against Qh5 the same move would lose to Qxf7#, so always check where the queen's line runs before choosing the defence. 3...Qf6 also holds but takes the knight's best square.",
       "wrong": [
-        {"move": "Bc5", "why": "Develops toward f2 but ignores f7: 4.Qxf7# is mate."},
-        {"move": "Nd4", "why": "Attacks the queen but does not stop it: 4.Qxf7# is mate."}
+        {
+          "move": "Bc5",
+          "why": "Develops toward f2 but ignores f7: 4.Qxf7# is mate."
+        },
+        {
+          "move": "Nd4",
+          "why": "Attacks the queen but does not stop it: 4.Qxf7# is mate."
+        }
       ],
       "hint": "The queen's line to f7 runs along the f-file. Put a piece in the way.",
       "objective": "Choose the right defence of f7 depending on where the queen stands.",
-      "tags": ["opening-traps", "defense"]
+      "tags": [
+        "opening-traps",
+        "defense"
+      ]
     },
     {
       "id": "06-09",
@@ -154,17 +254,30 @@
       "difficulty": 3,
       "fen": "rnbqkb1r/pppp1ppp/5n2/4N3/8/8/PPPPQPPP/RNB1KB1R w KQkq - 2 5",
       "question": "White to move. In the Petrov, Black copied White with 3...Nxe4?! and after 4.Qe2 retreated with 4...Nf6??. Win material.",
-      "solution": ["Nc6+", "Qe7", "Nxe7"],
+      "solution": [
+        "Nc6+",
+        "Qe7",
+        "Nxe7"
+      ],
       "goal": "win",
       "accept": [],
       "explanation": "The queen on e2 and the king on e8 share the open e-file, with only White's own knight in between. Moving the knight gives a discovered check, and from c6 it also attacks the queen on d8. Black must deal with the check, and White takes the queen next move. Copying moves in the opening does not work when the position is no longer symmetrical.",
       "wrong": [
-        {"move": "Ng6+", "why": "Also a discovered check and wins the rook, but Nc6+ wins the queen."},
-        {"move": "Qe3", "why": "Defends the knight but misses the discovered check that wins the queen."}
+        {
+          "move": "Ng6+",
+          "why": "Also a discovered check and wins the rook, but Nc6+ wins the queen."
+        },
+        {
+          "move": "Qe3",
+          "why": "Defends the knight but misses the discovered check that wins the queen."
+        }
       ],
       "hint": "Your queen and Black's king are on the same file. Move the knight with a threat.",
       "objective": "Use a discovered check on the open e-file against an uncastled king.",
-      "tags": ["opening-traps", "discovered-attack"]
+      "tags": [
+        "opening-traps",
+        "discovered-attack"
+      ]
     },
     {
       "id": "06-10",
@@ -172,17 +285,30 @@
       "difficulty": 2,
       "fen": "rnb1kbnr/ppppq1pp/5p2/4N3/4P3/8/PPPP1PPP/RNBQKB1R w KQkq - 1 4",
       "question": "White to move. After 1.e4 e5 2.Nf3 f6? 3.Nxe5 Qe7, your knight is attacked. Choose the retreat that keeps your advantage.",
-      "solution": ["Nf3"],
+      "solution": [
+        "Nf3"
+      ],
       "goal": "best",
-      "accept": ["Nc4", "Ng4"],
+      "accept": [
+        "Nc4",
+        "Ng4"
+      ],
       "explanation": "4.Nf3 returns the knight to its natural square. Black will win the e4-pawn back with ...Qxe4+, but after Be2 White is well ahead in development and Black's king is airy. 4.Nd3? blocks the d-pawn and the c1-bishop, and 4.d4? simply drops the knight.",
       "wrong": [
-        {"move": "d4", "why": "Defends nothing: 4...fxe5 wins the knight for a pawn."},
-        {"move": "Nd3", "why": "Saves the knight but blocks your d-pawn and bishop; Black regains the pawn with ...Qxe4+ and is fine."}
+        {
+          "move": "d4",
+          "why": "Defends nothing: 4...fxe5 wins the knight for a pawn."
+        },
+        {
+          "move": "Nd3",
+          "why": "Saves the knight but blocks your d-pawn and bishop; Black regains the pawn with ...Qxe4+ and is fine."
+        }
       ],
       "hint": "Which square keeps the knight safe without blocking your other pieces?",
       "objective": "Retreat to a square that keeps development flowing.",
-      "tags": ["opening-principles"]
+      "tags": [
+        "opening-principles"
+      ]
     },
     {
       "id": "06-11",
@@ -190,18 +316,38 @@
       "difficulty": 1,
       "fen": "r1bqk2r/ppp2ppp/2np1n2/2b1p3/2B1P3/2PP1N2/PP3PPP/RNBQK2R w KQkq - 0 6",
       "question": "White to move. This is the Giuoco Pianissimo from your repertoire. Choose a sound move.",
-      "solution": ["O-O"],
+      "solution": [
+        "O-O"
+      ],
       "goal": "best",
-      "accept": ["Nbd2", "Bb3", "h3", "b4", "a4"],
+      "accept": [
+        "Nbd2",
+        "Bb3",
+        "h3",
+        "b4",
+        "a4"
+      ],
       "explanation": "6.O-O tucks the king away and brings the rook toward the centre, the most useful thing White can do. Nothing is attacked, so there is no reason for violence. The 'attacking' tries all lose material: 6.Bxf7+? Kxf7 gives a bishop for a pawn, and 6.Nxe5? dxe5 simply loses a knight because e5 is defended.",
       "wrong": [
-        {"move": "Bxf7+", "why": "6...Kxf7 and White has given a bishop for a pawn; the king on f7 is perfectly safe."},
-        {"move": "Nxe5", "why": "e5 is defended twice: 6...dxe5 (or ...Nxe5) and you are a knight for a pawn down."},
-        {"move": "g4", "why": "A pointless pawn move that weakens your king and drops the pawn to ...Bxg4."}
+        {
+          "move": "Bxf7+",
+          "why": "6...Kxf7 and White has given a bishop for a pawn; the king on f7 is perfectly safe."
+        },
+        {
+          "move": "Nxe5",
+          "why": "e5 is defended twice: 6...dxe5 (or ...Nxe5) and you are a knight for a pawn down."
+        },
+        {
+          "move": "g4",
+          "why": "A pointless pawn move that weakens your king and drops the pawn to ...Bxg4."
+        }
       ],
       "hint": "Is anything of yours attacked? If not, finish development.",
       "objective": "Castle and develop when there is no forcing move.",
-      "tags": ["opening-principles", "castling"]
+      "tags": [
+        "opening-principles",
+        "castling"
+      ]
     }
   ]
 }

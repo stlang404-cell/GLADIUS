@@ -91,7 +91,10 @@ function augment(book) {
 // ------------------------------------------------------------------ harness
 const results = [];
 let failures = 0;
+let currentPage = null;
+const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY, 'i') : null;
 async function test(name, fn) {
+  if (ONLY && !ONLY.test(name)) return;
   const t0 = Date.now();
   try {
     const note = await fn();
@@ -100,6 +103,7 @@ async function test(name, fn) {
   } catch (e) {
     failures++;
     results.push({ name, ok: false, ms: Date.now() - t0, err: e });
+    if (currentPage) await currentPage.screenshot({ path: path.join(SHOTS, 'FAILED-' + name.replace(/[^a-z0-9]+/gi, '-').slice(0, 60) + '.png') }).catch(() => {});
     console.log(`FAIL  ${name}\n      ${String(e && e.message || e).split('\n').slice(0, 6).join('\n      ')}`);
   }
 }
@@ -124,7 +128,8 @@ async function shot(page, name) {
 async function state(page) { return page.evaluate(() => JSON.parse(localStorage.getItem('elo-blueprint') || '{}')); }
 
 async function goto(page, base, hash) {
-  await page.goto(base + 'app/#' + hash);
+  const url = base + 'app/#' + hash;
+  if (page.url() === url) await page.reload(); else await page.goto(url);
   await page.waitForSelector('#main .page, #main .solve-page', { timeout: 15000 });
 }
 
@@ -210,6 +215,7 @@ async function pieceAt(page, square) {
   const page = await ctx.newPage();
   const errs = [];
   watchErrors(page, errs);
+  currentPage = page;
   const M = true;
 
   await test('dashboard renders (stage, next lesson, today, stats, history, badges)', async () => {
@@ -264,7 +270,7 @@ async function pieceAt(page, square) {
     if (await mv.count()) {
       await mv.scrollIntoViewIfNeeded();
       await mv.tap();
-      await page.waitForSelector('.modal .line-board .board svg');
+      await page.waitForSelector('.modal .line-board svg');
       const l1 = await page.textContent('.line-label');
       await page.click('.modal [data-step="next"]');
       const l2 = await page.textContent('.line-label');

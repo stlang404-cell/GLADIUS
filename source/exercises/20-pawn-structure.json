@@ -1,0 +1,202 @@
+{
+  "chapter": 20,
+  "title": "Pawn Structure Essentials",
+  "exercises": [
+    {
+      "id": "20-01",
+      "type": "blunder-check",
+      "difficulty": 1,
+      "fen": "r2q1rk1/pp1bbpp1/2n1pn1p/3p4/3P3B/2NB1N2/PPPQ1PPP/R3R1K1 b - - 0 11",
+      "question": "Black to move. The bishop on h4 pins your knight, and ...g5 would chase it away. Is that a good idea? Play the best move.",
+      "solution": ["a6"],
+      "goal": "best",
+      "accept": ["Nb4"],
+      "explanation": "Pawns cannot move backwards. ...g5 would break the pin, but it tears open the pawn shield in front of your own king: Bxg5! hxg5 Nxg5 gives White two pawns, a raging attack and Qd2 is ready to join on h6. A quiet move such as ...a6 (or ...Nb4, hitting the d3-bishop) keeps the kingside intact and the position is level.",
+      "wrong": [
+        {"move": "g5", "why": "Bxg5! hxg5 Nxg5 and White's queen comes to h6; the weakened king cannot be defended."}
+      ],
+      "hint": "Before every pawn move near your king, ask what squares it leaves behind.",
+      "objective": "Think before every pawn move: a pawn advance near your king can never be taken back.",
+      "tags": ["pawn-structure", "king-safety", "blunder-check"]
+    },
+    {
+      "id": "20-02",
+      "type": "defense",
+      "difficulty": 1,
+      "fen": "2r3k1/p4ppp/1p6/1n1P4/8/5B2/PP3PPP/3R2K1 b - - 0 28",
+      "question": "Black to move. White's d-pawn is passed and supported by the rook behind it. Stop it.",
+      "solution": ["Nd6"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The best blockader of a passed pawn is a knight on the square directly in front of it. On d6 the knight cannot be attacked by a pawn, it stops the pawn dead, and it still controls c4, e4, b5 and f5. Black is a pawn down but holds comfortably. Any slower move lets White play d6, and the pawn gets much stronger with every step.",
+      "wrong": [
+        {"move": "Kf8", "why": "d6! and the pawn runs: ...Rd8 d7 and Black's pieces are tied up for good."},
+        {"move": "Nc7", "why": "The knight looks at d5 but does not block it; after Rc1 and d6 White is close to winning."},
+        {"move": "Rd8", "why": "A rook is a poor blockader: it is tied to d8 and White improves at leisure."}
+      ],
+      "hint": "Which piece blockades best, and on which square?",
+      "objective": "Blockade a passed pawn with a knight on the square in front of it.",
+      "tags": ["passed-pawn", "defense", "pawn-structure"]
+    },
+    {
+      "id": "20-03",
+      "type": "conversion",
+      "difficulty": 1,
+      "fen": "2r3k1/pp3pp1/3Pb2p/8/2B5/7P/PP3PP1/3R2K1 w - - 0 28",
+      "question": "White to move. Your passed d-pawn is blockaded only by the bishop on e6. What do you do?",
+      "solution": ["Bxe6"],
+      "goal": "best",
+      "accept": ["d7"],
+      "explanation": "Passed pawns must be pushed, and the first step is to remove what stands in the way. Bxe6 fxe6 eliminates the blockader; now the d-pawn has a clear road to d7 and Black's rook is tied to the back rank. d7 at once, threatening Bxe6, is just as strong. Retreating the bishop lets ...Bxb3 or ...Bd5 trade it off with the blockade intact.",
+      "wrong": [
+        {"move": "Bb3", "why": "Offers a trade on Black's terms: after ...Bxb3 axb3 the d-pawn is stuck and the advantage is mostly gone."},
+        {"move": "Bd5", "why": "...Bxd5 Rxd5 trades the wrong pieces; Black's rook and king can now hold the pawn."}
+      ],
+      "hint": "What piece stops your pawn, and can you take it?",
+      "objective": "Remove the blockader of a passed pawn, then push.",
+      "tags": ["passed-pawn", "conversion", "pawn-structure"]
+    },
+    {
+      "id": "20-04",
+      "type": "strategy",
+      "difficulty": 2,
+      "fen": "r4rk1/pp1bbppp/1qn1p3/2ppPn2/3P4/2P2N2/PP1QBPPP/RNB2RK1 b - - 0 11",
+      "question": "Black to move. White's pawn chain runs d4-e5. Where should you strike?",
+      "solution": ["cxd4"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "Attack the base of the chain. After ...cxd4 the d4 pawn is attacked by the knights on c6 and f5 and the queen on b6, and defended only by the knight on f3 and the queen; after cxd4 Nfxd4 Black wins it. White's best is to leave d4 and play Bd3, but Black is still a pawn up after ...dxc3. Taking on d4 with a knight first, before the pawn exchange, loses material, and ...c4 releases the pressure.",
+      "wrong": [
+        {"move": "c4", "why": "Closes the position and stops attacking d4; White's chain is safe again."},
+        {"move": "Nfxd4", "why": "Premature: cxd4 cxd4 and White's pawns hold; you have given a knight for two pawns."}
+      ],
+      "hint": "Count attackers and defenders of the base pawn.",
+      "objective": "Attack a pawn chain at its base and count before capturing.",
+      "tags": ["pawn-structure", "counting", "planning"]
+    },
+    {
+      "id": "20-05",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "3r4/p1p1kppp/2p5/8/8/8/PPP1KPPP/3R4 w - - 0 30",
+      "question": "White to move. Black has doubled c-pawns. Should you trade rooks?",
+      "solution": ["Rxd8", "Kxd8", "Kd3"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "In a pawn ending, doubled pawns are a long-term weakness: Black's three queenside pawns cannot create a passed pawn against White's three, while White's healthy majority can. After Rxd8 Kxd8 Kd3 the white king heads for c4 and c5, and Black's crippled pawns fall or let White through. With rooks on, the weakness matters much less.",
+      "wrong": [
+        {"move": "Rd3", "why": "Keeps rooks on; Black's rook stays active and the doubled pawns are only a small minus."},
+        {"move": "Ke3", "why": "Leaves your rook undefended: ...Rxd1 wins it."}
+      ],
+      "hint": "Imagine the position with only kings and pawns. Whose pawns are healthier?",
+      "objective": "Recognize when doubled pawns make a pawn ending winning.",
+      "tags": ["pawn-structure", "king-pawn-endgame", "conversion"]
+    },
+    {
+      "id": "20-06",
+      "type": "blunder-check",
+      "difficulty": 2,
+      "fen": "2r2rk1/1pqnbppp/p2pbn2/P3p3/4P3/1NN1B3/1PPQBPPP/R2R2K1 b - - 2 13",
+      "question": "Black to move. Your d6 pawn is backward and White's pieces eye d5. Is the freeing break ...d5 possible? Play the best move.",
+      "solution": ["Rfd8"],
+      "goal": "best",
+      "accept": ["h6"],
+      "explanation": "...d5 is the dream move against a backward pawn, but check it first. After ...d5 exd5 Nxd5 Nxd5 Bxd5 the d-file opens and your knight on d7 is hanging to the queen on d2 with the rook behind it. Prepare the break instead: ...Rfd8 puts a rook on the d-file and defends d7, and only then does ...d5 become a real option.",
+      "wrong": [
+        {"move": "d5", "why": "exd5 and Black cannot recapture safely: after the exchanges on d5 the knight on d7 falls."}
+      ],
+      "hint": "After the pawn break, which of your pieces would stand on the open d-file?",
+      "objective": "Prepare a freeing pawn break before playing it, and check the opened file.",
+      "tags": ["pawn-structure", "blunder-check", "calculation"]
+    },
+    {
+      "id": "20-07",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/pp3ppp/4k3/8/8/4K3/PPP3PP/8 w - - 0 35",
+      "question": "White to move. You have three queenside pawns against two. One natural pawn move throws the majority away. Avoid it and play a sound move.",
+      "solution": ["c4"],
+      "goal": "best",
+      "accept": ["Kd4", "Ke4", "a4", "Kf4"],
+      "explanation": "A pawn majority creates a passed pawn when the pawn without an opponent — the candidate, here the c-pawn — leads the advance. c4, followed by b4 and c5, keeps the majority flexible. b4? is the classic mistake: after ...Kd5 and ...b5 one black pawn holds two white ones, White's majority is frozen, and Black's kingside majority decides.",
+      "wrong": [
+        {"move": "b4", "why": "...b5 fixes a2, b4 and c2 with just two black pawns; White's majority is useless and Black wins on the kingside."}
+      ],
+      "hint": "Which of your queenside pawns has no black pawn in front of it?",
+      "objective": "Advance a pawn majority with the candidate pawn first.",
+      "tags": ["pawn-structure", "king-pawn-endgame", "passed-pawn"]
+    },
+    {
+      "id": "20-08",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/6p1/5k2/8/ppp2K2/8/PPP3P1/8 b - - 0 40",
+      "question": "Black to move. White's king is close to your queenside pawns. Which move saves the game?",
+      "solution": ["b3"],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "A lever — a pawn move that offers an exchange — can break open a blocked structure. ...b3! forces matters: after cxb3 axb3 axb3 cxb3 Black gets a passed pawn, which is enough to hold the draw. Every slow move lets White's king walk to the queenside and eat the pawns, and ...c3 or ...a3 are the wrong levers: after the exchange White's remaining pawn stops the rest.",
+      "wrong": [
+        {"move": "c3", "why": "bxc3 bxc3 and the c3 pawn falls to the white king; Black's a-pawn is not enough."},
+        {"move": "a3", "why": "bxa3 bxa3 and White's c-pawn and king hold everything."},
+        {"move": "Kg6", "why": "Too slow: White's king takes the c4 pawn and the queenside collapses."}
+      ],
+      "hint": "Which pawn move attacks two white pawns at once?",
+      "objective": "Use the right lever to create a passed pawn in a blocked pawn structure.",
+      "tags": ["pawn-structure", "king-pawn-endgame", "passed-pawn"]
+    },
+    {
+      "id": "20-09",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "2r2rk1/pp1bbppp/2n1pn2/q5B1/3P4/2NQ1N2/PPB2PPP/3RR1K1 w - - 0 15",
+      "question": "White to move. You have the isolated d-pawn — and the active pieces that come with it. Use them.",
+      "solution": ["Bxf6"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The isolated pawn's dynamic side: White's queen and bishop form a battery against h7, and the knight on f6 is its only defender. Bxf6 removes it; Black cannot recapture (...Bxf6 or ...gxf6 allows Qxh7#), so ...g6 is forced and Bxe7 wins a piece. The thematic d5 break is premature here: ...Nb4 hits the queen and the c2-bishop and Black equalizes.",
+      "wrong": [
+        {"move": "d5", "why": "...Nb4! attacks the queen and the bishop on c2; the battery is broken and the position is level."},
+        {"move": "Ne5", "why": "Natural centralization, but ...Nb4 again neutralizes the battery."}
+      ],
+      "hint": "What does the f6-knight defend?",
+      "objective": "Use the piece activity an isolated pawn gives you to attack the king.",
+      "tags": ["pawn-structure", "removing-defender", "attack"]
+    },
+    {
+      "id": "20-10",
+      "type": "strategy",
+      "difficulty": 4,
+      "fen": "3r1rk1/pp1bbppp/2n1pn2/q7/3P1B2/1BNQ1N2/PP3PPP/3RR1K1 b - - 0 15",
+      "question": "Black to move. You are playing against White's isolated d-pawn. The square d5 is the key. How do you get control of it?",
+      "solution": ["Nb4"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The square in front of an isolated pawn is the natural home for a blockader, but you must get there with time to spare. ...Nb4 hits the queen first; after the queen moves, Black follows with ...Bc6 and ...Nbd5 or ...Nfd5, and the isolated pawn is frozen. The immediate ...Nd5 loosens the defence of h7, and White replies Ng5! with Bxd5 and Qg3 ideas.",
+      "wrong": [
+        {"move": "Nd5", "why": "Ng5! hits h7 and e6; after Bxd5 exd5 Qg3 White's pieces are much more active."}
+      ],
+      "hint": "Which move gains time before you blockade?",
+      "objective": "Blockade the square in front of an isolated pawn, gaining tempo where possible.",
+      "tags": ["pawn-structure", "prophylaxis", "planning"]
+    },
+    {
+      "id": "20-11",
+      "type": "calculation",
+      "difficulty": 4,
+      "fen": "3r2k1/pp3pp1/7p/3Pb3/3N4/1P6/P4PPP/2R3K1 w - - 0 26",
+      "question": "White to move. Your passed d-pawn is attacked by the rook, and your knight is attacked by the bishop. Find the move that keeps both.",
+      "solution": ["Nf5"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "Pushing a passed pawn is the rule, but only when it is safe. Here d6? loses the knight to ...Bxd4. Nf5 saves the knight and protects d5 tactically: ...Rxd5?? runs into Ne7+, forking king and rook. White keeps the extra pawn and a lasting edge.",
+      "wrong": [
+        {"move": "d6", "why": "...Bxd4 wins the knight; the pawn push ignored the attacked piece."},
+        {"move": "Nc6", "why": "...bxc6 dxc6 and you have given a knight for a pawn."}
+      ],
+      "hint": "Where can the knight go so that ...Rxd5 becomes a mistake?",
+      "objective": "Defend a passed pawn tactically before pushing it.",
+      "tags": ["passed-pawn", "fork", "calculation"]
+    }
+  ]
+}

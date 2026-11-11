@@ -94,7 +94,7 @@ Answer all three before you think about your own plans.
 
 ## Hanging pieces: yours and theirs
 
-A piece is **hanging** (also called *en prise*) when it can be captured and the capture wins material. The simplest case is a completely undefended piece under attack. A subtler case is a piece defended once but attacked twice, or a piece defended only by something more valuable than its attacker. Chapter 3 taught you to count attackers and defenders; this chapter makes you do it every move.
+A piece is **hanging** (also called *en prise*) when it can be captured and the capture wins material. The simplest case is a completely undefended piece under attack. A subtler case is a piece defended once but attacked twice, or a piece defended only by something more valuable than its attacker. [Chapter 3](#ch-03) taught you to count attackers and defenders; this chapter makes you do it every move.
 
 ### Undefended means target
 
@@ -209,7 +209,16 @@ check: engine
 caption: The rook defends f2 a second time. Only then does h3 come, and the knight has to retreat to the edge.
 ```
 
-**Fifth, the opponent's strongest reply.** After 10.Re2, Black's checks: none. Captures: ...Nxf2 now loses a knight for a pawn. Threats: Black can put a second piece on f2 with ...Qf6, but White can then play h3 and the knight must leave. The move passes the check.
+**Fifth, the opponent's strongest reply.** After 10.Re2, Black's checks: none. Captures: the knight can still take on f2, but now the count has changed.
+
+```line
+fen: r1bq1rk1/bpp2ppp/p1np4/4p3/4P1n1/1BPP1N2/PP1NRPPP/R1BQ2K1 b - - 5 10
+moves: 10...Nxf2? 11.Rxf2 Bxf2+ 12.Kxf2
+check: engine
+caption: Black has given two minor pieces for a rook and a pawn, usually a poor trade with so many pieces still on the board.
+```
+
+Threats: nothing that works at once, and White's next move h3 will send the knight back. The move passes the check.
 
 That is the whole process: read the opponent's move, count the attacked square, list candidates, and blunder-check the most natural one before playing it. It took a page to write, but at the board it becomes a minute or two.
 
@@ -241,7 +250,7 @@ Knowing the checklist is easy. Using it every move, in real games, is the hard p
 
 Literally. When it is your move, put your hands under your legs or flat on the table away from the pieces. Only when you have finished the checklist and the blunder check do you reach for the piece. This simple physical rule stops the most common blunder of all: moving on impulse because you "saw" a move.
 
-Over the board, the **touch-move rule** (Chapter 1) makes this even more important: if you touch a piece, you must move it. Online, set the app to require a confirmation or turn off "premoves" while you build the habit.
+Over the board, the **touch-move rule** ([Chapter 1](#ch-01)) makes this even more important: if you touch a piece, you must move it. Online, set the app to require a confirmation or turn off "premoves" while you build the habit.
 
 ### Play slow games
 
@@ -263,11 +272,25 @@ After each game, find the first moment you lost material or missed a free piece.
 Play one slow game (15+10 or longer). After each of your opponent's moves, ask the three questions. Before each of your moves, ask "What can my opponent capture or check after this?" Sit on your hands until you have answered. After the game, count how many moves you checked and how many you skipped.
 :::
 
+## Where the scan usually fails
+
+Even players who run a scan miss things in the same few places. Knowing them helps you look there on purpose.
+
+* **Backward moves.** Our eyes move forward, toward the opponent. A queen or bishop that can capture by moving backward, toward its own side, is easy to miss. Include backward captures in your scan.
+* **Long-range pieces.** A bishop on b2 or a rook on a1 can strike across the whole board. When you list your opponent's captures, trace every open diagonal and file from their bishops, rooks and queen to the end.
+* **The king as an attacker.** Kings capture too. A piece next to the enemy king that is not protected is hanging, even if no other piece attacks it.
+* **Stopping after the first threat.** When you find one threat, it is tempting to answer it and stop looking. Many moves create two threats at once. Finish the list before you choose a reply.
+* **Your own last move.** The line you opened or the piece you stopped defending with your own previous move is just as dangerous as anything your opponent did. Ask the three questions about your own move, too.
+
+:::drill Thirty seconds, every move
+In your next few slow games, give yourself a fixed budget: thirty seconds of scanning after every opponent move, even when the move looks harmless. Most moves will reveal nothing. The few that reveal a threat will win you games.
+:::
+
 ## Not every free piece is free
 
 One last warning before the exercises. The scan finds hanging pieces, but sometimes a piece is left hanging on purpose. A **poisoned** piece is one that loses if you take it: the capture walks into a mate, a fork, or a bigger loss.
 
-The defence is the blunder check again. When you see a free piece, do not ask only "can I take it?" Ask "after I take it, what are my opponent's checks and captures?" If the capture puts your king on an open line, removes a defender from your back rank, or lands your queen on a square where it can be trapped, the free piece may be bait. Chapter 6 shows several famous opening traps that work exactly this way.
+The defence is the blunder check again. When you see a free piece, do not ask only "can I take it?" Ask "after I take it, what are my opponent's checks and captures?" If the capture puts your king on an open line, removes a defender from your back rank, or lands your queen on a square where it can be trapped, the free piece may be bait. [Chapter 6](#ch-06) shows several famous opening traps that work exactly this way.
 
 ## Practice at the board
 

@@ -1,0 +1,203 @@
+{
+  "chapter": 25,
+  "title": "Middlegame Strategy",
+  "exercises": [
+    {
+      "id": "25-01",
+      "type": "strategy",
+      "difficulty": 4,
+      "fen": "r2r2k1/pb2bppp/1pnqpn2/8/3P4/P1NQ1N2/1PB2PPP/R1B1R1K1 w - - 2 14",
+      "question": "White to move. You have the isolated queen's pawn and your pieces are set up behind it. Choose the move that cashes in.",
+      "solution": ["d5"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The IQP side's main break is d4-d5, played when the pieces are ready: here the queen and bishop aim at h7, the rook stands on e1 and the knights are active. 14.d5! opens lines: after 14...exd5 15.Bg5 the pin on f6 and the threat Nb5 are hard to meet, and 14...Nxd5?? loses to 15.Nxd5 exd5 16.Qxh7+ Kf8 17.Qh8#. Wait one more move and Black blockades.",
+      "wrong": [
+        {"move": "Rd1", "why": "Passive: Black completes development, blockades on d5 and the pawn becomes a target."},
+        {"move": "h3", "why": "A tempo too slow: ...Nxd4 and the isolated pawn simply falls."}
+      ],
+      "hint": "With the IQP, which pawn move opens the position for all your pieces?",
+      "objective": "Recognize when the d4-d5 break works for the side with the isolated pawn.",
+      "tags": ["pawn-structure", "attack", "planning"]
+    },
+    {
+      "id": "25-02",
+      "type": "strategy",
+      "difficulty": 4,
+      "fen": "r1bq1rk1/p3bppp/1pn1pn2/8/3P4/P1N2N2/1PB2PPP/R1BQR1K1 b - - 1 12",
+      "question": "Black to move. White's bishop on c2 and a queen coming to d3 would aim at h7. Find the move that prevents White's attacking set-up.",
+      "solution": ["Ba6"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "Against the IQP you want to blockade and trade, but first you must stop the attack that the IQP side gets from its active pieces. 12...Ba6! covers d3, so Qd3 and the queen-and-bishop battery are no longer possible, and it eyes White's rook. The standard blockade 12...Nd5? is premature here: Nxd5 exd5 Qd3 g6 and White has removed your best kingside defender.",
+      "wrong": [
+        {"move": "Nd5", "why": "Blockading at the wrong moment: Nxd5 exd5 Qd3 and the f6 defender is gone."},
+        {"move": "Bd7", "why": "Too passive: Qd3 forces ...g6 and Bh6 follows with a strong attack."}
+      ],
+      "hint": "Which square does White's queen need?",
+      "objective": "Against the IQP, neutralize the attacking set-up before blockading.",
+      "tags": ["prophylaxis", "pawn-structure", "king-safety"]
+    },
+    {
+      "id": "25-03",
+      "type": "strategy",
+      "difficulty": 3,
+      "fen": "r1bqr1k1/pp2bppp/2p2nn1/3p2B1/3P4/2NBPN2/PPQ2PPP/1R3RK1 w - - 11 12",
+      "question": "White to move. This is the Carlsbad structure from the Queen's Gambit Exchange. Choose the plan move.",
+      "solution": ["b4"],
+      "goal": "best",
+      "accept": ["Rfc1", "h3"],
+      "explanation": "With your rook already on b1, 12.b4 starts the minority attack: b4-b5 will hit c6 and leave Black with a weak pawn on c6 or d5. The central break 12.e4? fails tactically here: dxe4 Bxe4 Nxe4 Nxe4 Bf5 pins the knight to your queen. A pawn storm with g4 is on the wrong side and just drops a pawn.",
+      "wrong": [
+        {"move": "e4", "why": "dxe4 Bxe4 Nxe4 Nxe4 Bf5 pins the knight against your queen and wins material."},
+        {"move": "g4", "why": "Bxg4: the pawn is simply lost and your own king is exposed."}
+      ],
+      "hint": "Your rook stands on b1. Which pawn does it support?",
+      "objective": "Execute the minority attack in the Carlsbad structure.",
+      "tags": ["pawn-structure", "planning", "open-file"]
+    },
+    {
+      "id": "25-04",
+      "type": "strategy",
+      "difficulty": 3,
+      "fen": "r2q1rk1/pb3ppp/1pnbpn2/2ppN3/3P1P2/2PBP1B1/PP1N2PP/R2QK2R b KQ - 0 10",
+      "question": "Black to move. White's knight on e5 is annoying. Should you take it with the bishop? Choose the best move.",
+      "solution": ["Ne7"],
+      "goal": "best",
+      "accept": ["Qc7", "Be7"],
+      "explanation": "10...Bxe5? gives up your good bishop for the knight, and after fxe5 White gains space, kicks your knight from f6 and opens the f-file for the attack. 10...Ne7! reroutes the knight towards f5 or g6, where it challenges White's pieces without giving away the bishop. Exchange to remove a strong piece only when the recapture does not improve your opponent's position.",
+      "wrong": [
+        {"move": "Bxe5", "why": "fxe5 gains space with tempo on f6 and opens the f-file for White's attack."},
+        {"move": "Ne4", "why": "Nxe4 dxe4 Bxe4 and Black has simply lost a pawn."}
+      ],
+      "hint": "After a trade on e5, which White pawn recaptures, and what does it attack?",
+      "objective": "Judge an exchange by what the recapture gives the opponent.",
+      "tags": ["bishop-vs-knight", "planning", "pawn-structure"]
+    },
+    {
+      "id": "25-05",
+      "type": "strategy",
+      "difficulty": 4,
+      "fen": "r1b2rk1/pp1nqppp/2p1p3/8/2BP4/2Q1PN2/PP3PPP/R4RK1 b - - 0 12",
+      "question": "Black to move. You are a little cramped and your c8 bishop is shut in. Prepare the right freeing break.",
+      "solution": ["b6"],
+      "goal": "best",
+      "accept": ["c5"],
+      "explanation": "Cramped positions need a freeing pawn break, but the break must work. 12...b6 prepares ...Bb7 and ...c5, freeing the bishop safely; 12...c5 at once is also fine. The other break 12...e5? fails right now: Nxe5 Nxe5 dxe5 and your queen cannot regain the pawn because the white queen guards e5.",
+      "wrong": [
+        {"move": "e5", "why": "Nxe5 Nxe5 dxe5: the pawn on e5 is guarded by White's queen and Black is a pawn down."},
+        {"move": "f5", "why": "Creates permanent holes on e5 and e6 and frees nothing; the c8 bishop stays bad."}
+      ],
+      "hint": "Which break opens the long diagonal for your bishop?",
+      "objective": "Choose a freeing break that actually works in a cramped position.",
+      "tags": ["pawn-structure", "piece-activity", "planning"]
+    },
+    {
+      "id": "25-06",
+      "type": "strategy",
+      "difficulty": 3,
+      "fen": "r2q1rk1/bpp2ppp/p1npbn2/4p3/4P3/1BPP1N2/PP1N1PPP/R1BQR1K1 w - - 4 10",
+      "question": "White to move. Italian Game, slow centre. Choose a good plan move.",
+      "solution": ["Nf1"],
+      "goal": "best",
+      "accept": ["Ba4", "h3", "a4", "Qc2"],
+      "explanation": "In the closed Italian centre nothing is urgent, so improve your worst piece: Nf1 heads for g3 or e3 and frees the c1 bishop. The pawn break 10.d4? is premature: exd4 cxd4 Bxd4 and the a7 bishop wins a pawn. 10.c4? gives up control of d4 for ever and blocks your own bishop.",
+      "wrong": [
+        {"move": "d4", "why": "Premature: exd4 cxd4 Bxd4 and the pawn is lost to the bishop on a7."},
+        {"move": "c4", "why": "Leaves a permanent hole on d4 for Black's knight and shuts in your bishop."}
+      ],
+      "hint": "Which of your pieces is doing the least?",
+      "objective": "In a closed centre, improve pieces before breaking.",
+      "tags": ["piece-activity", "planning", "repertoire-white"]
+    },
+    {
+      "id": "25-07",
+      "type": "strategy",
+      "difficulty": 3,
+      "fen": "r4rk1/pp3ppp/2nqpn2/3p4/3P4/1QPB1N2/PP3PPP/R4RK1 w - - 2 13",
+      "question": "White to move. Exchange Caro-Kann structure. Ne5 looks like a dream outpost. Is it? Play a sound move.",
+      "solution": ["Rae1"],
+      "goal": "best",
+      "accept": ["Rfe1", "a4", "h3", "g3"],
+      "explanation": "An outpost is only good if the piece can stay there. Here 13.Ne5? Nxe5 14.dxe5 Qxe5 wins a pawn, because after the recapture the e5 pawn has no support. Bring the rooks to the centre first; Ne5 becomes strong once f4 or a rook on e1 backs it up.",
+      "wrong": [
+        {"move": "Ne5", "why": "Nxe5 dxe5 Qxe5: the outpost was not supported and a pawn is lost."},
+        {"move": "c4", "why": "Opens the centre for no reason: ...Na5 and ...dxc4 leave you with a weak isolated pawn."}
+      ],
+      "hint": "After Nxe5 and dxe5, who defends the pawn on e5?",
+      "objective": "Check that an outpost piece can be maintained before occupying it.",
+      "tags": ["outpost", "pawn-structure", "repertoire-white"]
+    },
+    {
+      "id": "25-08",
+      "type": "strategy",
+      "difficulty": 3,
+      "fen": "r1bq1rk1/ppp1npbp/3p1np1/3Pp3/2P1P3/2N5/PP2BPPP/R1BQNRK1 b - - 2 9",
+      "question": "Black to move. The centre is closed. Your pawns on d6 and e5 point to the kingside; White's point to the queenside. Choose the plan move.",
+      "solution": ["Ne8"],
+      "goal": "best",
+      "accept": ["Nd7", "a5"],
+      "explanation": "In a closed centre play on the side your pawns point to: Black prepares ...f5 by moving the f6 knight out of the way (Ne8 or Nd7). 9...b5? starts play on the queenside, where White is stronger, and after cxb5 it simply loses a pawn.",
+      "wrong": [
+        {"move": "b5", "why": "Wrong wing: cxb5 and you have lost a pawn where White is strongest."}
+      ],
+      "hint": "Which pawn break attacks the head of White's chain, and what is in its way?",
+      "objective": "With a closed centre, play on the wing your pawns point to.",
+      "tags": ["planning", "pawn-structure", "attack"]
+    },
+    {
+      "id": "25-09",
+      "type": "strategy",
+      "difficulty": 4,
+      "fen": "r1bq1rk1/pppnn1bp/3p2p1/3Ppp2/2P1P3/2NN4/PP2BPPP/R1BQ1RK1 w - - 0 11",
+      "question": "White to move. Black has started ...f5 on the kingside. Choose the move that keeps your position healthy for queenside play.",
+      "solution": ["f3"],
+      "goal": "best",
+      "accept": ["Kh1", "Bd2", "Bg5", "b3", "Rb1"],
+      "explanation": "11.f3 supports e4 so that Black's ...fxe4 never opens lines against your king, and it frees you to play c4-c5 on the queenside, where your pawns point. Lashing out with 11.h4? weakens your own king on the side where Black is stronger.",
+      "wrong": [
+        {"move": "h4", "why": "Weakens your king on Black's strong side; after ...Nf6 and ...fxe4 Black is better."},
+        {"move": "Nb5", "why": "The knight achieves nothing on b5 while ...fxe4 opens Black's play."}
+      ],
+      "hint": "Which pawn move makes your centre immune to ...fxe4?",
+      "objective": "Stabilize the centre and play on your own strong wing.",
+      "tags": ["prophylaxis", "pawn-structure", "planning"]
+    },
+    {
+      "id": "25-10",
+      "type": "strategy",
+      "difficulty": 3,
+      "fen": "r2qkb1r/pp1b1ppp/2n1p3/3pPn2/3P4/3B1N2/PP3PPP/RNBQ1RK1 b kq - 0 9",
+      "question": "Black to move. French structure: White's chain d4-e5. Attack the base of the chain.",
+      "solution": ["Nfxd4"],
+      "goal": "best",
+      "accept": ["Ncxd4"],
+      "explanation": "Against a pawn chain, strike at its base. The d4 pawn is attacked by both knights and defended only by the f3 knight and the queen, so 9...Nfxd4 wins it: after 10.Nxd4 Nxd4 Black is a clean pawn up. Slow moves give White time for Bxf5 and Nc3, after which d4 is safe again.",
+      "wrong": [
+        {"move": "Qb6", "why": "Adds pressure but gives White time: Bxf5 exf5 and d4 holds."},
+        {"move": "Be7", "why": "Too slow: White trades on f5, develops the knight and the pawn is safe."}
+      ],
+      "hint": "Count attackers and defenders of d4.",
+      "objective": "Attack the base of a pawn chain when it is under-defended.",
+      "tags": ["pawn-structure", "counting", "planning"]
+    },
+    {
+      "id": "25-11",
+      "type": "strategy",
+      "difficulty": 4,
+      "fen": "8/1n2k1pp/8/3PK3/8/3B4/6PP/8 w - - 0 45",
+      "question": "White to move. Bishop against knight with pawns on both wings. Use the bishop's long range.",
+      "solution": ["Bxh7"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The knight on b7 is stuck guarding the queenside and needs several moves to reach the kingside, while the bishop strikes at once: 45.Bxh7 wins a pawn and the bishop cannot be trapped, because ...g6 is met by the bishop simply staying on the b1-h7 diagonal. With pawns on both wings the long-range bishop is usually stronger than the knight.",
+      "wrong": [
+        {"move": "Kf4", "why": "Too slow: the knight returns to defend and the chance is gone."},
+        {"move": "d6+", "why": "The pawn is blockaded and lost after ...Nxd6; the advantage evaporates."}
+      ],
+      "hint": "Which black pawn is out of the knight's reach?",
+      "objective": "Exploit the bishop's range against a knight when pawns are on both wings.",
+      "tags": ["bishop-vs-knight", "minor-piece-endgame", "piece-activity"]
+    }
+  ]
+}

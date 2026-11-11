@@ -185,6 +185,18 @@ arrows: a5c4
 squares: a5
 ```
 
+### Five common blind spots
+
+Most vision errors fall into a handful of families. Learn to look for them by name:
+
+* **The piece behind the piece.** When a piece moves off a line, the piece behind it suddenly attacks along that line. A bishop on b2 behind a knight on c3, or a rook behind a pawn on an open file, can come to life in one move. Chapter 9 calls this a discovered attack.
+* **The square just vacated.** When you move a piece, the square it leaves can become an entry point for the opponent, and the lines it was blocking open up. Look at the empty square, not only at the new one.
+* **Long queen moves with check.** The queen can give check from far away, and checks that also attack something else are among the most common ways to lose a piece. Queen moves such as Qa4+ (along the a4-e8 diagonal) and Qh5+ (along the h5-e8 diagonal) catch players again and again in the opening.
+* **The knight fork squares near the king.** Before your king has castled, c7 and f7 (for Black) and c2 and f2 (for White) are the classic knight targets, because a knight landing there often attacks the king and a rook together.
+* **Your own pieces' defensive duties.** Vision is not only about attacking. If you do not see that your bishop is the only piece guarding a square, you will move it and leave that square undefended.
+
+When you review a game, try to name the blind spot behind each missed move. Naming the pattern makes it far easier to recognize next time.
+
 ### Visualizing without moving
 
 In a game you cannot move the pieces to test an idea; you must see the position after the move in your head. Start small. Before each move in a training game, picture the board after your move and answer one question: *what does each of my opponent's pieces attack now?* The square your piece leaves can open a line, and the square it goes to can block one.

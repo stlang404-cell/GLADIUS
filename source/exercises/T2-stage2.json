@@ -1,0 +1,279 @@
+{
+  "chapter": "T2",
+  "title": "Stage 2 Test",
+  "exercises": [
+    {
+      "id": "T2-01",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r4rk1/pb1n1ppp/1pqp4/3N4/2B5/4Q3/PP3PPP/3RR1K1 w - - 0 20",
+      "question": "White to move. Black threatens Qxg2#. Answer the threat and win material.",
+      "solution": ["Ne7+", "Kh8", "Nxc6"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Black's queen and bishop line up on g2, so you need a forcing move. 20.Ne7+ is a knight fork: it checks the king on g8 and attacks the queen on c6. After 20...Kh8 21.Nxc6 the mate threat has gone with the queen.",
+      "wrong": [
+        {"move": "f3", "why": "It stops the mate, but Black takes the knight on d5 and you are a piece down."},
+        {"move": "Bd3", "why": "It defends nothing important; Black wins the knight with ...Qxd5."}
+      ],
+      "hint": "Which check also attacks the queen?",
+      "objective": "Answer a mate threat with a forcing fork.",
+      "tags": ["fork", "threats"]
+    },
+    {
+      "id": "T2-02",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r1bq1rk1/pp3ppp/2nb1n2/3p4/3P4/N2BBN2/PP1Q1PPP/R3K2R b KQ - 0 10",
+      "question": "Black to move. White has not castled yet. Win the queen.",
+      "solution": ["Bb4", "O-O", "Bxd2"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The queen on d2 and the king on e1 stand on the same diagonal, and nothing can be put on c3 to block it. 10...Bb4 pins the queen to the king, and the bishop is protected by the knight on c6, so Qxb4 only gives the queen for a bishop. Castling gets the king out, but the queen is still attacked and 11...Bxd2 wins it.",
+      "wrong": [
+        {"move": "Ne4", "why": "Attacks the queen, but after Qd1 or Qc2 White is fine."},
+        {"move": "Bg4", "why": "Develops with a mild pin on f3, but misses the much stronger pin on the queen."}
+      ],
+      "hint": "Look for a check-line between the queen and the king.",
+      "objective": "Pin a queen to its king with a protected piece.",
+      "tags": ["pin"]
+    },
+    {
+      "id": "T2-03",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1b1qb1r/pp1k1ppp/4pn2/2p5/8/3B1N2/PPP2PPP/R1BQ1RK1 w - - 0 10",
+      "question": "White to move. Black's king and queen are on the same diagonal. Win the queen.",
+      "solution": ["Bb5+", "Ke7", "Bxe8"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The king on d7 and the queen on e8 sit on the a4-e8 diagonal. 10.Bb5+ is a skewer: the king must step off the line and the queen behind it falls. Nothing can block on c6 because Black's c-pawn has already gone to c5.",
+      "wrong": [
+        {"move": "Ne5+", "why": "A check, but after ...Kc7 Black's king walks to safety and the queen stays."},
+        {"move": "Bf4", "why": "Develops, but gives Black time to play ...Kc7 or ...Qe7."}
+      ],
+      "hint": "Which check hits the king with something valuable behind it?",
+      "objective": "Recognize a bishop skewer of king and queen.",
+      "tags": ["skewer"]
+    },
+    {
+      "id": "T2-04",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1br2k1/pp3ppp/3b1n2/q7/2BQ4/2N5/PPPB1PPP/R3R1K1 b - - 0 14",
+      "question": "Black to move. Your bishop on d6 stands between your rook and White's queen. Move it with maximum force.",
+      "solution": ["Bxh2+", "Kf1", "Rxd4"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Any bishop move uncovers the rook on d8 against the queen on d4. But your rook is unprotected, so a quiet bishop move would allow Qxd8+. 14...Bxh2+ discovers the attack with check, so White has no time to deal with the queen and 15...Rxd4 wins it.",
+      "wrong": [
+        {"move": "Be5", "why": "A discovered attack without check: White answers Qxd8+ and wins your rook instead."},
+        {"move": "Qc7", "why": "Defends the rook but wastes the discovered attack; White moves the queen away."}
+      ],
+      "hint": "A discovered attack is strongest when the moving piece gives check.",
+      "objective": "Use a discovered attack with check to win the queen.",
+      "tags": ["discovered-attack"]
+    },
+    {
+      "id": "T2-05",
+      "type": "mate",
+      "difficulty": 2,
+      "fen": "r1bqkb1r/pp1npppp/2p2n2/8/3PN3/8/PPP1QPPP/R1B1KBNR w KQkq - 3 6",
+      "question": "White to move. Black has just played 5...Ngf6?? in the Caro-Kann. Mate in 1.",
+      "solution": ["Nd6#"],
+      "goal": "mate",
+      "mate_in": 1,
+      "accept": [],
+      "explanation": "Nd6 is a double check: the knight attacks e8 and the queen on e2 checks down the opened e-file. Against a double check only a king move helps, and every square next to Black's king is blocked by its own pieces or covered. This is a well-known opening trap.",
+      "wrong": [
+        {"move": "Nxf6+", "why": "A single check that Black answers with ...Nxf6; the mating idea is gone."}
+      ],
+      "hint": "Which knight move gives two checks at once?",
+      "objective": "Spot a double-check mate in the opening.",
+      "tags": ["double-check", "opening-traps", "mate-patterns"]
+    },
+    {
+      "id": "T2-06",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r4rk1/ppp2ppp/2nb1n2/3p4/3P2bq/2N2N2/PPPQBPPP/R1B2RK1 b - - 0 10",
+      "question": "Black to move. White has just played Nf3, attacking your queen. Find the strongest reply.",
+      "solution": ["Bxf3"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The knight on f3 attacks your queen, but it is also the only defender of h2, which your queen and bishop both hit. 10...Bxf3 removes it: if 11.Bxf3 or 11.gxf3, then 11...Qxh2#. White has to play something like h3 or g3, and you stay a piece up.",
+      "wrong": [
+        {"move": "Qh5", "why": "The queen escapes, but you have missed winning a piece."},
+        {"move": "Bxh2+", "why": "After Nxh2 the h2 square is defended again and you have lost a bishop."}
+      ],
+      "hint": "What does the knight on f3 defend?",
+      "objective": "Capture a defender that guards a mating square.",
+      "tags": ["removing-defender", "mate-patterns"]
+    },
+    {
+      "id": "T2-07",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1q2rk1/pp2bppp/5n2/3b4/8/2P5/PPQ1NPPP/RBBR2K1 w - - 0 16",
+      "question": "White to move. Black's knight on f6 is defending two things. Overload it.",
+      "solution": ["Rxd5"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The knight on f6 guards both the bishop on d5 and the h7-square, where your queen and bishop battery points. 16.Rxd5! wins a piece, because 16...Nxd5 allows 17.Qxh7#. Black must block the diagonal with ...g6 and stay a piece down.",
+      "wrong": [
+        {"move": "Nd4", "why": "Centralizes the knight but gives Black time to play ...g6 or ...Be4 and the overload disappears."},
+        {"move": "Qxh7+", "why": "Premature: after ...Nxh7 you have lost your queen."}
+      ],
+      "hint": "If the knight recaptures on d5, what happens on h7?",
+      "objective": "Exploit a knight overloaded with two defensive duties.",
+      "tags": ["overloading", "mate-patterns"]
+    },
+    {
+      "id": "T2-08",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "4rbk1/p4ppp/1pq2n2/8/3P1B2/1N6/PPQ2PPP/2R3K1 b - - 0 24",
+      "question": "Black to move. White's rook on c1 guards the queen and the back rank. Win material.",
+      "solution": ["Qxc2"],
+      "goal": "win",
+      "accept": ["Re1+"],
+      "explanation": "The rook on c1 is overloaded: it protects the queen on c2 and also the e1-square. 24...Qxc2! wins the queen, because 25.Rxc2 allows 25...Re1#. Deflecting the rook first with 24...Re1+ 25.Rxe1 Qxc2 wins the queen too.",
+      "wrong": [
+        {"move": "Qe6", "why": "Avoids the queen trade but wastes the chance; White plays g3 or h3 and the back rank is safe."},
+        {"move": "Qd7", "why": "A passive retreat that lets White trade or make luft."}
+      ],
+      "hint": "If the rook recaptures on c2, what is left guarding e1?",
+      "objective": "Exploit a rook that guards both a piece and the back rank.",
+      "tags": ["overloading", "back-rank", "deflection"]
+    },
+    {
+      "id": "T2-09",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "2rqr1k1/pp1b1pp1/4pn2/6N1/3P4/7R/PP3PP1/2RQ1BK1 w - - 0 19",
+      "question": "White to move. Use a sacrifice to bring Black's king onto a forkable square.",
+      "solution": ["Rh8+", "Kxh8", "Nxf7+", "Kg8", "Nxd8"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "On g8 the king is safe from the knight, but on h8 it is not: a knight on f7 attacks h8 and d8 together. 19.Rh8+! forces 19...Kxh8, and 20.Nxf7+ forks the king and queen. After 20...Kg8 21.Nxd8 White has won the queen for a rook.",
+      "wrong": [
+        {"move": "Nxf7", "why": "Without the decoy Black recaptures with ...Kxf7 and you are just a knight down."},
+        {"move": "d5", "why": "A central break, but it allows ...exd5 or ...Rxc1 and Black is fine."}
+      ],
+      "hint": "Which square would put Black's king and queen a knight's jump apart?",
+      "objective": "Combine a decoy sacrifice with a knight fork.",
+      "tags": ["decoy", "fork"]
+    },
+    {
+      "id": "T2-10",
+      "type": "mate",
+      "difficulty": 2,
+      "fen": "3r2k1/pQ1rqppp/5n2/4p3/N3P3/4B3/PP3PPP/2R3K1 b - - 0 24",
+      "question": "Black to move. Your rooks are doubled on the open d-file. Mate in 2.",
+      "solution": ["Rd1+", "Rxd1", "Rxd1#"],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "White's only back-rank guard is the rook on c1, and the king has no luft. 24...Rd1+ forces 25.Rxd1, and the second rook recaptures with mate: 25...Rxd1#. Doubled rooks on an open file are a back-rank weapon.",
+      "wrong": [
+        {"move": "Rxb7", "why": "Wins the queen, but you had mate in two."},
+        {"move": "Qe6", "why": "Offers a queen trade and lets White off the hook."}
+      ],
+      "hint": "Two attackers against one defender on d1.",
+      "objective": "Execute a back-rank mate with doubled rooks.",
+      "tags": ["back-rank", "mate-patterns"]
+    },
+    {
+      "id": "T2-11",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "3rr2k/pp1b2pp/8/q2Q2N1/2B5/8/PPP2PPP/4R1K1 w - - 0 22",
+      "question": "White to move. Your queen, bishop and knight all point at Black's king. Mate in 2.",
+      "solution": ["Qg8+", "Rxg8", "Nf7#"],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "22.Qg8+! cannot be taken by the king because the bishop on c4 guards g8, so 22...Rxg8 is forced. Black's own rook now blocks the king's only flight square, and 23.Nf7# is a smothered mate.",
+      "wrong": [
+        {"move": "Qxa5", "why": "Wins the queen, but Black answers ...Rxe1+ and you have missed mate."},
+        {"move": "Nf7+", "why": "After ...Kg8 the mate takes longer; the queen sacrifice mates at once."}
+      ],
+      "hint": "Make Black's rook take away its own king's escape square.",
+      "objective": "Recognize the smothered-mate finish with a queen sacrifice.",
+      "tags": ["smothered-mate", "mate-patterns"]
+    },
+    {
+      "id": "T2-12",
+      "type": "mate",
+      "difficulty": 4,
+      "fen": "r4rk1/pppnbppp/4pq2/5b2/8/2N1P3/PP1NQPPP/2KR1B1R b - - 0 12",
+      "question": "Black to move. White castled queenside and the c2-pawn has gone. Mate in 2.",
+      "solution": ["Qxc3+", "bxc3", "Ba3#"],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "Your bishop on f5 already covers b1 and c2, and White's own pieces block d1 and d2. 12...Qxc3+! forces 12...bxc3, which opens b2, and 13...Ba3# is Boden-style mate from two bishops. The queen sacrifice clears the path for the second bishop.",
+      "wrong": [
+        {"move": "Nc5", "why": "Brings another piece, but White defends with e4 or Qc4 and the chance passes."},
+        {"move": "Ba3", "why": "Without the sacrifice White takes the bishop with bxa3 and nothing happens."}
+      ],
+      "hint": "Which white pawn guards b2? Make it move.",
+      "objective": "Use a queen sacrifice to open a diagonal for a two-bishop mate.",
+      "tags": ["mate-patterns", "decoy"]
+    },
+    {
+      "id": "T2-13",
+      "type": "opening",
+      "difficulty": 2,
+      "fen": "r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3",
+      "question": "Black to move. White threatens Qxf7#. Find the most principled defence.",
+      "solution": ["g6"],
+      "goal": "best",
+      "accept": ["Qe7"],
+      "explanation": "The queen on h5 and the bishop on c4 both aim at f7, which only the king defends. 3...g6 attacks the queen and blocks its path, so White has to lose time retreating, and Black can follow with ...Nf6 and ...Bg7. 3...Qe7 also defends f7, but it blocks the f8-bishop.",
+      "wrong": [
+        {"move": "Nf6", "why": "The natural developing move loses on the spot: 4.Qxf7#."},
+        {"move": "d5", "why": "A pawn sacrifice that does not stop the threat for long; after Bxd5 Black is simply worse."}
+      ],
+      "hint": "Can you defend f7 and attack the queen at the same time?",
+      "objective": "Defend against an early queen-and-bishop attack on f7.",
+      "tags": ["opening-traps", "opening-principles", "threats"]
+    },
+    {
+      "id": "T2-14",
+      "type": "opening",
+      "difficulty": 3,
+      "fen": "rn1qkbnr/ppp2p1p/3p2p1/4p3/2B1P1b1/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 0 5",
+      "question": "White to move. Black's bishop pins your knight to your queen. Is the e5-pawn safe to take? Play the best move.",
+      "solution": ["Nxe5"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The pin on f3 is only a pin to the queen, not the king, so the knight may move. 5.Nxe5! is the Légal pattern: if 5...Bxd1?? 6.Bxf7+ Ke7 7.Nd5#. If 5...dxe5, 6.Qxg4 and White has won a pawn with a fine position.",
+      "wrong": [
+        {"move": "h3", "why": "Reasonable, but after ...Bxf3 Qxf3 Black is fine and the tactical chance is gone."},
+        {"move": "d3", "why": "Solid but passive; it lets Black off the hook."}
+      ],
+      "hint": "Is the knight on f3 pinned to the king or only to the queen?",
+      "objective": "Recognize when a relative pin can be broken with a tactic (Légal's pattern).",
+      "tags": ["opening-traps", "pin", "mate-patterns"]
+    },
+    {
+      "id": "T2-15",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "rnbqkb1r/pp3ppp/4pn2/2pp2B1/3P4/3BP3/PPP1NPPP/RN1QK2R b KQkq - 0 5",
+      "question": "Black to move. White's bishop on d3 has very few squares. Win it.",
+      "solution": ["c4"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Before you attack a piece, count its escape squares. After 5...c4 the bishop on d3 cannot go back to e2 or c2 (its own pieces are there), e4 is covered by the d5-pawn, and on f5, g6 or h7 it would be captured. White gets only one pawn for the bishop, for example 6.Bxc4 dxc4.",
+      "wrong": [
+        {"move": "h6", "why": "Questions the other bishop, but it misses that the d3-bishop can be trapped."},
+        {"move": "Nc6", "why": "A good developing move, but White can play c3 and the bishop gets c2 back."}
+      ],
+      "hint": "Which pawn move attacks the bishop on d3?",
+      "objective": "Trap a piece with a pawn move after counting its escape squares.",
+      "tags": ["trapped-piece", "counting"]
+    }
+  ]
+}

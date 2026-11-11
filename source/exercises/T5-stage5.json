@@ -134,7 +134,7 @@
       "type": "mate",
       "difficulty": 5,
       "fen": "r3r2k/pp4pp/1q6/6N1/2Q5/8/PP3PPP/2B3K1 w - - 0 25",
-      "question": "White to move. You are a rook down, but Black's king is boxed in by its own pawns and your queen and knight are close. Mate in 4.",
+      "question": "White to move. You are behind in material, but Black's king is boxed in by its own pawns and your queen and knight are close. Mate in 4.",
       "solution": [
         "Nf7+",
         "Kg8",

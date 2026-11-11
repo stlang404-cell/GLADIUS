@@ -36,6 +36,8 @@ export async function render() {
       break;
     }
   }
+  for (const m of document.querySelectorAll('.modal-back')) m.remove();
+  document.body.classList.remove('modal-open');
   if (typeof cleanup === 'function') { try { cleanup(); } catch (e) { console.warn(e); } }
   cleanup = null;
   main.innerHTML = '';

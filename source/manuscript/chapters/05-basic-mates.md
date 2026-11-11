@@ -51,10 +51,16 @@ The simplest way to shrink the box is the **knight's-distance method**: after ea
 
 ```line
 fen: 8/8/8/3k4/8/2Q5/8/K7 b - - 0 1
-moves: 1...Ke4 2.Qf6 Kd5 3.Qe7 Kd4 4.Qe6 Kc5 5.Qd7 Kc4 6.Qd6 Kc3 7.Qd5 Kb4 8.Kb2 Ka4 9.Kc3 Ka3 10.Qa8#
+moves: 1...Ke4 2.Qf6 Kd5 3.Qe7 Kd4 4.Qe6 Kc5 5.Qd7 Kc4 6.Qd6 Kc3 7.Qd5 Kb4
+caption: After every king move, the queen goes to a square a knight's move away from it. The king is pushed step by step onto the a- and b-files.
+```
+
+```line
+fen: 8/8/8/3Q4/1k6/8/8/K7 w - - 13 8
+moves: 8.Kb2 Ka4 9.Kc3 Ka3 10.Qa8#
 check: engine
 diagram: end
-caption: The queen follows the king at a knight's distance until it is trapped on the a- and b-files; then White's king walks up and the queen mates.
+caption: Once the king is trapped on the a- and b-files, the queen stays on d5 and White's king walks up; then the queen mates.
 ```
 
 Notice what White did *not* do: no checks until the last move. Each queen move took squares away. When the king reached the a- and b-files, the queen stayed on d5, guarding the fifth rank and the c-file, and White's king came to c3 to cover b2, b3 and b4.
@@ -109,41 +115,47 @@ The rook mate takes longer, up to 16 moves with perfect play and usually more in
 
 ### The box and the cut-off
 
-The rook cuts the enemy king off along a file or rank. In the next diagram the rook on a6 keeps the black king on the seventh and eighth ranks. That is the box. Your job is to make it smaller, one rank at a time, until the king is on the edge.
+The rook cuts the enemy king off along a file or rank. In the next diagram the rook on a6 keeps the black king on the seventh and eighth ranks. That is the box. Your job is to make it smaller, one rank or file at a time, until the king is on the edge.
 
 ```board
 fen: 8/2k5/R7/3K4/8/8/8/8 w - - 0 1
-caption: The rook on a6 cuts the black king off on the seventh and eighth ranks. White's king will now try to stand directly opposite the black king.
+caption: The rook on a6 cuts the black king off on the seventh and eighth ranks. White will shrink this box and bring the king up to face the black king.
 arrows: a6h6
 squares: c7
 ```
 
 ### Opposition: when to check
 
-Two kings stand in **opposition** when they are on the same file (or rank) with exactly one square between them. When the kings are in opposition and the rook gives check along the rank behind the enemy king, the king cannot step forward (your king covers those squares) and must go back one rank. That is how the box shrinks.
+Two kings stand in **opposition** when they are on the same file (or rank) with exactly one square between them. When the enemy king is on the edge and the kings are in opposition, a rook check along the edge is mate, because your king covers every square in front. Before that, a rook check is useful only if it pushes the king back a rank.
 
-If the enemy king refuses to stand opposite yours, you follow it sideways with your king. If following would only repeat, you make a **waiting move** with the rook: a rook move along its rank, far from the enemy king, that keeps the box exactly as it is and passes the move to your opponent. Then the king has to step into opposition or toward the corner.
+If the enemy king refuses to stand opposite yours, you follow it with your king. If following would only repeat, you make a **waiting move** with the rook: a rook move along its line, far from the enemy king, that keeps the box exactly as it is and passes the move to your opponent. Then the king has to give way.
 
 ```line
 fen: 8/2k5/R7/3K4/8/8/8/8 w - - 0 1
-moves: 1.Kc5 Kb7 2.Rh6 Kc7 3.Rh7+ Kd8 4.Kd6 Ke8 5.Ke6 Kf8 6.Kf6 Kg8 7.Rb7 Kh8 8.Kg6 Kg8 9.Rb8#
+moves: 1.Rd6 Kb7 2.Kc5 Kc7
+caption: First the rook shrinks the box to the corner area a7-c8, then White's king walks up to face the black king.
+```
+
+```line
+fen: 8/2k5/3R4/2K5/8/8/8/8 w - - 4 3
+moves: 3.Rd1 Kb7 4.Rd7+ Kc8 5.Kc6 Kb8 6.Kb6 Kc8 7.Rd6 Kb8 8.Rd8#
 check: engine
 diagram: end
-caption: The rook checks only when the kings face each other (move 3 and the final mate). In between, White's king follows and the rook steps away when attacked.
+caption: Wait (3.Rd1), check to push the king to the edge (4.Rd7+), follow with the king, wait again (7.Rd6), and mate when the kings face each other.
 ```
 
-Look at moves 1 to 3. After 1.Kc5 the kings face each other, so Black moves away with 1...Kb7, attacking the rook. The rook simply goes to the other end of its rank, 2.Rh6, where the king can never reach it. When the king returns to c7, the kings are in opposition again and 3.Rh7+ pushes it to the eighth rank.
+Follow the plan in the line. 1.Rd6 shrinks the box to the corner area a7-c8. White's king walks up with 2.Kc5. When Black's king stands on c7, the rook simply waits with 3.Rd1, keeping the d-file closed, and Black must step back to b7. Now 4.Rd7+ drives the king to the eighth rank. White's king follows, and after 6.Kb6 Kc8 the second waiting move 7.Rd6 forces 7...Kb8, straight into opposition: 8.Rd8#.
 
-### The waiting move near the corner
+### The waiting move
 
 ```board
-fen: 6k1/7R/5K2/8/8/8/8/8 w - - 0 7
-caption: Black's king on g8 attacks the rook on h7. 7.Rb7 saves the rook and keeps the box: Black can only go to h8 or f8, and either way the mate comes soon.
-red: g8h7
-arrows: h7b7
+fen: 8/2k5/3R4/2K5/8/8/8/8 w - - 4 3
+caption: The black king has nowhere useful to go, but it is White's move. 3.Rd1 keeps the d-file closed and hands the move back to Black, who must retreat.
+arrows: d6d1
+squares: c7
 ```
 
-This position from the line is worth a closer look. If Black now plays 7...Kf8, the kings are in opposition and 8.Rb8# follows. After 7...Kh8, White's king steps to g6, leaving Black only g8, and the rook mates on the back rank.
+Waiting moves feel strange at first, because they do not seem to do anything. Their job is to change who is on move. In king-and-rook endings, the side that must move often has to give ground, so a quiet rook move far from the enemy king is one of the most useful tools you have.
 
 :::mistake Checking from too close
 A rook check with the rook next to the enemy king, and no protection, just loses the rook. Keep the rook far away from the enemy king, at the other end of its rank or file. It works just as well from there.
@@ -154,20 +166,59 @@ A rook check with the rook next to the enemy king, and no protection, just loses
 With two heavy pieces you do not need your king at all. The **ladder** (also called the lawnmower) uses the two pieces on neighbouring ranks or files. One guards a rank, the other gives check on the next rank, and they leapfrog each other until the king is on the edge.
 
 ```board
-fen: 8/8/8/8/8/6k1/1R6/R6K w - - 0 1
-caption: Two rooks start the ladder. The rook on b2 guards the second rank; the a1-rook will check on the third, and so on up the board.
-arrows: a1a3 b2b4
+fen: 8/8/8/6k1/1R6/R7/8/K7 w - - 0 1
+caption: Two rooks start the ladder. The rook on b4 guards the fourth rank; the a3-rook will check on the fifth, and so on up the board.
+arrows: a3a5 b4b6
 ```
 
 ```line
-fen: 8/8/8/8/8/6k1/1R6/R6K w - - 0 1
-moves: 1.Ra3+ Kf4 2.Rb4+ Ke5 3.Ra5+ Kd6 4.Rb6+ Kc7 5.Rh6 Kb7 6.Rg5 Kc7 7.Rg7+ Kd8 8.Rh8#
+fen: 8/8/8/6k1/1R6/R7/8/K7 w - - 0 1
+moves: 1.Ra5+ Kg6 2.Rb6+ Kf7 3.Ra7+ Ke8 4.Rb8#
 check: engine
 diagram: end
-caption: When the king walks toward the rooks (moves 4 and 5), switch them to the far side of the board, then continue the ladder.
+caption: Each rook check pushes the king one rank back, while the other rook guards the rank it just left.
 ```
 
-The only skill is the switch. The black king walked toward the rooks to attack them. Instead of checking into its arms, White moved each rook to the far side (5.Rh6 and 6.Rg5) and then carried on. The same method works with a queen and a rook, or with two queens after a promotion.
+The only extra skill is the switch. If the enemy king walks toward your rooks and attacks one of them, do not check into its arms: move that rook to the far side of the board, along the same rank, and then carry on with the ladder. The same method works with a queen and a rook, or with two queens after a promotion.
+
+### Queen and rook together
+
+The ladder works even faster with a queen and a rook, and it is the mate you will reach most often in real games, because players who are far ahead usually still have a rook when they promote a pawn.
+
+```board
+fen: 8/8/8/6k1/1Q6/R7/8/K7 w - - 0 1
+caption: Queen and rook on neighbouring files. The queen guards the fourth rank; the rook checks on the fifth.
+arrows: a3a5 b4b6
+```
+
+```line
+fen: 8/8/8/6k1/1Q6/R7/8/K7 w - - 0 1
+moves: 1.Ra5+ Kf6 2.Qb6+ Ke7 3.Ra7+ Ke8 4.Qb8#
+check: engine
+caption: The same ladder: rook, queen, rook, queen. Because the queen also covers diagonals, the king has even fewer squares.
+```
+
+A queen and a rook can also mate with the rook guarding and the queen in front of the king, but the ladder needs no thought at all, so use it whenever the king is in the open.
+
+## Getting to the basic mate
+
+The basic mates usually appear at the end of a game you have already won on material. How you get there matters too.
+
+* **Trade pieces when you are ahead.** Every exchange brings you closer to a position where your extra material is decisive and your opponent has no counterplay. The opponent's last pieces are their only hope; take them off the board.
+* **Promote with care.** When you promote a pawn, check for stalemate first, exactly as [Chapter 1](#ch-01) explained. If promoting to a queen would stalemate, promote to a rook instead; king and rook still win.
+* **Keep one piece that can mate.** If you have a choice, keep a rook or a queen rather than a lone minor piece. King and bishop, or king and knight, cannot mate a lone king.
+* **Do not hurry.** Your opponent may play on in the hope that you stalemate them. Take your time, use the method, and say the stalemate question in your head before every move.
+
+### The rook mate as a plan in words
+
+If you forget the details, remember this short plan for king and rook against king:
+
+1. Put the rook a few squares away from the enemy king to cut it off along a file or rank.
+2. Bring your king toward the enemy king, staying on the same side of the rook.
+3. When the kings stand opposite each other, check along the rank or file behind the enemy king to push it back.
+4. When the enemy king attacks the rook, move the rook to the far end of its line.
+5. When you cannot make progress, make a waiting move with the rook.
+6. On the edge, the check with the kings in opposition is mate.
 
 ## Other mates: two bishops, bishop and knight
 
@@ -176,6 +227,24 @@ King with two bishops against a king is also a forced win, and king, bishop and 
 :::coach What to study when
 Coaching judgment: queen, rook and two-rook mates come up in real games every month at this level. The two-bishop mate is a good exercise later in Stage 2 or 3. Learn the bishop-and-knight mate only when you are above about 1500 and want a challenge; it appears so rarely that the time is better spent on tactics and rook endgames.
 :::
+
+## How the defender makes it hard
+
+To mate quickly, it helps to know what the defending side is trying to do. A player with a lone king has only two hopes: stalemate, or running you out of moves or time. So the defender does two things.
+
+First, the defending king **heads for the centre**, because a king in the middle of the board is hardest to box in. Every move you spend checking it without shrinking the box helps the defender. Second, near the edge, the defender **looks for stalemate squares**: corners and edge squares where one careless move takes away the last legal move.
+
+That tells you how to play. Use your first moves to cut the king off from the centre, even if it means a quiet move instead of a check. Then, near the edge, slow down: the closer the king gets to the corner, the more carefully you count its legal moves.
+
+### Why the knight's distance works
+
+A queen placed a knight's move away from the enemy king covers almost all of the squares around it, but cannot be attacked by it, because the king can only take something on a neighbouring square. Each time the king moves, you can usually find a new knight's-distance square that leaves it fewer choices. You do not need to calculate; you need only repeat the pattern until the king reaches the edge. When it does, stop: the next queen move toward the corner is the one that can stalemate.
+
+### When the opponent still has pawns
+
+In real games the lone king often still has a pawn or two. Pawns change two things. A pawn that can move means stalemate is impossible for the moment, so the defender cannot use the stalemate trick while it can still push. But a blocked pawn (one with a piece directly in front of it) has no legal move and does not help the defender at all. Count it as if it were not there when you ask the stalemate question.
+
+The other danger is a pawn that runs toward promotion while you are busy mating. Before you start the technique, check whether any enemy pawn can become a queen. If it can, stop it or take it first; then mate.
 
 ## The three classic errors
 

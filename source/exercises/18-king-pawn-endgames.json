@@ -1,0 +1,339 @@
+{
+  "chapter": 18,
+  "title": "King and Pawn Endgames",
+  "exercises": [
+    {
+      "id": "18-01",
+      "type": "endgame",
+      "difficulty": 1,
+      "fen": "k7/8/8/3K4/7p/8/8/8 w - - 0 1",
+      "question": "White to move. Black's h-pawn is running. Which king move saves the game?",
+      "solution": [
+        "Ke4"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "Draw the square of the h4-pawn: h4-h1-e1-e4. Only Ke4 steps inside it, and from there the king catches the pawn: 1.Ke4 h3 2.Kf3 h2 3.Kg2. Every other move leaves the king one step outside the square and the pawn promotes.",
+      "wrong": [
+        {
+          "move": "Kd4",
+          "why": "Looks central, but d4 is outside the square: 1...h3 2.Ke3 h2 3.Kf2 h1=Q."
+        },
+        {
+          "move": "Ke5",
+          "why": "The fifth rank is outside the square; the king is one tempo short after 1...h3."
+        }
+      ],
+      "hint": "Draw the square from the pawn to its promotion square.",
+      "objective": "Use the rule of the square to decide instantly whether your king catches a passed pawn.",
+      "tags": [
+        "king-pawn-endgame",
+        "passed-pawn"
+      ]
+    },
+    {
+      "id": "18-02",
+      "type": "endgame",
+      "difficulty": 1,
+      "fen": "8/8/4k3/8/3KP3/8/8/8 b - - 0 1",
+      "question": "Black to move. White wants to escort the e-pawn. Find the move that draws.",
+      "solution": [
+        "Kd6"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "Kd6 takes the opposition: the kings face each other on the d-file with one square between them and White to move. White's king cannot advance to d5, c5 or e5 without giving up the key squares, so Black keeps blocking. Any other move lets the white king step forward, for example 1...Kf6? 2.Kd5 and White reaches the key squares in front of the pawn.",
+      "wrong": [
+        {
+          "move": "Kf6",
+          "why": "Gives up the opposition: 2.Kd5 and the white king walks to d6 or e6."
+        },
+        {
+          "move": "Ke7",
+          "why": "Retreating hands White the key squares after 2.Ke5 or 2.Kd5."
+        }
+      ],
+      "hint": "Face the white king with one square between you.",
+      "objective": "Take the direct opposition when defending king and pawn against king.",
+      "tags": [
+        "opposition",
+        "king-pawn-endgame",
+        "defense"
+      ]
+    },
+    {
+      "id": "18-03",
+      "type": "endgame",
+      "difficulty": 1,
+      "fen": "8/4k3/8/5K2/4P3/8/8/8 w - - 0 1",
+      "question": "White to move and win.",
+      "solution": [
+        "Ke5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Ke5 takes the opposition in front of the pawn. Black must now give way, and the white king reaches a key square (d6, e6 or f6): 1.Ke5 Kd7 2.Kf6 and the pawn marches. Pushing the pawn first or wandering to the side lets Black take the opposition and draw.",
+      "wrong": [
+        {
+          "move": "e5",
+          "why": "Pushing too early: 1...Ke6 2.Ke4 Ke7 and Black blocks the pawn with the opposition; it is a draw."
+        },
+        {
+          "move": "Kg5",
+          "why": "1...Ke6 takes the opposition and White makes no progress."
+        }
+      ],
+      "hint": "King in front of the pawn, and make the opponent move.",
+      "objective": "Win king and pawn against king by leading with the king and taking the opposition.",
+      "tags": [
+        "opposition",
+        "king-pawn-endgame"
+      ]
+    },
+    {
+      "id": "18-04",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "8/8/3k4/1K6/P7/8/8/8 b - - 0 1",
+      "question": "Black to move. White has a rook pawn. Where must your king go to draw?",
+      "solution": [
+        "Kc7"
+      ],
+      "goal": "draw",
+      "accept": [
+        "Kd7"
+      ],
+      "explanation": "Against an a-pawn (or h-pawn) the defender draws by reaching the corner in front of it: once the black king sits on a8/b8, White can only stalemate or let the pawn be blocked. Kc7 heads for b8 and a8 and gets there in time. Moves away from the corner allow the white king to b7 or b6 and cut Black off.",
+      "wrong": [
+        {
+          "move": "Ke7",
+          "why": "Walks away from the corner: 2.Kc6 and the white king shields the pawn all the way to a8."
+        },
+        {
+          "move": "Kd5",
+          "why": "Chasing behind the pawn is too slow: 2.a5 and White's king guards the a-pawn's path."
+        }
+      ],
+      "hint": "With a rook pawn, the corner is your fortress.",
+      "objective": "Know that king against king and rook pawn is drawn once the defender reaches the corner.",
+      "tags": [
+        "king-pawn-endgame",
+        "defense"
+      ]
+    },
+    {
+      "id": "18-05",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "3k4/8/3P4/4K3/8/8/8/8 b - - 0 1",
+      "question": "Black to move. Only one move holds the draw. Find it.",
+      "solution": [
+        "Kd7"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "The black king must stay directly in front of the pawn. After Kd7 the white king cannot get to c7 or e7, and if White plays Kd5 Black answers Kd8 and keeps the blockade until stalemate or the pawn falls. Stepping to the side lets the white king take the square in front of the pawn: 1...Ke8? 2.Ke6 and 3.d7, or 1...Kc8? 2.Ke6 and 3.Ke7.",
+      "wrong": [
+        {
+          "move": "Ke8",
+          "why": "2.Ke6 and the pawn reaches d7 with White's king guarding the promotion square."
+        },
+        {
+          "move": "Kc8",
+          "why": "2.Ke6 followed by Ke7 controls d8; the pawn queens."
+        }
+      ],
+      "hint": "Stand in the pawn's path.",
+      "objective": "Defend king and pawn against king by keeping your king in front of the pawn.",
+      "tags": [
+        "king-pawn-endgame",
+        "defense",
+        "opposition"
+      ]
+    },
+    {
+      "id": "18-06",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/8/8/2K5/5ppp/8/5PPP/1k6 b - - 0 1",
+      "question": "Black to move. Both kings are far from the kingside. Win the game.",
+      "solution": [
+        "g3",
+        "hxg3",
+        "f3",
+        "gxf3",
+        "h3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "This is the classic three-against-three breakthrough. 1...g3! sacrifices the middle pawn to open lines: after 2.hxg3 f3! 3.gxf3 h3 the h-pawn runs to h1, and after 2.fxg3 h3! 3.gxh3 f3 the f-pawn does the same. The white king on c5 is far outside the square of either runner. Calm king moves let White's king come back and the chance is gone.",
+      "wrong": [
+        {
+          "move": "Kc2",
+          "why": "Natural but slow: 2.Kd4 brings the white king to the kingside and the breakthrough no longer works."
+        },
+        {
+          "move": "h3",
+          "why": "The wrong pawn first: 2.gxh3 and the black pawns can no longer break through; White's extra pawn decides."
+        }
+      ],
+      "hint": "Sacrifice the middle pawn.",
+      "objective": "Recognize and execute the three-against-three pawn breakthrough.",
+      "tags": [
+        "king-pawn-endgame",
+        "passed-pawn",
+        "calculation"
+      ]
+    },
+    {
+      "id": "18-07",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "7k/8/8/7p/P7/8/8/2K5 b - - 0 1",
+      "question": "Black to move. Should you run with the pawn or chase White's pawn? Count, then play the right move.",
+      "solution": [
+        "h4"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Count: the h-pawn needs four moves to queen, the a-pawn needs four too, but Black moves first. After 1...h4 2.a5 h3 3.a6 h2 4.a7 h1=Q+ Black queens with check, and the new queen on h1 also covers a8 along the long diagonal. The black king cannot catch the a-pawn (h8 is outside its square), so chasing it loses.",
+      "wrong": [
+        {
+          "move": "Kg7",
+          "why": "The king is outside the a-pawn's square: 2.a5 and White queens first."
+        },
+        {
+          "move": "Kg8",
+          "why": "Same problem: the king is too slow to catch the a-pawn, and Black has wasted the race."
+        }
+      ],
+      "hint": "Count the moves to queen, and check what the new queen controls.",
+      "objective": "Count tempi in a pawn race, including checks and control of the other queening square.",
+      "tags": [
+        "king-pawn-endgame",
+        "passed-pawn",
+        "counting"
+      ]
+    },
+    {
+      "id": "18-08",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/8/8/3k4/8/8/3PK3/8 w - - 0 1",
+      "question": "White to move. The pawn is still on d2. Which move wins?",
+      "solution": [
+        "Kd3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Kd3 takes the opposition in front of the pawn. Because the pawn is still far back, White has spare pawn moves to win any opposition battle later. After 1.Kd3 Kc5 2.Ke4 or 1...Ke5 2.Kc4 the white king advances and reaches the key squares. Pushing the pawn first lets the black king blockade it.",
+      "wrong": [
+        {
+          "move": "d4",
+          "why": "Pushing first throws away the spare tempo: 1...Kd6! and Black keeps the opposition in front of the pawn; it is a draw."
+        },
+        {
+          "move": "Ke3",
+          "why": "1...Ke5 takes the opposition; with the king beside the pawn instead of in front, White cannot make progress."
+        }
+      ],
+      "hint": "King first, pawn later.",
+      "objective": "Lead with the king and use the opposition when the pawn is still behind.",
+      "tags": [
+        "opposition",
+        "king-pawn-endgame"
+      ]
+    },
+    {
+      "id": "18-09",
+      "type": "endgame",
+      "difficulty": 4,
+      "fen": "8/3k4/4p3/4P3/2K5/8/8/8 w - - 0 1",
+      "question": "White to move. The black pawn on e6 is the target. Find the winning plan move.",
+      "solution": [
+        "Kb5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "White wants the king on d6 or f6, but the direct approach meets the opposition. Kb5! outflanks: if 1...Kc7 2.Kc5 Black must give way, and if 1...Ke7 2.Kc6 and the king walks to d6. The black king cannot cover both sides because the e5-pawn takes d6 and f6 away from it. Central moves like Kd4 or Kc5 let Black take the opposition and draw.",
+      "wrong": [
+        {
+          "move": "Kd4",
+          "why": "1...Kc6! takes the opposition and White cannot break through."
+        },
+        {
+          "move": "Kc5",
+          "why": "1...Kc7 takes the opposition; White has no spare pawn move and it is a draw."
+        }
+      ],
+      "hint": "Go around, not straight ahead.",
+      "objective": "Use outflanking to win a blocked king and pawn ending.",
+      "tags": [
+        "opposition",
+        "king-pawn-endgame"
+      ]
+    },
+    {
+      "id": "18-10",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/4k3/3p4/3P4/5K2/8/8/8 b - - 0 1",
+      "question": "Black to move. White's king wants to go round to e6. How do you stop it?",
+      "solution": [
+        "Kf6"
+      ],
+      "goal": "draw",
+      "accept": [
+        "Kf8"
+      ],
+      "explanation": "Kf6 takes the direct opposition (f4 against f6). Now White's king cannot go to g5 or e4-e5 without Black mirroring it; for example 2.Ke4 Kg5 or 2.Kg4 Ke5 and the d6-pawn stays defended. Kf8 (distant opposition, three squares apart) also holds. Moving toward the queenside allows 2.Kg5 or 2.Kf5 and the king outflanks to e6.",
+      "wrong": [
+        {
+          "move": "Ke8",
+          "why": "2.Kg5 Kf7 3.Kf5 and White's king reaches e6, winning the d6-pawn."
+        },
+        {
+          "move": "Kd8",
+          "why": "2.Kf5 and the white king goes to e6 next; the d6-pawn falls."
+        }
+      ],
+      "hint": "Mirror the white king on its own file.",
+      "objective": "Use the opposition defensively to stop an outflanking manoeuvre.",
+      "tags": [
+        "opposition",
+        "king-pawn-endgame",
+        "defense"
+      ]
+    },
+    {
+      "id": "18-11",
+      "type": "endgame",
+      "difficulty": 4,
+      "fen": "3r4/4kp2/6p1/7p/P6P/5KP1/8/3R4 w - - 0 1",
+      "question": "White to move. Material is equal. Should you trade rooks? Play the best move.",
+      "solution": [
+        "Rxd8"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Count the pawn ending before you go in: after 1.Rxd8 Kxd8 White has an outside passed a-pawn. The white king heads for d5, the a-pawn drags the black king to the queenside, and then White's king eats the kingside pawns. With rooks on, Black's rook stops the a-pawn from behind or in front and the game is close to equal. The trade turns a roughly equal rook ending into a winning pawn ending.",
+      "wrong": [
+        {
+          "move": "Ra1",
+          "why": "Keeps rooks: 1...Ra8 and the black rook blockades the a-pawn; White has only a small edge."
+        },
+        {
+          "move": "Re1+",
+          "why": "A check with no follow-up: 1...Kf8 2.Ra1 Ra8 and Black holds."
+        }
+      ],
+      "hint": "Which pawn ending would you get, and who wins it?",
+      "objective": "Trade into a pawn ending only after calculating that the outside passed pawn wins it.",
+      "tags": [
+        "king-pawn-endgame",
+        "passed-pawn",
+        "conversion"
+      ]
+    }
+  ]
+}

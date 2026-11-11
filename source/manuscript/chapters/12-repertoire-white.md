@@ -291,11 +291,11 @@ The best defence after 4.Qe2 is 4...Qe7 5.Qxe4 d6 6.d4 dxe5 7.dxe5, and White is
 Two more Petrov sidelines:
 
 * **3...Qe7?!** (attacking the knight and the e4 pawn): 4.Nf3 Qxe4+ 5.Be2. You have given back the pawn, but you are ahead in development and Black's queen is exposed.
-* **3...Nc6** (the "Stafford Gambit", popular online): 4.Nxc6 dxc6 5.d3 and develop with Be2, O-O. Most of Black's tricks rely on White playing f3 or Bc4 too early; d3 and Be2 keep everything protected.
+* **3...Nc6?** (the "Stafford Gambit", popular online, which simply gives up a pawn): 4.Nxc6 dxc6 5.d3 and develop with Be2, O-O. Most of Black's tricks rely on White playing f3 or Bc4 too early; d3 and Be2 keep everything protected.
 
 ```line
 fen: startpos
-moves: 1.e4 e5 2.Nf3 Nf6 3.Nxe5 Nc6 4.Nxc6 dxc6 5.d3 Bc5 6.Be2
+moves: 1.e4 e5 2.Nf3 Nf6 3.Nxe5 Nc6? 4.Nxc6 dxc6 5.d3 Bc5 6.Be2
 check: engine
 caption: Against the Stafford, a piece up, White simply develops with d3 and Be2 and castles.
 ```
@@ -330,9 +330,7 @@ These are moves you will see at the 400–800 level. Each one breaks an opening 
 fen: startpos
 moves: 1.e4 e5 2.Nf3 f6? 3.Nxe5 fxe5? 4.Qh5+ Ke7 5.Qxe5+ Kf7 6.Bc4+
 check: engine
-diagram: end
 caption: Black's king is dragged into the open. White has a winning attack (after 4...g6 5.Qxe5+ wins the rook on h8).
-arrows: h5e5 c4f7
 ```
 
 The better defence for Black is 3...Qe7 4.Nf3 Qxe4+ 5.Be2, and White is ahead in development while Black's king and queen are awkwardly placed.

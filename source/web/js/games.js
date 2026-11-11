@@ -4,7 +4,7 @@ import { Board } from './board.js';
 import { Chess } from './chess-ui.js';
 import { getGame, updateGame, deleteGame, importPgnText, positions, sampleGamePgn, exportPgn } from './library.js';
 import { reviewGame, CLASS_LABEL } from './analysis.js';
-import { fmtScore, winProb } from './engine.js';
+import { engine, fmtScore, winProb } from './engine.js';
 import { CATEGORIES } from './srs.js';
 import { addMomentToJournal } from './journal.js';
 import { h, pageHead, toast, downloadFile, confirmDialog, fmtDate } from './ui.js';
@@ -177,7 +177,7 @@ export function renderGame(main, { id }) {
     reviewBox.innerHTML = '';
     const bar = h('progress', { max: pos.length, value: 0, id: 'review-progress', 'aria-label': 'Engine review progress' });
     const lab = h('span', { class: 'small muted' }, 'Starting the engine…');
-    const stop = h('button', { class: 'btn small ghost', type: 'button', id: 'cancel-review', onclick: () => { if (cancel) cancel.cancelled = true; } }, 'Cancel');
+    const stop = h('button', { class: 'btn small ghost', type: 'button', id: 'cancel-review', onclick: () => { if (cancel) { cancel.cancelled = true; engine.stop(); } } }, 'Cancel');
     reviewBox.append(h('h2', { class: 'card-title' }, 'Engine review'), bar, lab, stop);
     const depth = store.get().settings.engineDepth || 12;
     reviewGame(g, { depth, cancel, onProgress: (i, n) => { bar.value = i; lab.textContent = ` Position ${i} of ${n}`; } }).then((rev) => {
