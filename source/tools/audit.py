@@ -62,16 +62,19 @@ def pdf_audit(path: pathlib.Path, must_contain: list[str]) -> list[str]:
                 broken += 1
     out.append(f"- Internal link annotations: {links}; without destination: {broken}"
                + (" ✅" if broken == 0 else " ❌"))
-    text = ""
-    for i in sorted({0, 1, 2, n // 3, n // 2, n - 1}):
+    texty = 0
+    full = []
+    for pg in r.pages:
         try:
-            text += r.pages[i].extract_text() or ""
+            t = pg.extract_text() or ""
         except Exception:
-            pass
-    full_sample = " ".join(text.split())
-    found = [w for w in must_contain if w.lower() in full_sample.lower()]
-    out.append(f"- Searchable text: extracted {len(full_sample)} characters from sample pages; "
-               f"expected phrases found {len(found)}/{len(must_contain)}" + (" ✅" if len(found) == len(must_contain) else " ⚠️"))
+            t = ""
+        texty += len(t.strip()) > 80
+        full.append(t)
+    blob = " ".join(" ".join(full).split()).lower()
+    found = [w for w in must_contain if w.lower() in blob]
+    out.append(f"- Searchable/selectable text: {texty}/{n} pages have extractable text; expected phrases found "
+               f"{len(found)}/{len(must_contain)}" + (" ✅" if len(found) == len(must_contain) else " ⚠️"))
     meta = r.metadata or {}
     out.append(f"- Metadata title: {meta.get('/Title', '—')}")
     return out
@@ -157,7 +160,7 @@ def main():
 
     # ---------------- documents
     lines += ["## 3. PDF documents", ""]
-    expect = {"THE-ELO-BLUEPRINT-COMPLETE.pdf": ["Contents", "Elo Blueprint", "Solutions"],
+    expect = {"THE-ELO-BLUEPRINT-COMPLETE.pdf": ["Contents", "How to Use This Book", "Solutions", "Glossary", "fork"],
               "THE-ELO-CHEAT-SHEETS.pdf": ["Cheat", "checklist"],
               "THE-90-DAY-CHESS-ACCELERATOR.pdf": ["Day", "workbook"]}
     for name, words_ in expect.items():
@@ -182,10 +185,12 @@ def main():
     alog = LOGS / "app-tests.log"
     if alog.exists():
         t = alog.read_text()
-        res = list(dict.fromkeys(re.sub(r"\s+\(\d+\.\ds\)$", "", l.rstrip()) for l in t.splitlines()
-                                 if re.match(r"\s*(PASS|FAIL)", l)))
-        lines.append(f"- Playwright suite (`tools/test_app.js`): {sum('PASS' in l for l in res)} passed, "
-                     f"{sum('FAIL' in l for l in res)} failed")
+        allres = [l.rstrip() for l in t.splitlines() if re.match(r"\s*(PASS|FAIL)\s", l)]
+        m = re.search(r"(\d+) passed, (\d+) failed", t)
+        total = int(m.group(1)) + int(m.group(2)) if m else len(allres)
+        res = allres[-total:]  # the suite prints its final summary list last
+        lines.append(f"- Playwright suite (`tools/test_app.js`, iPhone 13 and 1280×800 viewports): "
+                     + (f"{m.group(1)} passed, {m.group(2)} failed" if m else "no summary line"))
         lines += ["```"] + res + ["```"]
     else:
         lines.append("- ❌ app test log missing")
