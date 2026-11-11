@@ -1,0 +1,349 @@
+{
+  "chapter": 28,
+  "title": "Analyzing Your Games and Training for Life",
+  "exercises": [
+    {
+      "id": "28-01",
+      "type": "mate",
+      "difficulty": 4,
+      "fen": "r4rk1/qb3ppp/p7/3N4/1p6/3Q1R2/PP3PPP/6K1 w - - 0 22",
+      "question": "White to move. From a student's game (illustrative): White played 22.Qxh7+? here and the attack fizzled out. Find the mate in 3 that was missed.",
+      "solution": [
+        "Ne7+",
+        "Kh8",
+        "Qxh7+",
+        "Kxh7",
+        "Rh3#"
+      ],
+      "goal": "mate",
+      "mate_in": 3,
+      "accept": [],
+      "explanation": "Order matters. 22.Ne7+ first drives the king to h8 and puts the knight on e7, where it covers g8 and g6. Only then does 23.Qxh7+ Kxh7 24.Rh3# work: Anastasia's mate, with the knight taking the king's escape squares. In the game, 22.Qxh7+? Kxh7 23.Rh3+ Kg6 let the king walk out. Journal category: missed-mate.",
+      "wrong": [
+        {
+          "move": "Qxh7+",
+          "why": "The right idea in the wrong order: after 22...Kxh7 23.Rh3+ Kg6 the king escapes because the knight is not yet on e7."
+        },
+        {
+          "move": "Rh3",
+          "why": "Too slow: Black answers 22...f5 and the mating net never closes."
+        }
+      ],
+      "hint": "Which check takes away g6 and g8 before the queen sacrifice?",
+      "objective": "Find the move order that makes a mating pattern work, and log missed mates in your journal.",
+      "tags": [
+        "mate-patterns",
+        "attack",
+        "calculation"
+      ]
+    },
+    {
+      "id": "28-02",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "2Q5/1R3ppk/7p/P7/8/7P/3q2PK/8 b - - 0 38",
+      "question": "Black to move. From a student's game (illustrative): Black, a rook down, resigned here. Was resignation correct? Find the move that saves the game.",
+      "solution": [
+        "Qf4+"
+      ],
+      "goal": "draw",
+      "accept": [
+        "Qd6+"
+      ],
+      "explanation": "White's king has only g1, h1 and h2, and White's queen and rook are far away. 38...Qf4+ (or 38...Qd6+) starts a perpetual check: for example 39.Kh1 Qf1+ 40.Kh2 Qf4+, and White cannot escape or block without losing material. The student's notes said 'down a rook, no chances', which is exactly why the habit of checking for perpetual before resigning matters. Journal category: time-psychology.",
+      "wrong": [
+        {
+          "move": "Qxa5",
+          "why": "Grabs a pawn, but 39.Rxf7 creates mating threats and Black has wasted the moment for checks."
+        },
+        {
+          "move": "Qd5",
+          "why": "Centralizes without checking; White has time for Qc7 and the a-pawn, and Black is lost."
+        }
+      ],
+      "hint": "Count the white king's squares. Can you check on all of them?",
+      "objective": "Before resigning, look for perpetual check, and note 'resigned too early' honestly in your journal.",
+      "tags": [
+        "perpetual",
+        "defense"
+      ]
+    },
+    {
+      "id": "28-03",
+      "type": "endgame",
+      "difficulty": 4,
+      "fen": "8/ppp5/6k1/PPP5/8/8/8/7K w - - 0 40",
+      "question": "White to move. From a student's game (illustrative): White played 40.Kg2 here, trying to bring the king over, and lost. Both kings are far from the queenside. Find the win.",
+      "solution": [
+        "b6",
+        "axb6",
+        "c6",
+        "bxc6",
+        "a6"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "This is the classic three-against-three breakthrough. 40.b6! forces a capture, and after 40...axb6 41.c6! bxc6 42.a6 the a-pawn cannot be stopped (after 40...cxb6, 41.a6! bxa6 42.c6 wins the same way). It works only because Black's king is too far away; the student's 40.Kg2? gave Black time to bring the king closer, and then Black's own majority decided. Journal category: missed-win (endgame).",
+      "wrong": [
+        {
+          "move": "Kg2",
+          "why": "Natural but too slow: Black's king approaches and the breakthrough no longer works."
+        },
+        {
+          "move": "a6",
+          "why": "The wrong pawn first: after 40...bxa6 Black has enough pawns left to stop everything."
+        }
+      ],
+      "hint": "Sacrifice two pawns to make the third a queen.",
+      "objective": "Recognize pawn-breakthrough patterns and check whether the defending king is in the square.",
+      "tags": [
+        "king-pawn-endgame",
+        "passed-pawn",
+        "calculation"
+      ]
+    },
+    {
+      "id": "28-04",
+      "type": "blunder-check",
+      "difficulty": 2,
+      "fen": "rn1qkbnr/ppp2p1p/3p2p1/4N3/2B1P1b1/2N5/PPPP1PPP/R1BQK2R b KQkq - 0 5",
+      "question": "Black to move. From a student's game (illustrative): White has just played 5.Nxe5, leaving the queen on d1 'hanging'. The student took it. What should Black play instead?",
+      "solution": [
+        "dxe5"
+      ],
+      "goal": "best",
+      "accept": [
+        "Be6"
+      ],
+      "explanation": "This is Legal's mate pattern: after 5...Bxd1?? 6.Bxf7+ Ke7 7.Nd5# the queen was bait. 5...dxe5 6.Qxg4 leaves Black a pawn down, which is unpleasant but playable. The real mistake was earlier: 4...g6? did not attend to the pin on f3 and the weak f7-square. Journal category: opening.",
+      "wrong": [
+        {
+          "move": "Bxd1",
+          "why": "Takes the bait: 6.Bxf7+ Ke7 7.Nd5# is mate."
+        }
+      ],
+      "hint": "If you take the queen, which white pieces can reach f7 and d5?",
+      "objective": "Treat a 'free' queen as a question, and trace an opening disaster back to the earlier move that caused it.",
+      "tags": [
+        "opening-traps",
+        "blunder-check",
+        "mate-patterns"
+      ]
+    },
+    {
+      "id": "28-05",
+      "type": "blunder-check",
+      "difficulty": 3,
+      "fen": "r1b1kb1r/pp3ppp/1q2pn2/8/3P4/2NB4/PPP1QPPP/R1BR2K1 b kq - 0 10",
+      "question": "Black to move. From a student's game (illustrative): Black played 10...Qxd4 here, winning back a pawn, and resigned two moves later. What is the problem, and what is a sound move?",
+      "solution": [
+        "Be7"
+      ],
+      "goal": "best",
+      "accept": [
+        "Bd7"
+      ],
+      "explanation": "The d4-pawn is a bait on the d-file. After 10...Qxd4? 11.Bb5+! the bishop moves with check and uncovers the rook on d1 against the queen: a discovered attack. Black must deal with the check and loses the queen. 10...Be7 (or 10...Bd7, covering b5) develops and gets the king ready to castle. Journal category: missed-tactic (the opponent's).",
+      "wrong": [
+        {
+          "move": "Qxd4",
+          "why": "11.Bb5+ uncovers the rook on d1 and wins the queen."
+        }
+      ],
+      "hint": "What stands between White's rook on d1 and your queen if it lands on d4?",
+      "objective": "Before capturing on a line, check what pieces stand behind the target and what can move off that line with check.",
+      "tags": [
+        "blunder-check",
+        "discovered-attack"
+      ]
+    },
+    {
+      "id": "28-06",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "6k1/1pb2p2/p1p3pp/P3p3/1Pq1Pp2/2P2N1P/3Q1PP1/6K1 w - - 0 29",
+      "question": "White to move. From a student's game (illustrative): White played 29.Kh2 and drifted into a worse ending. Black's bishop on c7 is undefended. Find the move that wins material.",
+      "solution": [
+        "Qd7",
+        "Qxc3",
+        "Qc8+",
+        "Kg7",
+        "Qxc7"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Loose pieces drop off. 29.Qd7! attacks the undefended bishop on c7 and also threatens Qd8+ and Qe8. If 29...Qxc3, then 30.Qc8+ Kg7 31.Qxc7 wins the bishop, and the e5-pawn falls too. The engine's verdict swings from slightly worse to clearly winning on this one move, which is exactly the kind of turning point to look for. Journal category: missed-tactic.",
+      "wrong": [
+        {
+          "move": "Kh2",
+          "why": "A passive safety move; Black continues ...c5 and White is slightly worse."
+        },
+        {
+          "move": "Nxe5",
+          "why": "Grabs a pawn but drops the knight: 29...Bxe5, and Black is winning."
+        }
+      ],
+      "hint": "Which black piece has no defender?",
+      "objective": "Scan for loose pieces (undefended pieces) and use queen double attacks against them.",
+      "tags": [
+        "fork",
+        "threats",
+        "calculation"
+      ]
+    },
+    {
+      "id": "28-07",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r4rk1/pb2qppp/1p6/2p1p3/3nP3/2QP1N2/PP1B1PPP/R4RK1 b - - 0 15",
+      "question": "Black to move. From a student's game (illustrative): Black played 15...Nxf3+ here and was pleased to wreck White's pawns. A much bigger win was available. Find it.",
+      "solution": [
+        "Ne2+",
+        "Kh1",
+        "Nxc3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The knight on d4 can reach e2 with check, and from e2 it also attacks c3. 15...Ne2+ 16.Kh1 Nxc3 wins the queen for a knight. The student's move was not bad, but it was a 'what' move (it looked nice) rather than the result of checking every check. Journal category: missed-tactic.",
+      "wrong": [
+        {
+          "move": "Nxf3+",
+          "why": "Damages White's pawns and is fine, but it wins nothing; the fork on e2 wins the queen."
+        }
+      ],
+      "hint": "List every check you have.",
+      "objective": "Always list all checks: a knight check is often a fork.",
+      "tags": [
+        "fork",
+        "candidate-moves"
+      ]
+    },
+    {
+      "id": "28-08",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "r1bq1rk1/pp1n1ppp/2n1p3/2ppP3/3P4/2PB1N2/PP3PPP/R1BQ1RK1 w - - 0 10",
+      "question": "White to move. From a student's game (illustrative): White played 10.Re1 and the game stayed level. Black's kingside has no knight on f6 and no dark-squared bishop. Find the attacking blow.",
+      "solution": [
+        "Bxh7+",
+        "Kxh7",
+        "Ng5+",
+        "Kg8",
+        "Qh5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "This is the Greek gift sacrifice. The checklist is all there: bishop aimed at h7, a knight that can reach g5 with check, the queen able to reach h5, and no black knight on f6 to defend. After 10.Bxh7+ Kxh7 11.Ng5+ Kg8 12.Qh5, mate on h7 is threatened and Black must give up material (12...Qxg5 13.Bxg5). If 11...Kg6, the attack continues with h4-h5 or Qg4. Journal category: missed-win.",
+      "wrong": [
+        {
+          "move": "Ng5",
+          "why": "Without the sacrifice first, Black plays ...h6 or ...f5 and the attack is gone."
+        },
+        {
+          "move": "Re1",
+          "why": "The game move: solid, but it lets Black play ...Nf6 or ...f6 and the chance disappears."
+        }
+      ],
+      "hint": "Bishop on d3, knight on f3, queen on d1, and h7 defended only by the king.",
+      "objective": "Recognize the Greek gift checklist and log missed attacking chances as 'missed-win'.",
+      "tags": [
+        "attack",
+        "king-safety",
+        "calculation"
+      ]
+    },
+    {
+      "id": "28-09",
+      "type": "conversion",
+      "difficulty": 3,
+      "fen": "8/4k3/1P3p2/2K3p1/6P1/2n2P2/8/8 b - - 0 50",
+      "question": "Black to move. From a student's game (illustrative): Black, a knight up, played 50...Kd7 here, and White's passed b-pawn held Black's king and knight tied up. Find the cleanest way to convert.",
+      "solution": [
+        "Na4+",
+        "Kd4",
+        "Nxb6"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "When converting, first remove the opponent's only counterplay. 50...Na4+ forks king and pawn, and after 51.Kd4 Nxb6 White has nothing left; Black's king then goes after the kingside pawns. The student's 50...Kd7 is still good for Black, but it allowed play with the passed pawn and made the win much harder. Journal category: conversion.",
+      "wrong": [
+        {
+          "move": "Kd7",
+          "why": "Keeps a winning advantage, but the b-pawn stays alive and Black's king and knight become tied to it; the conversion is much harder."
+        },
+        {
+          "move": "Nd5",
+          "why": "Covers b6 but simply hangs the knight to 51.Kxd5."
+        }
+      ],
+      "hint": "Which knight move comes with check?",
+      "objective": "When ahead in the endgame, eliminate the opponent's passed pawn with tempo.",
+      "tags": [
+        "conversion",
+        "fork",
+        "minor-piece-endgame"
+      ]
+    },
+    {
+      "id": "28-10",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1bq1rk1/pp3ppp/2pb1n2/8/3QP3/1BN5/PPP2PPP/R1B2RK1 b - - 0 11",
+      "question": "Black to move. From a student's game (illustrative): Black played 11...Ng4, attacking h2, and the game stayed balanced. White's queen on d4 has no defender. Find the winning blow.",
+      "solution": [
+        "Bxh2+",
+        "Kxh2",
+        "Qxd4"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The bishop on d6 is standing between your queen and White's undefended queen. Moving it with check gives White no time to react: 11...Bxh2+ 12.Kxh2 Qxd4 wins the queen for a bishop. Whenever your own piece blocks a line to an enemy target, ask whether it can move with check. Journal category: missed-tactic.",
+      "wrong": [
+        {
+          "move": "Ng4",
+          "why": "The game move; it threatens h2 but gives White time to cover everything."
+        },
+        {
+          "move": "Bc5",
+          "why": "Attacks the queen but simply hangs the bishop: 12.Qxc5."
+        }
+      ],
+      "hint": "What is behind your bishop on the d-file?",
+      "objective": "Spot discovered attacks created by your own pieces, especially with a checking first move.",
+      "tags": [
+        "discovered-attack",
+        "candidate-moves"
+      ]
+    },
+    {
+      "id": "28-11",
+      "type": "opening",
+      "difficulty": 3,
+      "fen": "rn1qkb1r/ppp2ppp/5n2/4p3/2B1P3/5Q2/PPP2PPP/RNB1K2R w KQkq - 2 7",
+      "question": "White to move. From a student's game in the 3.d4 Philidor (illustrative): White played 7.Nc3 here. Black's f7-pawn is defended only by the king, and b7 is not defended at all. Find the most testing move.",
+      "solution": [
+        "Qb3"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "7.Qb3! attacks f7 (together with the bishop) and b7 at the same time; Black cannot cover both comfortably and usually has to give up a pawn. Development with 7.Nc3 is natural but lets Black finish developing in peace. In your journal, this is an 'opening' entry with a simple fix: after ...Bxf3 exchanges, check for queen double attacks on f7 and b7.",
+      "wrong": [
+        {
+          "move": "Nc3",
+          "why": "Natural development, but Black gets time for ...Bc5 and ...O-O; the chance to win material is gone."
+        },
+        {
+          "move": "O-O",
+          "why": "Safe, but again Black is allowed to consolidate."
+        }
+      ],
+      "hint": "Which queen move hits two undefended targets?",
+      "objective": "Look for double attacks on f7 and b7 in open games, and record repeated opening misses.",
+      "tags": [
+        "repertoire-white",
+        "opening-principles",
+        "fork"
+      ]
+    }
+  ]
+}

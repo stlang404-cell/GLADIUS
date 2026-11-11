@@ -1,0 +1,353 @@
+{
+  "chapter": 5,
+  "title": "The Basic Checkmates",
+  "exercises": [
+    {
+      "id": "05-01",
+      "type": "mate",
+      "difficulty": 1,
+      "fen": "1k6/7Q/2K5/8/8/8/8/8 w - - 0 1",
+      "question": "White to move. Mate in one.",
+      "solution": [
+        "Qb7#"
+      ],
+      "goal": "mate",
+      "mate_in": 1,
+      "accept": [],
+      "explanation": "The queen goes right next to the enemy king, protected by your own king on c6. From b7 it covers a8, a7, c8 and c7, and the king cannot take it. This 'kiss' mate, queen in front of the king with the king guarding it, is the most common finish of K+Q against K.",
+      "wrong": [
+        {
+          "move": "Qh8+",
+          "why": "Check along the back rank, but the king escapes to a7."
+        },
+        {
+          "move": "Qc7+",
+          "why": "Protected check, but a8 is free: ...Ka8."
+        }
+      ],
+      "hint": "Which square next to the black king is protected by your king?",
+      "objective": "Recognize the protected-queen mate in front of the king.",
+      "tags": [
+        "basic-mates"
+      ]
+    },
+    {
+      "id": "05-02",
+      "type": "mate",
+      "difficulty": 1,
+      "fen": "8/8/8/8/r7/6k1/8/7K b - - 0 1",
+      "question": "Black to move. Mate in one.",
+      "solution": [
+        "Ra1#"
+      ],
+      "goal": "mate",
+      "mate_in": 1,
+      "accept": [],
+      "explanation": "The White king is on the edge and your king on g3 takes away g2 and h2. A rook check along the first rank covers g1 as well. This is the basic rook mate: the kings face each other (or nearly), and the rook checks along the edge.",
+      "wrong": [
+        {
+          "move": "Rh4+",
+          "why": "Check, but along the h-file; the king steps to g1."
+        },
+        {
+          "move": "Ra2",
+          "why": "Takes away the second rank, but that was already covered by your king. It is not check."
+        }
+      ],
+      "hint": "Check along the edge the king is standing on.",
+      "objective": "Deliver the basic rook mate on the edge.",
+      "tags": [
+        "basic-mates"
+      ]
+    },
+    {
+      "id": "05-03",
+      "type": "mate",
+      "difficulty": 2,
+      "fen": "8/4k3/R7/1R6/8/8/8/K7 w - - 0 1",
+      "question": "White to move. Use the two rooks to mate in two.",
+      "solution": [
+        "Rb7+",
+        "Kd8",
+        "Ra8#"
+      ],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "This is the ladder (or 'lawnmower'). The rook on a6 already guards the sixth rank, so 1.Rb7+ drives the king to the back rank, and 2.Ra8# finishes while the b7-rook keeps the seventh rank closed. The rooks work far away from the enemy king, so it cannot attack them.",
+      "wrong": [
+        {
+          "move": "Ra7+",
+          "why": "This rook check leaves the sixth rank open: the king goes back to d6 or e6."
+        },
+        {
+          "move": "Rbb6",
+          "why": "Doubling on the sixth rank wastes a move; there is no mate next move."
+        }
+      ],
+      "hint": "One rook guards a rank while the other checks on the next one.",
+      "objective": "Execute the two-rook ladder mate.",
+      "tags": [
+        "basic-mates"
+      ]
+    },
+    {
+      "id": "05-04",
+      "type": "mate",
+      "difficulty": 1,
+      "fen": "8/8/8/8/2q5/1k6/8/K7 b - - 0 1",
+      "question": "Black to move. Mate in one. Careful: one natural queen move only stalemates.",
+      "solution": [
+        "Qc1#"
+      ],
+      "goal": "mate",
+      "mate_in": 1,
+      "accept": [
+        "Qf1#"
+      ],
+      "explanation": "1...Qc1# (or 1...Qf1#) checks along the first rank; a2 and b2 are covered by your king and b1 by the queen. The trap is 1...Qc2??, which takes away every square but does not give check: White has no legal move and the game is a draw by stalemate.",
+      "wrong": [
+        {
+          "move": "Qc2",
+          "why": "Stalemate: White's king has no legal move and is not in check."
+        },
+        {
+          "move": "Qc3+",
+          "why": "Check, but the king escapes to b1."
+        }
+      ],
+      "hint": "Before you play a queen move next to a cornered king, ask: is it check?",
+      "objective": "Avoid stalemate when finishing with the queen.",
+      "tags": [
+        "basic-mates",
+        "stalemate"
+      ]
+    },
+    {
+      "id": "05-05",
+      "type": "mate",
+      "difficulty": 2,
+      "fen": "8/8/8/8/8/3q4/4k3/7K b - - 0 1",
+      "question": "Black to move. Mate in two.",
+      "solution": [
+        "Kf2",
+        "Kh2",
+        "Qh7#"
+      ],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "The queen cannot mate alone; the king must help. 1...Kf2 takes g1, g2 and g3 away and leaves the White king only h2. After 2.Kh2 the queen mates along the h-file with 2...Qh7#. The tempting queen move 1...Qg3?? is stalemate.",
+      "wrong": [
+        {
+          "move": "Qg3",
+          "why": "Stalemate: the White king has no move and is not in check."
+        },
+        {
+          "move": "Qd1+",
+          "why": "A check that only drives the king to h2; it is not mate next move."
+        }
+      ],
+      "hint": "Bring the king, not the queen.",
+      "objective": "Use the king to support the queen mate; avoid stalemate.",
+      "tags": [
+        "basic-mates",
+        "stalemate"
+      ]
+    },
+    {
+      "id": "05-06",
+      "type": "mate",
+      "difficulty": 2,
+      "fen": "3k4/8/2K5/8/8/8/8/7R w - - 0 1",
+      "question": "White to move. Mate in two with king and rook.",
+      "solution": [
+        "Re1",
+        "Kc8",
+        "Re8#"
+      ],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "1.Re1! cuts the king off from the e-file, so its only move is 1...Kc8, straight into opposition with your king. Now 2.Re8# is mate: c7, b7 and d7 are covered by the king and the whole back rank by the rook. Forcing the king to step in front of yours is the key skill of the rook mate.",
+      "wrong": [
+        {
+          "move": "Rh8+",
+          "why": "Checks too early: the king walks out to e7 and the box gets bigger."
+        },
+        {
+          "move": "Kd6",
+          "why": "Kings in opposition but it is Black's move: ...Ke8 or ...Kc8 and no mate follows at once."
+        }
+      ],
+      "hint": "Which file must the black king not reach?",
+      "objective": "Force the king into opposition before the rook mates.",
+      "tags": [
+        "basic-mates",
+        "opposition"
+      ]
+    },
+    {
+      "id": "05-07",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "k7/8/8/1K6/8/8/8/1Q6 w - - 0 1",
+      "question": "White to move. Mate in two. Do not stalemate.",
+      "solution": [
+        "Kc6",
+        "Ka7",
+        "Qb7#"
+      ],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "Your queen already guards the b-file, so the black king has only a7 and a8 to shuffle between. 1.Kc6! brings the king close enough to protect b7, and after 1...Ka7 2.Qb7# is mate. 1.Ka6?? looks just as close but takes away a7 too: Black has no legal move and it is stalemate.",
+      "wrong": [
+        {
+          "move": "Ka6",
+          "why": "Stalemate: the king on a8 has no legal move and is not in check."
+        },
+        {
+          "move": "Qh7",
+          "why": "Keeps the box but frees b8 for the king; there is no mate next move."
+        }
+      ],
+      "hint": "Your king must protect the square in front of the cornered king, without taking away its last move.",
+      "objective": "Bring the king while leaving the enemy king a legal move.",
+      "tags": [
+        "basic-mates",
+        "stalemate"
+      ]
+    },
+    {
+      "id": "05-08",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "7r/8/8/8/8/2k5/8/3K4 b - - 0 1",
+      "question": "Black to move. Mate in two with king and rook.",
+      "solution": [
+        "Re8",
+        "Kc1",
+        "Re1#"
+      ],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "The White king on d1 has three squares: c1, e1 and e2 (your king already covers c2 and d2). 1...Re8! takes away the e-file, so 2.Kc1 is forced, into opposition with your king, and 2...Re1# finishes on the edge. Checking first with 1...Rh1+ lets the king escape to e2.",
+      "wrong": [
+        {
+          "move": "Rh1+",
+          "why": "Check too early: the king escapes to e2 and the box grows."
+        },
+        {
+          "move": "Kd3",
+          "why": "A natural king move, but now White has e1 and c1 and there is no mate next move."
+        }
+      ],
+      "hint": "Cut off the file the king wants to run to.",
+      "objective": "Cut off the king with the rook so it must step into opposition.",
+      "tags": [
+        "basic-mates",
+        "opposition"
+      ]
+    },
+    {
+      "id": "05-09",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "8/8/2k5/p5R1/7R/8/5PPP/6K1 w - - 0 1",
+      "question": "White to move. Black's king is in the open. Mate in three with the rook ladder.",
+      "solution": [
+        "Rh6+",
+        "Kd7",
+        "Rg7+",
+        "Ke8",
+        "Rh8#"
+      ],
+      "goal": "mate",
+      "mate_in": 3,
+      "accept": [],
+      "explanation": "The rook on g5 guards the fifth rank. 1.Rh6+ forces the king up to the seventh, 2.Rg7+ forces it to the eighth, and 3.Rh8# ends it. The rooks stay on the far side of the board, so the king can never attack them; that is why the ladder works without any help from your own king.",
+      "wrong": [
+        {
+          "move": "Rg6+",
+          "why": "Check on the wrong side: after ...Kd7 your rooks are in each other's way and the ladder takes longer."
+        },
+        {
+          "move": "Rxa5",
+          "why": "Grabbing a pawn when you have a forced mate."
+        }
+      ],
+      "hint": "One rook guards, the other checks, one rank at a time.",
+      "objective": "Run the two-rook ladder in a real endgame.",
+      "tags": [
+        "basic-mates"
+      ]
+    },
+    {
+      "id": "05-10",
+      "type": "mate",
+      "difficulty": 4,
+      "fen": "2k5/8/8/1K6/8/8/8/1R6 w - - 0 1",
+      "question": "White to move. Mate in three with king and rook.",
+      "solution": [
+        "Kc6",
+        "Kd8",
+        "Re1",
+        "Kc8",
+        "Re8#"
+      ],
+      "goal": "mate",
+      "mate_in": 3,
+      "accept": [],
+      "explanation": "The rook on b1 already keeps the king off the b-file, but it cannot mate without the king's help. 1.Kc6! brings your king to the sixth rank and leaves Black only one move, 1...Kd8. Now the cut 2.Re1 takes away the e-file, so 2...Kc8 is forced, straight into opposition, and 3.Re8# is mate. Approach with the king, cut off the side the king wants to run to, and let it step in front of your king.",
+      "wrong": [
+        {
+          "move": "Rd1",
+          "why": "Gives up the b-file: the king can go back to b7 or b8 and the box gets bigger."
+        },
+        {
+          "move": "Ka6",
+          "why": "The king approaches from the wrong side and the black king slips toward the centre with ...Kc7 or ...Kd7."
+        }
+      ],
+      "hint": "First bring your king opposite the enemy king's file, one rank below.",
+      "objective": "Combine the king approach, the cut-off and the waiting move.",
+      "tags": [
+        "basic-mates",
+        "opposition"
+      ]
+    },
+    {
+      "id": "05-11",
+      "type": "defense",
+      "difficulty": 4,
+      "fen": "7k/7p/7P/8/2Q5/8/1r6/7K b - - 0 1",
+      "question": "Black to move. You are lost on material and White threatens Qc8#. Your king has no legal moves. Find the move that saves the game.",
+      "solution": [
+        "Rh2+"
+      ],
+      "goal": "draw",
+      "accept": [
+        "Rb1+"
+      ],
+      "explanation": "Your king is stuck: g8 is covered by the queen, g7 by the h6-pawn, and the h7-pawn is blocked. If your rook disappears, you will have no legal move. 1...Rh2+! offers it: 2.Kxh2 is stalemate, and if the king runs, the rook keeps checking (2.Kg1 Rg2+ 3.Kf1 Rf2+) and must be taken sooner or later. This 'crazy rook' trick is the reason the side with the queen must always check for stalemate.",
+      "wrong": [
+        {
+          "move": "Rc2",
+          "why": "Attacks the queen but is not check: 2.Qd4+ Kg8 3.Qg7# follows."
+        },
+        {
+          "move": "Rg2",
+          "why": "Not check: 2.Qc8+ Rg8 3.Qc3+ and mate on g7."
+        }
+      ],
+      "hint": "Which piece is the only one keeping you from being stalemated?",
+      "objective": "Use stalemate as a defensive resource (review of Chapter 1).",
+      "tags": [
+        "stalemate",
+        "defense"
+      ]
+    }
+  ]
+}

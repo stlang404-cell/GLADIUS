@@ -1,0 +1,351 @@
+{
+  "chapter": 8,
+  "title": "Pins and Skewers",
+  "exercises": [
+    {
+      "id": "08-01",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "r1bqk2r/ppp2ppp/2np1n2/1B6/3bP3/2NP1N2/PPP2PPP/R1BQ1RK1 w kq - 0 7",
+      "question": "White to move. Black's bishop on d4 looks protected by the knight on c6. Is it really? Win material.",
+      "solution": [
+        "Nxd4"
+      ],
+      "goal": "win",
+      "accept": [
+        "Bxc6+"
+      ],
+      "explanation": "The knight on c6 is pinned by your bishop on b5 to the king on e8, so it cannot recapture on d4: that would expose the king. A pinned piece is a defender in name only. Nxd4 simply wins a bishop. Bxc6+ first, removing the pinned knight and then taking on d4, wins the same piece.",
+      "wrong": [
+        {
+          "move": "Nd5",
+          "why": "Centralizes the knight but leaves the bishop on d4 alone; Black castles and the pin is gone."
+        },
+        {
+          "move": "Bg5",
+          "why": "Pins the other knight, but Black castles and the knight on c6 becomes a real defender of d4."
+        }
+      ],
+      "hint": "Can the knight on c6 legally move?",
+      "objective": "Recognize that an absolutely pinned piece does not defend anything.",
+      "tags": [
+        "pin",
+        "hanging-pieces"
+      ]
+    },
+    {
+      "id": "08-02",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "1r2b3/p4pkp/2p3p1/8/P3PB2/3K3R/5P1P/8 b - - 0 30",
+      "question": "Black to move. The white king and rook stand on the same rank. Win material.",
+      "solution": [
+        "Rb3+",
+        "Kc4",
+        "Rxh3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The king on d3 and the rook on h3 are lined up on the third rank with nothing between them. ...Rb3+ checks the king; when it steps off the rank, the rook on h3 is exposed and ...Rxh3 wins it. That is a skewer: the more valuable piece in front is attacked, moves, and the piece behind is lost.",
+      "wrong": [
+        {
+          "move": "Rb4",
+          "why": "Attacks the e4 pawn, but misses the skewer; White keeps everything."
+        },
+        {
+          "move": "Rd8+",
+          "why": "A check on the wrong line: the king steps away and nothing stands behind it."
+        }
+      ],
+      "hint": "Which check lines up the king with something behind it?",
+      "objective": "Spot a rook skewer of king and rook along a rank.",
+      "tags": [
+        "skewer",
+        "endgame-technique"
+      ]
+    },
+    {
+      "id": "08-03",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "rn1qk2r/pppn1pbp/3pb1p1/8/3P4/2N2N2/PPPQ1PPP/R1B1RBK1 w kq - 0 10",
+      "question": "White to move. Black's bishop on e6 stands on the open e-file in front of the king. Exploit it.",
+      "solution": [
+        "d5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The bishop on e6 is pinned by the rook on e1 to the king on e8, so it cannot take on d5 or run away. Attack a pinned piece with a pawn: d5 hits the bishop, and Black cannot save it. Castling now does not help either, because the bishop is still attacked and White takes it next move.",
+      "wrong": [
+        {
+          "move": "Ng5",
+          "why": "Attacks the pinned bishop a second time, but Black castles and the e-file pin is gone; White wins much less."
+        },
+        {
+          "move": "h3",
+          "why": "A useful-looking waiting move, but it gives Black time to castle out of the pin."
+        }
+      ],
+      "hint": "The pinned bishop cannot move. What is the cheapest piece you can attack it with?",
+      "objective": "Exploit an absolute pin by attacking the pinned piece with a pawn.",
+      "tags": [
+        "pin"
+      ]
+    },
+    {
+      "id": "08-04",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r1bqr1k1/ppp2ppp/2n2n2/3p4/8/1Q1BB3/PPPN1PPP/R3K2R b KQ - 4 10",
+      "question": "Black to move. White has not castled yet. Win material.",
+      "solution": [
+        "d4",
+        "Nf1",
+        "dxe3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Your rook on e8 pins the bishop on e3 to the white king on e1. A pinned piece cannot run, so attack it with a pawn: ...d4 hits the bishop, and nothing White does saves it. Even if White castles now, the bishop is still attacked and ...dxe3 wins a piece.",
+      "wrong": [
+        {
+          "move": "Qd6",
+          "why": "Develops, but lets White castle and unpin; the chance is gone."
+        },
+        {
+          "move": "Ng4",
+          "why": "Too slow: White castles, the bishop is no longer pinned, and Black wins far less."
+        }
+      ],
+      "hint": "Which white piece cannot move, and which pawn can attack it?",
+      "objective": "Use a pawn to win an absolutely pinned piece.",
+      "tags": [
+        "pin"
+      ]
+    },
+    {
+      "id": "08-05",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "rn1qkbnr/ppp2p1p/3p2p1/4N3/2B1P1b1/2N5/PPPP1PPP/R1BQK2R b KQkq - 0 5",
+      "question": "Black to move. You pinned White's knight to the queen with ...Bg4, and White has just played Nxe5, offering the queen. What is the best reply?",
+      "solution": [
+        "dxe5"
+      ],
+      "goal": "best",
+      "accept": [
+        "Be6"
+      ],
+      "explanation": "The knight on f3 was only pinned to the queen, not to the king, so it was allowed to move, and White has set the Legal trap. If you take the queen, Bxf7+ Ke7 Nd5 is checkmate. Instead, take the knight with ...dxe5 (or block the f7 diagonal with ...Be6); after ...dxe5 Qxg4 White is only a pawn up, which is far better than being mated.",
+      "wrong": [
+        {
+          "move": "Bxd1",
+          "why": "Greed: Bxf7+ Ke7 Nd5 is checkmate."
+        },
+        {
+          "move": "d5",
+          "why": "Counter-attacks the bishop, but after Qxg4 White has won the bishop on g4 and stays clearly better."
+        },
+        {
+          "move": "Bg7",
+          "why": "Ignores the knight: Nxg4 leaves Black a piece down."
+        }
+      ],
+      "hint": "Before you take the queen, look at every check White would have afterwards.",
+      "objective": "Remember that a relatively pinned piece may still move; check what it threatens.",
+      "tags": [
+        "defense",
+        "pin",
+        "blunder-check"
+      ]
+    },
+    {
+      "id": "08-06",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1bqkb1r/pppn1ppp/5n2/3N2B1/3P4/8/PP2PPPP/R2QKBNR b KQkq - 0 6",
+      "question": "Black to move. White has just taken your d5 pawn with the knight, thinking your knight on f6 is pinned. Punish it.",
+      "solution": [
+        "Nxd5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "This is the Elephant Trap in the Queen's Gambit Declined. The knight on f6 is only pinned to the queen, so it may move. After ...Nxd5, if White takes the queen with Bxd8, ...Bb4+ forces Qd2, ...Bxd2+ Kxd2 and ...Kxd8 leaves Black a piece up. If White does not take, Black is simply a knight up.",
+      "wrong": [
+        {
+          "move": "h6",
+          "why": "Too slow: White keeps the extra pawn after Bxf6."
+        },
+        {
+          "move": "c6",
+          "why": "Kicks the knight but misses that it can simply be taken."
+        }
+      ],
+      "hint": "Your knight is pinned to the queen, not to the king. What happens if you take on d5 and White takes your queen?",
+      "objective": "Use a relatively pinned piece when moving it wins more than it loses.",
+      "tags": [
+        "pin",
+        "opening-traps"
+      ]
+    },
+    {
+      "id": "08-07",
+      "type": "endgame",
+      "difficulty": 4,
+      "fen": "R7/P4k2/6p1/7p/4p2P/6P1/r4PK1/8 w - - 0 45",
+      "question": "White to move. Your rook stands in front of your a-pawn, and Black's rook is behind it. Find the winning idea.",
+      "solution": [
+        "Rh8",
+        "e3",
+        "a8=Q",
+        "Rxa8",
+        "Rxa8"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Rh8! clears the a8 square for the pawn and threatens a8=Q. If Black takes the pawn with ...Rxa7, Rh7+ skewers the king on f7 and the rook on a7. So Black cannot take, and the pawn promotes; the best Black can do is give up the rook for the new queen. This skewer trick works whenever the defending king stands on the seventh rank with no piece in between.",
+      "wrong": [
+        {
+          "move": "Kf1",
+          "why": "Slow: Black's king goes to g7 or h7 and the skewer trick is no longer possible; the ending is close to a draw."
+        },
+        {
+          "move": "g4",
+          "why": "Changes nothing: Black keeps the king near g7 and holds."
+        }
+      ],
+      "hint": "What happens if your rook leaves the a-file sideways and Black takes the pawn?",
+      "objective": "Use the rook skewer trick to promote a pawn on the seventh rank.",
+      "tags": [
+        "skewer",
+        "rook-endgame",
+        "promotion"
+      ]
+    },
+    {
+      "id": "08-08",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1b2r2/pp2kppp/5n2/3p4/8/2N1B3/PPP2PPP/R4RK1 w - - 0 15",
+      "question": "White to move. The queens are off and Black's king stands on e7. Win material.",
+      "solution": [
+        "Bc5+",
+        "Ke8",
+        "Bxf8"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The king on e7 and the rook on f8 sit on the same diagonal, a3-f8. Bc5+ checks the king, nothing can block on d6, and when the king steps away the rook behind it falls. That is a skewer with a bishop: White wins the exchange.",
+      "wrong": [
+        {
+          "move": "Rfe1+",
+          "why": "A check, but the king steps to d7 or d8 and there is nothing behind it to win."
+        },
+        {
+          "move": "Nxd5+",
+          "why": "Nxd5+ Nxd5 just gives a knight for a pawn."
+        }
+      ],
+      "hint": "Which piece stands behind the black king on a diagonal?",
+      "objective": "Find a bishop skewer of king and rook.",
+      "tags": [
+        "skewer"
+      ]
+    },
+    {
+      "id": "08-09",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "r2qkb1r/ppp2ppp/2np1n2/1B2p3/3PP1b1/2N2N2/PPP2PPP/R1BQK2R w KQkq - 3 6",
+      "question": "White to move. Your bishop on b5 pins the knight on c6 to the king. How do you exploit it?",
+      "solution": [
+        "d5",
+        "a6",
+        "Ba4",
+        "b5",
+        "Nxb5"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "Attack the pinned knight with a pawn: d5 hits c6. Black's best try is ...a6 and ...b5, chasing the bishop, but Nxb5! keeps the pin alive: after ...axb5 Bxb5 the knight on c6 is pinned again and still attacked, so White wins it back with interest. Taking on c6 at once (Bxc6+) throws the pin away.",
+      "wrong": [
+        {
+          "move": "Bxc6+",
+          "why": "Exchanges the pinning bishop; after ...bxc6 Black has no problems."
+        },
+        {
+          "move": "dxe5",
+          "why": "Opens the position but releases the tension; White is better but wins nothing."
+        }
+      ],
+      "hint": "Attack the pinned piece. If Black chases your bishop, how can you keep the pin?",
+      "objective": "Keep a pin alive when the opponent tries to break it.",
+      "tags": [
+        "pin",
+        "calculation"
+      ]
+    },
+    {
+      "id": "08-10",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r1bq1rk1/ppp2pbp/3p2p1/4p3/3nP3/1PQP1NP1/PBP2PBP/R4RK1 b - - 0 11",
+      "question": "Black to move. Review from Chapter 7: find the move that wins the white queen.",
+      "solution": [
+        "Ne2+",
+        "Kh1",
+        "Nxc3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Work backwards from the targets: the king on g1 and the queen on c3. A knight on e2 attacks both, and no white piece guards e2. ...Ne2+ is a royal fork; after the king moves, ...Nxc3 wins the queen.",
+      "wrong": [
+        {
+          "move": "Nxf3+",
+          "why": "A check, but Bxf3 recaptures and nothing is won."
+        },
+        {
+          "move": "c5",
+          "why": "Supports the knight but misses the fork."
+        }
+      ],
+      "hint": "Which square touches both g1 and c3 with a knight's jump?",
+      "objective": "Review: find a royal fork by working backwards from the targets.",
+      "tags": [
+        "fork"
+      ]
+    },
+    {
+      "id": "08-11",
+      "type": "blunder-check",
+      "difficulty": 1,
+      "fen": "r1bqkb1r/pppn1ppp/5n2/3p2B1/3P4/2N5/PP2PPPP/R2QKBNR w KQkq - 0 6",
+      "question": "White to move. Black's knight on f6 is pinned to the queen and the pawn on d5 looks loose. Is it safe to take? Play the right move.",
+      "solution": [
+        "e3"
+      ],
+      "goal": "best",
+      "accept": [
+        "Nf3",
+        "Qc2"
+      ],
+      "explanation": "The pawn on d5 is a trap. The pin on f6 is only relative, so after Nxd5? the knight simply takes back with ...Nxd5!, and if Bxd8 then ...Bb4+ wins back the queen with a piece to spare. Run the safety scan instead: develop with e3, Nf3 or Qc2 and keep the pin.",
+      "wrong": [
+        {
+          "move": "Nxd5",
+          "why": "Falls into the Elephant Trap: ...Nxd5 Bxd8 Bb4+ and Black ends up a piece ahead."
+        },
+        {
+          "move": "Bxf6",
+          "why": "Gives up the bishop pair for nothing; Black recaptures and is comfortable."
+        }
+      ],
+      "hint": "If you take on d5, can the 'pinned' knight on f6 move?",
+      "objective": "Do not count on a relative pin when deciding whether a capture is safe.",
+      "tags": [
+        "blunder-check",
+        "pin",
+        "opening-traps"
+      ]
+    }
+  ]
+}

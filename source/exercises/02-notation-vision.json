@@ -1,0 +1,334 @@
+{
+  "chapter": 2,
+  "title": "Reading the Board: Notation and Board Vision",
+  "exercises": [
+    {
+      "id": "02-01",
+      "type": "vision",
+      "difficulty": 1,
+      "fen": "r4rk1/pp2bppp/1qp1pn2/4n3/2P5/1P1PP1P1/1BQN1PBP/3R1RK1 w - - 0 14",
+      "question": "White to move. Black's knight has just jumped to e5. Win material.",
+      "solution": [
+        "Bxe5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Follow the long diagonal from your bishop on b2: c3 and d4 are empty, so the bishop reaches e5. Nothing defends the knight there: the queen on b6, the bishop on e7 and the knight on f6 all point elsewhere, and there is no black pawn on d6 or f6. Bxe5 wins a clean piece.",
+      "wrong": [
+        {
+          "move": "d4",
+          "why": "Attacks the knight with a pawn, but it simply retreats; capturing it was free."
+        },
+        {
+          "move": "e4",
+          "why": "Gains space in the centre, but leaves a free piece on the board."
+        }
+      ],
+      "hint": "Trace every line your bishop on b2 can see.",
+      "objective": "Use the full length of a long diagonal.",
+      "tags": [
+        "vision",
+        "hanging-pieces"
+      ]
+    },
+    {
+      "id": "02-02",
+      "type": "vision",
+      "difficulty": 1,
+      "fen": "r2q1rk1/pp1n1ppp/1npbp1b1/3p4/3P3N/2P1P3/PP1NBPPP/R1BQ1RK1 b - - 0 10",
+      "question": "Black to move. White's knight has just gone to h4 to attack your bishop on g6. What is the best reply?",
+      "solution": [
+        "Qxh4"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Pieces on the edge of the board are easy to overlook, and so are long backward-looking diagonals. Your queen on d8 sees down the diagonal e7, f6, g5 to h4, and the knight there has no defender: the bishop on e2 points at h5, not h4, and there is no white pawn on g3. Qxh4 wins a whole piece.",
+      "wrong": [
+        {
+          "move": "Bxh2+",
+          "why": "A flashy check, but after Kxh2 Qxh4+ Kg1 you have only won a pawn instead of a piece."
+        },
+        {
+          "move": "a5",
+          "why": "A slow move: White takes your bishop on g6 and the chance is gone."
+        }
+      ],
+      "hint": "Look at the diagonal running from your queen towards the h-file.",
+      "objective": "Spot captures of undefended pieces on the edge of the board.",
+      "tags": [
+        "vision",
+        "hanging-pieces"
+      ]
+    },
+    {
+      "id": "02-03",
+      "type": "vision",
+      "difficulty": 2,
+      "fen": "r1bqkb1r/pp3ppp/2n1p3/2pp3n/3P1B2/2PBP3/PP1N1PPP/R2QK1NR w KQkq - 2 7",
+      "question": "White to move. Black has just played ...Nh5 to attack your bishop on f4. What is the best move?",
+      "solution": [
+        "Qxh5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Before you rescue the bishop, look at the whole board. Your queen on d1 looks down the diagonal e2, f3, g4, h5, and all three squares are empty because your king's knight is still on g1. The knight on h5 is not defended, so Qxh5 wins a piece, and the bishop on f4 is no longer attacked.",
+      "wrong": [
+        {
+          "move": "Bg3",
+          "why": "Saves the bishop, but misses that the knight on h5 was free."
+        },
+        {
+          "move": "Be5",
+          "why": "Also rescues the bishop, but Black is allowed to keep the knight."
+        }
+      ],
+      "hint": "What is your queen on d1 looking at?",
+      "objective": "Scan for long diagonal captures before making a natural retreat.",
+      "tags": [
+        "vision",
+        "hanging-pieces"
+      ]
+    },
+    {
+      "id": "02-04",
+      "type": "vision",
+      "difficulty": 2,
+      "fen": "r4rk1/ppNn1ppp/2p1qn2/3p4/3P1b2/2PB1N2/PPQ2PPP/R2R2K1 b - - 0 15",
+      "question": "Black to move. White's knight has just captured on c7, attacking your queen and your rook on a8. What is the best move?",
+      "solution": [
+        "Bxc7"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Pieces moving backwards are the easiest to miss. Your bishop on f4 can travel back along the diagonal e5, d6 to c7, and both squares are empty. Bxc7 removes the forking knight, so you have won a piece instead of losing material.",
+      "wrong": [
+        {
+          "move": "Qd6",
+          "why": "Saves the queen, but Nxa8 wins the rook."
+        },
+        {
+          "move": "Qg4",
+          "why": "Moves the queen to an active square, but Nxa8 still wins the exchange."
+        }
+      ],
+      "hint": "Can any of your pieces reach c7?",
+      "objective": "See backward captures by long-range pieces.",
+      "tags": [
+        "vision",
+        "fork"
+      ]
+    },
+    {
+      "id": "02-05",
+      "type": "vision",
+      "difficulty": 2,
+      "fen": "r1q2rk1/1b1n1ppp/p2p4/1p1Np3/4P3/3QB3/PPP2PPP/R4RK1 w - - 0 15",
+      "question": "White to move. Find the knight move that wins material.",
+      "solution": [
+        "Ne7+",
+        "Kh8",
+        "Nxc8"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Picture the eight squares your knight on d5 can reach. One of them, e7, is a dark square that touches both g8 and c8 by a knight's jump. Ne7+ checks the king and attacks the queen; nothing guards e7, so after the king moves you take the queen.",
+      "wrong": [
+        {
+          "move": "Nb6",
+          "why": "Attacks the rook and queen, but Nxb6 removes the knight."
+        },
+        {
+          "move": "Rac1",
+          "why": "A sensible developing move, but it misses the knight fork."
+        }
+      ],
+      "hint": "Which square would let your knight attack the king and the queen at once?",
+      "objective": "Visualize all of a knight's target squares, including checks.",
+      "tags": [
+        "vision",
+        "fork"
+      ]
+    },
+    {
+      "id": "02-06",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "r4rk1/pb1n1ppp/1p1bp3/2p1N1q1/3P4/2NBP3/PPPQ1PPP/R1B2RK1 b - - 0 12",
+      "question": "Black to move. Find checkmate in one move.",
+      "solution": [
+        "Qxg2#"
+      ],
+      "goal": "mate",
+      "mate_in": 1,
+      "accept": [],
+      "explanation": "Your bishop on b7 looks all the way down the long diagonal to g2, because c6, d5, e4 and f3 are all empty now that White's knight has left f3. So your queen can take on g2 down the g-file, and the king cannot recapture a defended queen. The squares f1 and h1 are covered too.",
+      "wrong": [
+        {
+          "move": "Bxe5",
+          "why": "Wins nothing much and misses the mate; White recaptures with dxe5."
+        }
+      ],
+      "hint": "What does your bishop on b7 see?",
+      "objective": "Use a long diagonal as hidden support for a mating move.",
+      "tags": [
+        "vision",
+        "basic-mates"
+      ]
+    },
+    {
+      "id": "02-07",
+      "type": "vision",
+      "difficulty": 3,
+      "fen": "r1b2rk1/ppq2ppp/2p5/8/3R3n/2P1B3/PP1NQPPP/5RK1 w - - 0 18",
+      "question": "White to move. Black's knight has jumped to h4. Win material.",
+      "solution": [
+        "Rxh4"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Rooks see whole ranks, not just files. Your rook on d4 looks along the fourth rank through e4, f4 and g4 to h4, and the knight on the edge has no defender. Rxh4 wins a piece. Players often only look at a rook's file and miss the sideways capture.",
+      "wrong": [
+        {
+          "move": "Qg4",
+          "why": "Attacks the knight and g7, but the knight is free right now, and after ...Nf3+ White loses material."
+        },
+        {
+          "move": "Bf4",
+          "why": "Gains time on the queen, but the knight on h4 should simply be taken."
+        }
+      ],
+      "hint": "Look sideways along your rook's rank.",
+      "objective": "See horizontal rook moves across the whole board.",
+      "tags": [
+        "vision",
+        "hanging-pieces"
+      ]
+    },
+    {
+      "id": "02-08",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "2r2rk1/ppq1bppp/4p3/8/6Q1/1P6/PB3PPP/3R1RK1 b - - 0 20",
+      "question": "Black to move. What is White threatening, and how do you meet it?",
+      "solution": [
+        "g6"
+      ],
+      "goal": "best",
+      "accept": [
+        "e5",
+        "g5"
+      ],
+      "explanation": "Follow the long diagonal from the bishop on b2: c3, d4, e5 and f6 are all empty, so the bishop guards g7, and Qxg7 would be mate. Moving the g-pawn to g6 closes the g-file so the queen can no longer reach g7. Blocking the diagonal with ...e5 also works. Blocking with ...f6 fails because it opens e6 to Qxe6+.",
+      "wrong": [
+        {
+          "move": "Qc2",
+          "why": "Attacks the bishop, but Qxg7 is checkmate."
+        },
+        {
+          "move": "Rfd8",
+          "why": "Fights for the d-file, but Qxg7 is checkmate."
+        },
+        {
+          "move": "f6",
+          "why": "Blocks the diagonal, but Qxe6+ wins material and keeps the attack."
+        }
+      ],
+      "hint": "What does the bishop on b2 see?",
+      "objective": "Spot an opponent's long diagonal mating threat and stop it.",
+      "tags": [
+        "defense",
+        "vision",
+        "threats"
+      ]
+    },
+    {
+      "id": "02-09",
+      "type": "vision",
+      "difficulty": 4,
+      "fen": "r4rk1/pp2bppp/2pq1n2/3p1B2/3P4/5N2/PPn2PPP/R1B1RQK1 w - - 0 16",
+      "question": "White to move. Black's knight has jumped to c2, forking both of your rooks. What is the best move?",
+      "solution": [
+        "Bxc2"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "You do not have to choose which rook to save. Your bishop on f5 looks backwards along the diagonal e4, d3 to c2, and both squares are empty. Bxc2 removes the forking knight and leaves you a piece up. Backward diagonal moves are among the hardest to see, so scan in every direction from every piece.",
+      "wrong": [
+        {
+          "move": "Re2",
+          "why": "Saves one rook, but ...Nxa1 wins the other; you lose the exchange instead of winning a piece."
+        },
+        {
+          "move": "Rb1",
+          "why": "Saves the a1 rook, but ...Nxe1 wins the other."
+        }
+      ],
+      "hint": "Which of your pieces can reach c2?",
+      "objective": "See backward diagonal captures.",
+      "tags": [
+        "vision",
+        "fork"
+      ]
+    },
+    {
+      "id": "02-10",
+      "type": "quiet",
+      "difficulty": 4,
+      "fen": "rnb1kbnr/pp2pppp/1q6/2pp4/3P1B2/2N1P3/PPP2PPP/R2QKBNR b KQkq - 2 4",
+      "question": "Black to move. The pawn on b2 is attacked by your queen and has no defender. Is it safe to take? Play the best move.",
+      "solution": [
+        "e6"
+      ],
+      "goal": "best",
+      "accept": [
+        "Nf6",
+        "cxd4"
+      ],
+      "explanation": "Before grabbing, scan what White's pieces can reach. Your queen has left d8, so nothing defends the d5-pawn, and the knight on c3 attacks it. After ...Qxb2 or ...Nc6, White plays Nxd5, and the knight then threatens Nc7+, a square the bishop on f4 already watches along its diagonal, forking your king and rook. A quiet move such as ...e6 defends d5 and opens a diagonal for your bishop; ...Nf6 also guards d5.",
+      "wrong": [
+        {
+          "move": "Qxb2",
+          "why": "Nxd5 attacks c7 with the knight and bishop together, and Nc7+ is coming; Black loses more than the pawn."
+        },
+        {
+          "move": "Nc6",
+          "why": "Develops, but leaves d5 undefended: Nxd5 wins a pawn and threatens Nc7+."
+        }
+      ],
+      "hint": "Which of your pawns lost its defender when your queen left d8?",
+      "objective": "Scan the opponent's reachable squares, including knight routes and long diagonals, before grabbing material.",
+      "tags": [
+        "vision",
+        "threats",
+        "blunder-check"
+      ]
+    },
+    {
+      "id": "02-11",
+      "type": "mate",
+      "difficulty": 1,
+      "fen": "7k/8/6K1/p1p5/P1P5/8/8/4Q3 w - - 0 55",
+      "question": "White to move. Black has a king and blocked pawns. Finish the game.",
+      "solution": [
+        "Qe8#"
+      ],
+      "goal": "mate",
+      "mate_in": 1,
+      "accept": [],
+      "explanation": "The queen travels the whole e-file to e8, giving check along the eighth rank; your king covers g7 and h7, so it is mate. Review from Chapter 1: Black's pawns cannot move, so the tempting Qe6, which takes g8 without checking, would be stalemate.",
+      "wrong": [
+        {
+          "move": "Qe6",
+          "why": "Black is not in check and has no legal move: stalemate."
+        }
+      ],
+      "hint": "Use the full length of the e-file.",
+      "objective": "See long queen moves and avoid stalemate.",
+      "tags": [
+        "stalemate",
+        "vision",
+        "basic-mates"
+      ]
+    }
+  ]
+}

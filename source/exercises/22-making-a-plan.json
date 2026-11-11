@@ -1,0 +1,274 @@
+{
+  "chapter": 22,
+  "title": "Making a Plan",
+  "exercises": [
+    {
+      "id": "22-01",
+      "type": "strategy",
+      "difficulty": 1,
+      "fen": "r1bq1rk1/bpp2pp1/p1np1n1p/4p3/4P3/1BPP1N1P/PP3PP1/RNBQR1K1 w - - 0 10",
+      "question": "White to move. Nothing is happening tactically. Find your worst piece and improve it.",
+      "solution": [
+        "Nbd2"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "Run the worst-piece test: the knight on b1 has never moved and blocks the rook on a1 from joining the game. Nbd2 starts the classic Italian manoeuvre Nd2-f1-g3 (or e3), where the knight eyes f5 and d5 and helps defend the king. Flashy alternatives fail: the sacrifice Bxh6 gives a piece for two pawns and no attack, and Ng5 runs into ...hxg5.",
+      "wrong": [
+        {
+          "move": "Bxh6",
+          "why": "After ...gxh6 White has only two pawns for the piece and nothing to follow up with."
+        },
+        {
+          "move": "Ng5",
+          "why": "The knight jump attacks nothing that matters and ...hxg5 simply wins a piece."
+        }
+      ],
+      "hint": "Which white piece has not moved yet?",
+      "objective": "Identify the worst piece and give it a better square.",
+      "tags": [
+        "planning",
+        "piece-activity"
+      ]
+    },
+    {
+      "id": "22-02",
+      "type": "strategy",
+      "difficulty": 2,
+      "fen": "r1bqr1k1/pp2bppp/2p2nn1/3p2B1/3P4/2NBPN2/PPQ2PPP/1R3RK1 w - - 10 12",
+      "question": "White to move. Read the pawn structure and choose a plan move.",
+      "solution": [
+        "b4"
+      ],
+      "goal": "best",
+      "accept": [
+        "a3"
+      ],
+      "explanation": "This is the Carlsbad structure: White's pawns on d4 and e3 face Black's on d5 and c6. The standard plan is the minority attack: push the b-pawn to b5, exchange it for the c6-pawn, and leave Black with a weak pawn on c6 or d5 to target. The rook already waits on b1, so b4 (or a3 first) is exactly in tune with the structure. Opening the centre with e4 loses material here, and g4 weakens White's own king.",
+      "wrong": [
+        {
+          "move": "e4",
+          "why": "After ...dxe4 Bxe4 Nxe4 Nxe4 Bf5 the pinned knight on e4 drops; the centre break is premature."
+        },
+        {
+          "move": "g4",
+          "why": "A kingside pawn storm with no support; ...Nxg4 simply wins a pawn and exposes White's king."
+        }
+      ],
+      "hint": "The rook on b1 is a clue. Which pawn would it like to support?",
+      "objective": "Choose the plan that the pawn structure suggests (minority attack).",
+      "tags": [
+        "planning",
+        "pawn-structure"
+      ]
+    },
+    {
+      "id": "22-03",
+      "type": "strategy",
+      "difficulty": 2,
+      "fen": "r2qr1k1/bpp2pp1/p1npbn1p/4p3/4P3/2PP1N1P/PPB2PP1/R1BQRNK1 b - - 5 12",
+      "question": "Black to move. Both sides have developed calmly. What is Black's most purposeful plan move?",
+      "solution": [
+        "d5"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "In this quiet Italian structure, the pawn break ...d5 is Black's natural plan: it challenges White's centre, frees Black's pieces and uses the fact that White's knight on f1 has not yet reached g3. After exd5 Bxd5 Black's pieces are active and the a7-bishop bears down on f2. The bishop sacrifice on h3 is unsound: White simply takes and Black has no follow-up.",
+      "wrong": [
+        {
+          "move": "Bxh3",
+          "why": "After gxh3 Black has one pawn for the bishop and no pieces ready to attack the king."
+        },
+        {
+          "move": "Nh5",
+          "why": "The knight goes to the rim hoping for ...Nf4, but d4 takes over the centre and Black is worse."
+        }
+      ],
+      "hint": "Which pawn move fights for the centre and opens lines for your pieces?",
+      "objective": "Find the central pawn break that fits the structure.",
+      "tags": [
+        "planning",
+        "pawn-structure"
+      ]
+    },
+    {
+      "id": "22-04",
+      "type": "strategy",
+      "difficulty": 3,
+      "fen": "r1b2rk1/pp1nqppp/2p1p3/8/2BP4/2R1PN2/PP3PPP/3Q1RK1 b - - 0 12",
+      "question": "Black to move. Black's position is solid but cramped. Which piece is Black's worst, and which move frees it?",
+      "solution": [
+        "e5"
+      ],
+      "goal": "best",
+      "accept": [
+        "c5"
+      ],
+      "explanation": "Black's worst piece is the bishop on c8, locked in by the pawn on e6. The freeing break ...e5 opens the c8-h3 diagonal and challenges White's centre at the same time; the other freeing break, ...c5, is also reasonable. Random pawn moves on the kingside, such as ...f5 or ...g5, create permanent weaknesses (the e5-square and e6-pawn, or the king) and leave the bishop just as bad.",
+      "wrong": [
+        {
+          "move": "f5",
+          "why": "It weakens e5 and e6 for good and still leaves the c8-bishop locked in."
+        },
+        {
+          "move": "g5",
+          "why": "An attack with no pieces behind it; it loosens Black's own king and achieves nothing."
+        }
+      ],
+      "hint": "Which pawn is blocking the c8-bishop?",
+      "objective": "Improve the worst piece with a freeing pawn break.",
+      "tags": [
+        "planning",
+        "piece-activity"
+      ]
+    },
+    {
+      "id": "22-05",
+      "type": "strategy",
+      "difficulty": 1,
+      "fen": "r2qkb1r/pp2pppp/2n2n2/3p4/3P1Bb1/2PB4/PP3PPP/RN1QK1NR w KQkq - 3 7",
+      "question": "White to move. Black's bishop has just left c8 to go to g4. Find a weakness in Black's camp and the move that targets it.",
+      "solution": [
+        "Qb3"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "Two things changed when the bishop left c8: your queen on d1 is now attacked, and the b7-pawn has lost its defender. Qb3 solves the first problem and creates a problem for Black, attacking b7. This is the standard idea in the Exchange Caro-Kann. Kicking the bishop with h3 is a typical autopilot move that forgets the queen is already attacked.",
+      "wrong": [
+        {
+          "move": "h3",
+          "why": "Your queen is attacked: ...Bxd1 wins it."
+        }
+      ],
+      "hint": "When a piece leaves its post, what does it stop defending?",
+      "objective": "Spot the weakness created by the opponent's last move.",
+      "tags": [
+        "planning",
+        "threats"
+      ]
+    },
+    {
+      "id": "22-06",
+      "type": "strategy",
+      "difficulty": 3,
+      "fen": "rn1qr1k1/pp3pp1/4b2p/2pn4/1b1P4/2NQP1B1/PP2BPPP/R3K1NR w KQ - 0 12",
+      "question": "White to move. Ask first: what does Black want to do next? Then find the move that stops it.",
+      "solution": [
+        "Nf3"
+      ],
+      "goal": "only",
+      "accept": [],
+      "explanation": "Black's idea is ...cxd4: after exd4, the pinned c3-knight can be exchanged on c3 and White's queenside falls apart, and the e-file opens against White's uncastled king. Nf3 is prophylaxis and development in one move: the knight defends d4 so White can recapture with a piece, and it clears the way to castle and break the pin. The greedy dxc5 opens the d-file for Black's queen and runs into ...Nxc3 with a discovered attack.",
+      "wrong": [
+        {
+          "move": "dxc5",
+          "why": "After ...Nxc3 the queen on d3 is attacked by the queen on d8 and White loses material."
+        },
+        {
+          "move": "O-O-O",
+          "why": "Castling into the open c-file: ...Bxc3 and ...cxd4 rip the queenside open."
+        },
+        {
+          "move": "a3",
+          "why": "Kicking the bishop allows ...Qa5, increasing the pressure on the pinned knight."
+        }
+      ],
+      "hint": "Which central pawn is Black attacking, and how can you defend it while developing?",
+      "objective": "Use prophylaxis: find the opponent's plan and stop it while developing.",
+      "tags": [
+        "prophylaxis",
+        "planning"
+      ]
+    },
+    {
+      "id": "22-07",
+      "type": "strategy",
+      "difficulty": 2,
+      "fen": "r1bqr1k1/pp2bppp/2p2nn1/3p2B1/1P1P4/2NBPN2/P1Q2PPP/1R3RK1 b - - 0 12",
+      "question": "Black to move. White has started the minority attack with b4. Choose a sensible plan move.",
+      "solution": [
+        "a6"
+      ],
+      "goal": "best",
+      "accept": [
+        "Bd6"
+      ],
+      "explanation": "Ask what White wants: b4-b5 to break up your c6-d5 chain. ...a6 is prophylaxis: if White plays b5, Black can recapture with the a-pawn and keep a healthier structure. ...Bd6, activating the bishop towards White's kingside, is an equally good plan. The pawn grab ...Bxb4 simply loses a piece to the rook on b1, and ...h6 allows Bxh6! with a strong attack.",
+      "wrong": [
+        {
+          "move": "Bxb4",
+          "why": "The b4-pawn is defended by the rook on b1: Rxb4 wins the bishop."
+        },
+        {
+          "move": "h6",
+          "why": "After Bxh6! gxh6 Bxg6 fxg6 Qxg6+ White's attack is too strong."
+        }
+      ],
+      "hint": "What is White's next pawn move, and how can you prepare for it?",
+      "objective": "Anticipate the opponent's plan and prepare against it.",
+      "tags": [
+        "prophylaxis",
+        "pawn-structure"
+      ]
+    },
+    {
+      "id": "22-08",
+      "type": "strategy",
+      "difficulty": 1,
+      "fen": "r1bq1rk1/p3bppp/2p2n2/3p2B1/8/2NB4/PPP2PPP/R2QR1K1 b - - 1 11",
+      "question": "Black to move. Which open line belongs to your rook?",
+      "solution": [
+        "Rb8"
+      ],
+      "goal": "best",
+      "accept": [
+        "Be6",
+        "h6",
+        "Re8"
+      ],
+      "explanation": "Black's pawn structure has given you a half-open b-file, and at the end of it stands White's b2-pawn. ...Rb8 puts the rook on that file at once, where it presses on b2 and ties White's pieces down. Developing with ...Be6, kicking the bishop with ...h6 or contesting the e-file with ...Re8 are also good. The tempting ...Ng4 is a blunder: the f6-knight was blocking the bishop on g5, and after Bxe7 Black loses a piece.",
+      "wrong": [
+        {
+          "move": "Ng4",
+          "why": "It uncovers the g5-bishop's attack on e7; Bxe7 wins a piece because the e-file is also controlled by White's rook."
+        }
+      ],
+      "hint": "Look for a file with no black pawn on it.",
+      "objective": "Put rooks on open and half-open files.",
+      "tags": [
+        "open-file",
+        "planning"
+      ]
+    },
+    {
+      "id": "22-11",
+      "type": "defense",
+      "difficulty": 2,
+      "fen": "r5k1/p1p3pp/2bp4/2p2P2/2q5/2B3QP/P5P1/5RK1 b - - 3 28",
+      "question": "Black to move. You are two pawns up. Before you make a plan, ask: what does White want?",
+      "solution": [
+        "Qf7"
+      ],
+      "goal": "only",
+      "accept": [],
+      "explanation": "White threatens Qxg7 mate: the queen on g3 and the bishop on c3 both hit g7. ...Qf7 defends g7 and also blocks the f-pawn, the only move that keeps your advantage. The natural ...g6 loses to fxg6, opening the f-file for White's rook, and grabbing the bishop with ...Qxc3 drops the queen after Qxc3.",
+      "wrong": [
+        {
+          "move": "g6",
+          "why": "After fxg6 the f-file opens and White's rook and queen crash through."
+        },
+        {
+          "move": "Qxc3",
+          "why": "Qxc3 simply wins your queen for a bishop."
+        }
+      ],
+      "hint": "Which square do two white pieces attack?",
+      "objective": "Ask what the opponent wants before choosing a plan.",
+      "tags": [
+        "prophylaxis",
+        "king-safety",
+        "blunder-check"
+      ]
+    }
+  ]
+}

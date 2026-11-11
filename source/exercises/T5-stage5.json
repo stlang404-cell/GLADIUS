@@ -1,0 +1,481 @@
+{
+  "chapter": "T5",
+  "title": "Stage 5 Test",
+  "exercises": [
+    {
+      "id": "T5-01",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "2kr1b1r/pp1nqppp/2p1p3/8/4QB2/2N5/PPP2PPP/R3KB1R w KQ - 0 11",
+      "question": "White to move. Black has castled queenside behind the c6-pawn, and both your bishops are still able to reach the long diagonals. Mate in 2.",
+      "solution": [
+        "Qxc6+",
+        "bxc6",
+        "Ba6#"
+      ],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "This is Boden's mate: two bishops on crossing diagonals. 11.Qxc6+! bxc6 is forced (b8 and c7 are covered by the bishop on f4, and d7 is blocked by Black's own knight). Then 12.Ba6# finishes, because the bishop on f4 still covers b8 and c7.",
+      "wrong": [
+        {
+          "move": "Ba6",
+          "why": "The right bishop, but without the queen sacrifice Black simply plays ...Nb8 or ...bxa6 and keeps the king covered."
+        },
+        {
+          "move": "O-O-O",
+          "why": "A natural developing move that misses the forced mate."
+        }
+      ],
+      "hint": "The c6-pawn is the only thing shielding the a6-c8 diagonal.",
+      "objective": "Recognize Boden's mate pattern against a king castled on the queenside.",
+      "tags": [
+        "mate-patterns",
+        "decoy",
+        "attack"
+      ]
+    },
+    {
+      "id": "T5-02",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "3r2k1/5pp1/7p/3q4/8/8/2Q2PPP/3R2K1 b - - 0 30",
+      "question": "Black to move. White's rook on d1 is defended by the queen. Count attackers and defenders on d1, then mate in 2.",
+      "solution": [
+        "Qxd1+",
+        "Qxd1",
+        "Rxd1#"
+      ],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "d1 is attacked twice (queen and rook, doubled on the d-file) and defended twice (rook and queen), but White's queen is overloaded: it must recapture and also guard the back rank. 30...Qxd1+! 31.Qxd1 Rxd1# mates because White's king has no flight square.",
+      "wrong": [
+        {
+          "move": "Qd4",
+          "why": "Offers a trade but drops the queen to 31.Rxd4."
+        },
+        {
+          "move": "Qg5",
+          "why": "Avoids the trade but misses the forced mate; the position is just equal."
+        }
+      ],
+      "hint": "Which white piece has two jobs?",
+      "objective": "Use overloading and the back rank: when a defender must recapture, check what it stops guarding.",
+      "tags": [
+        "overloading",
+        "back-rank",
+        "counting"
+      ]
+    },
+    {
+      "id": "T5-03",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp2B1/3P4/2PQ1N2/PPBN1PPP/R3R1K1 w - - 0 11",
+      "question": "White to move. Your queen and bishop are lined up on h7, but the knight on f6 defends it. Win material.",
+      "solution": [
+        "Bxf6",
+        "g6",
+        "Bxe7"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Remove the defender. 11.Bxf6! threatens Qxh7# immediately, and Black cannot recapture: after 11...Bxf6 or 11...gxf6, 12.Qxh7# follows. Black must block with 11...g6, and 12.Bxe7 leaves White a clean piece up.",
+      "wrong": [
+        {
+          "move": "dxc5",
+          "why": "Wins a pawn for a moment, but gives Black time for ...g6 or ...h6 and the tactic disappears."
+        },
+        {
+          "move": "Ne5",
+          "why": "A good square for the knight, but it misses that the f6-knight can simply be removed."
+        }
+      ],
+      "hint": "If the f6-knight disappeared, what would happen on h7?",
+      "objective": "Remove the single defender of a mating square.",
+      "tags": [
+        "removing-defender",
+        "mate-patterns",
+        "attack"
+      ]
+    },
+    {
+      "id": "T5-04",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "2rq1rk1/Bp1bbppp/4p3/3n4/3P4/3B1N2/PP3PPP/R2Q1RK1 b - - 0 13",
+      "question": "Black to move. White's bishop has just grabbed a pawn on a7. Is it in danger? Find the best move.",
+      "solution": [
+        "b6"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "13...b6! traps the bishop: its only exit square, b8, is covered by your rook and queen, and the b6-pawn is protected by the knight and queen. Black will follow with ...Ra8 or ...Qc7 and win the bishop for at most a pawn or two. White's best practical try is to look for desperate counterplay with Bxh7+ ideas, which do not change the result.",
+      "wrong": [
+        {
+          "move": "Bc6",
+          "why": "A reasonable developing move, but it lets the bishop escape with Bc5 or Be3."
+        },
+        {
+          "move": "Qa5",
+          "why": "Attacks the bishop, but Bc5 gets it out and trades it off."
+        }
+      ],
+      "hint": "Count the bishop's escape squares.",
+      "objective": "Trap a piece that has wandered into the corner by taking away its last exit.",
+      "tags": [
+        "trapped-piece",
+        "quiet-move"
+      ]
+    },
+    {
+      "id": "T5-05",
+      "type": "mate",
+      "difficulty": 5,
+      "fen": "r3r2k/pp4pp/1q6/6N1/2Q5/8/PP3PPP/2B3K1 w - - 0 25",
+      "question": "White to move. You are a rook down, but Black's king is boxed in by its own pawns and your queen and knight are close. Mate in 4.",
+      "solution": [
+        "Nf7+",
+        "Kg8",
+        "Nh6+",
+        "Kh8",
+        "Qg8+",
+        "Rxg8",
+        "Nf7#"
+      ],
+      "goal": "mate",
+      "mate_in": 4,
+      "accept": [],
+      "explanation": "This is the smothered mate (also called Philidor's legacy). 25.Nf7+ Kg8 26.Nh6+ is a double check, so the king must move: 26...Kh8. Then 27.Qg8+! Rxg8 forces Black's rook onto g8, and 28.Nf7# mates a king that is smothered by its own pieces.",
+      "wrong": [
+        {
+          "move": "Qg8+",
+          "why": "Too early: Black simply plays 25...Kxg8, because the knight is not yet on h6 to protect g8."
+        },
+        {
+          "move": "Be3",
+          "why": "Attacks the queen but gives Black time; with a rook less, White is simply lost."
+        }
+      ],
+      "hint": "Start with a check that drives the king back to g8, then use a double check.",
+      "objective": "Execute the smothered-mate sequence in the right order.",
+      "tags": [
+        "smothered-mate",
+        "double-check",
+        "decoy"
+      ]
+    },
+    {
+      "id": "T5-06",
+      "type": "mate",
+      "difficulty": 4,
+      "fen": "r3r1k1/pp4pp/2p5/2b1p3/4P1n1/2N1q3/PP4PP/R1BQ1R1K b - - 0 20",
+      "question": "Black to move. White's king on h1 is surrounded by its own pieces and pawns. Mate in 2.",
+      "solution": [
+        "Qg1+",
+        "Rxg1",
+        "Nf2#"
+      ],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "20...Qg1+! cannot be taken by the king because the bishop on c5 covers g1, so 21.Rxg1 is forced. Now the king is completely boxed in and 21...Nf2# is a smothered mate. The direct 20...Nf2+ only wins material after 21.Rxf2.",
+      "wrong": [
+        {
+          "move": "Nf2+",
+          "why": "A fork, but after 21.Rxf2 Qxf2 White is only losing material, not mated."
+        },
+        {
+          "move": "Qf2",
+          "why": "Threatens mate on g2 and g1, but 21.Qb3+ and Rxf2 defuse everything."
+        }
+      ],
+      "hint": "Which square next to the king can you fill with a piece that the king cannot capture?",
+      "objective": "Recognize the queen-sacrifice smothered mate.",
+      "tags": [
+        "smothered-mate",
+        "decoy"
+      ]
+    },
+    {
+      "id": "T5-07",
+      "type": "opening",
+      "difficulty": 3,
+      "fen": "rnbqkb1r/pppp1ppp/8/4N3/4n3/8/PPPP1PPP/RNBQKB1R w KQkq - 0 4",
+      "question": "White to move. In your Petrov line, Black has answered 3.Nxe5 by copying you with 3...Nxe4 instead of 3...d6. What is the most testing reply?",
+      "solution": [
+        "Qe2"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "4.Qe2! attacks the knight on e4 and, after it moves or is defended by 4...Qe7, threatens to open the e-file against Black's king. After 4...Qe7 5.Qxe4 d6 6.d4 dxe5 7.dxe5 White has won a pawn. Copying moves in open positions is dangerous because the side that moves first gets to the open file first.",
+      "wrong": [
+        {
+          "move": "Bc4",
+          "why": "Develops, but 4...d5 kicks the bishop and Black is at least equal."
+        },
+        {
+          "move": "Nxf7",
+          "why": "Grabs a pawn, but 4...Qe7 hits the e-file and Black's threats (...Nc3+ ideas) win material."
+        }
+      ],
+      "hint": "Both kings are on the e-file. Who gets there first?",
+      "objective": "Punish a symmetrical opening mistake by using the open e-file.",
+      "tags": [
+        "repertoire-white",
+        "opening-traps",
+        "open-file"
+      ]
+    },
+    {
+      "id": "T5-08",
+      "type": "opening",
+      "difficulty": 3,
+      "fen": "r1bqkbnr/pppp1ppp/8/4N3/2BnP3/8/PPPP1PPP/RNBQK2R b KQkq - 0 4",
+      "question": "Black to move. You tried the dubious 3...Nd4, and your opponent grabbed the e5-pawn with 4.Nxe5. Find the move that punishes the greed.",
+      "solution": [
+        "Qg5"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "4...Qg5! attacks both the knight on e5 and the g2-pawn. If White ignores it with 5.Nxf7?, 5...Qxg2 6.Rf1 Qxe4+ 7.Be2 Nf3# is a famous mate. White's best is 5.Bxf7+ Kd8 6.O-O Qxe5, when Black has the better game. Remember that 3...Nd4 is a trap, not a sound opening; the book's repertoire move is 3...Bc5.",
+      "wrong": [
+        {
+          "move": "Qe7",
+          "why": "Attacks e5 and e4, but after 5.Nxf7 the knight hits the rook on h8 and White keeps the extra pawn and the better game."
+        },
+        {
+          "move": "Nf6",
+          "why": "Develops, but 5.Bxf7+ wins a pawn and exposes Black's king."
+        }
+      ],
+      "hint": "Find a queen move that attacks two things.",
+      "objective": "Punish a pawn grab with a double attack, and know which opening tricks are unsound.",
+      "tags": [
+        "opening-traps",
+        "fork",
+        "repertoire-black"
+      ]
+    },
+    {
+      "id": "T5-09",
+      "type": "endgame",
+      "difficulty": 4,
+      "fen": "R7/P4k2/6pp/8/7P/5PP1/r7/6K1 w - - 0 50",
+      "question": "White to move. Your rook is stuck in front of the a-pawn and Black's rook sits behind it. Black's king is on f7. Find the trick that wins.",
+      "solution": [
+        "Rh8"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "50.Rh8! clears the a8-square and threatens a8=Q. If Black takes the pawn with 50...Rxa7, then 51.Rh7+ skewers king and rook along the seventh rank. Black's other tries fail too: after 51.a8=Q Rxa8 Rxa8 White is a rook up. The trick works because Black's king is on the seventh rank but not on g7 or h7, where it would guard h7.",
+      "wrong": [
+        {
+          "move": "g4",
+          "why": "Creates kingside play slowly; Black's king returns to g7 and the skewer trick disappears. White is still better, but the immediate win is gone."
+        },
+        {
+          "move": "Kf1",
+          "why": "Bringing the king over is too slow: Black's king heads for g7, where the trick no longer works."
+        }
+      ],
+      "hint": "Move the rook off the a-file with an eye on h7.",
+      "objective": "Know the rook-endgame skewer trick with a rook in front of an a-pawn.",
+      "tags": [
+        "rook-endgame",
+        "skewer",
+        "endgame-technique"
+      ]
+    },
+    {
+      "id": "T5-10",
+      "type": "conversion",
+      "difficulty": 4,
+      "fen": "3rk3/pp3pp1/8/7p/8/8/PP3PP1/3RK3 b - - 0 30",
+      "question": "Black to move. You are a pawn up and your h-pawn is passed. Choose the clearest way to win.",
+      "solution": [
+        "Rxd1+",
+        "Kxd1",
+        "Kd7"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Trade into the king and pawn ending. After 30...Rxd1+ 31.Kxd1 Kd7 your outside passed h-pawn will pull White's king to the kingside, and your king will then win the queenside pawns. With rooks on, White's rook stays active and the win is much slower.",
+      "wrong": [
+        {
+          "move": "f6",
+          "why": "Safe, but keeps rooks on and gives White's rook time to become active; the win is far from clear."
+        },
+        {
+          "move": "Rc8",
+          "why": "Avoids the trade that wins most simply; White's rook takes the open d-file."
+        }
+      ],
+      "hint": "Which ending is easiest to win with an outside passed pawn?",
+      "objective": "Convert by trading into a won king and pawn ending when you have an outside passed pawn.",
+      "tags": [
+        "conversion",
+        "king-pawn-endgame",
+        "passed-pawn"
+      ]
+    },
+    {
+      "id": "T5-11",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "8/5k2/8/5K1P/8/3B4/8/8 b - - 0 60",
+      "question": "Black to move. White has a bishop and an h-pawn. Find the move that holds the draw.",
+      "solution": [
+        "Kg7"
+      ],
+      "goal": "draw",
+      "accept": [
+        "Kf8",
+        "Kg8"
+      ],
+      "explanation": "The pawn queens on h8, a dark square, and White's bishop is light-squared, so it can never drive your king out of the corner. Head for h8: 60...Kg7 (or 60...Kf8/60...Kg8) reaches the corner in time and the game is a draw. Moving away lets the white king take the corner squares.",
+      "wrong": [
+        {
+          "move": "Ke7",
+          "why": "Moves away from the corner: 61.Kg6 and the h-pawn promotes."
+        },
+        {
+          "move": "Ke8",
+          "why": "Also too far from h8: 61.h6 and the pawn runs with the king's support."
+        }
+      ],
+      "hint": "What colour is h8, and what colour is White's bishop?",
+      "objective": "Know the wrong-coloured bishop and rook pawn draw and head for the corner.",
+      "tags": [
+        "minor-piece-endgame",
+        "defense",
+        "endgame-technique"
+      ]
+    },
+    {
+      "id": "T5-12",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "4k3/8/4P3/4K3/8/8/8/8 b - - 0 60",
+      "question": "Black to move. White's king and pawn are advanced. Only one move draws. Find it.",
+      "solution": [
+        "Ke7"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "Take the opposition directly in front of the pawn. After 60...Ke7 White's king cannot advance to d6 or f6 without allowing your king to stay in front of the pawn. 60...Kd8? or 60...Kf8? lets 61.Kd6 or 61.Kf6 seize the key squares and the pawn queens.",
+      "wrong": [
+        {
+          "move": "Kd8",
+          "why": "61.Kd6 takes the opposition and the key square; e7 and e8 follow."
+        },
+        {
+          "move": "Kf8",
+          "why": "61.Kd6 again: White's king reaches the seventh rank beside the pawn."
+        }
+      ],
+      "hint": "Kings face to face, with one square between them.",
+      "objective": "Use the opposition to defend king and pawn endings.",
+      "tags": [
+        "opposition",
+        "king-pawn-endgame",
+        "defense"
+      ]
+    },
+    {
+      "id": "T5-13",
+      "type": "defense",
+      "difficulty": 4,
+      "fen": "8/7k/6pp/3Q4/8/6PP/rq3P2/6K1 w - - 0 40",
+      "question": "White to move. You are a rook down and Black threatens ...Qxf2+ with mate to follow. Find the move that saves the game.",
+      "solution": [
+        "Qf7+",
+        "Kh8",
+        "Qf8+"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "Black's king has only h7 and h8, and both g7 and g8 are covered from f7 and f8. 40.Qf7+ Kh8 41.Qf8+ Kh7 42.Qf7+ is a perpetual check. Any quiet move loses: Black's queen and rook mate on f2 or g2.",
+      "wrong": [
+        {
+          "move": "Qd3",
+          "why": "Defends nothing: 40...Qxf2+ 41.Kh1 Qg2 is mate."
+        },
+        {
+          "move": "Qd7+",
+          "why": "A check, but after 40...Qg7 the checks run out and Black's extra rook wins."
+        }
+      ],
+      "hint": "Which squares does the black king have, and can one queen check on both?",
+      "objective": "When losing, look for perpetual check before anything else.",
+      "tags": [
+        "perpetual",
+        "defense",
+        "practical"
+      ]
+    },
+    {
+      "id": "T5-14",
+      "type": "defense",
+      "difficulty": 5,
+      "fen": "8/8/8/8/7P/K1p5/8/7k b - - 0 60",
+      "question": "Black to move. White's h-pawn looks unstoppable and White's king is ready to take your c-pawn. Find the only move that draws.",
+      "solution": [
+        "Kg2",
+        "h5",
+        "Kf3"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "This is the Réti idea: a king moving diagonally can chase two goals at once. 60...Kg2! heads towards the h-pawn and towards your own c-pawn. After 61.h5 Kf3 Black's king is inside the h-pawn's square, and if White spends time on c3, Black's king catches the pawn; if White pushes the pawn, ...Ke4 supports the c-pawn. Moving straight along the edge with ...Kh2 or pushing ...c2 at once loses.",
+      "wrong": [
+        {
+          "move": "Kh2",
+          "why": "Chases only the pawn, and from the wrong direction: 61.h5 and the pawn outruns the king."
+        },
+        {
+          "move": "c2",
+          "why": "61.Kb2 stops the pawn and the h-pawn runs."
+        }
+      ],
+      "hint": "A diagonal king move gets closer to two places at once.",
+      "objective": "Use diagonal king moves to pursue two goals at the same time (the Réti manoeuvre).",
+      "tags": [
+        "king-pawn-endgame",
+        "calculation",
+        "endgame-technique"
+      ]
+    },
+    {
+      "id": "T5-15",
+      "type": "opening",
+      "difficulty": 3,
+      "fen": "r2qkbnr/ppp2ppp/2np4/4p2b/2B1P3/2N2N1P/PPPP1PP1/R1BQK2R w KQkq - 1 6",
+      "question": "White to move. Black has just retreated 5...Bh5, keeping the pin on your knight. Find the strongest move.",
+      "solution": [
+        "Nxe5"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The pin is not real, because the queen on d1 is a bait. 6.Nxe5! and if 6...Bxd1?? 7.Bxf7+ Ke7 8.Nd5# is Legal's mate. Black's best is 6...Nxe5 7.Qxh5, and White has won a pawn with the better position.",
+      "wrong": [
+        {
+          "move": "O-O",
+          "why": "Safe, but lets Black keep the pin and the e5-pawn; White's chance is gone."
+        },
+        {
+          "move": "d3",
+          "why": "Natural, but after ...Na5 Black trades off your bishop and equalizes."
+        }
+      ],
+      "hint": "If Black takes your queen, which two minor pieces deliver mate?",
+      "objective": "Recognize Legal's mate pattern from the attacking side and calculate the best defence.",
+      "tags": [
+        "opening-traps",
+        "mate-patterns",
+        "calculation"
+      ]
+    }
+  ]
+}

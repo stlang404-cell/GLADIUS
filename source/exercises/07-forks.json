@@ -1,0 +1,356 @@
+{
+  "chapter": 7,
+  "title": "Forks",
+  "exercises": [
+    {
+      "id": "07-01",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "r3kb1r/pp1b1ppp/2n1pn2/1N6/3P4/5N2/PP3PPP/R1B1KB1R w KQkq - 0 10",
+      "question": "White to move. The queens are gone and Black has not castled. Win material.",
+      "solution": [
+        "Nc7+",
+        "Kd8",
+        "Nxa8"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The king on e8 and the rook on a8 are a knight's fork apart: both are attacked from c7, and nothing guards c7. Nc7+ checks, the king must move, and Nxa8 wins a full rook. Even if the knight is later trapped in the corner, White has won at least the exchange.",
+      "wrong": [
+        {
+          "move": "Nd6+",
+          "why": "A check, but d6 is guarded by the bishop on f8: Bxd6 wins the knight."
+        },
+        {
+          "move": "Bf4",
+          "why": "Developing toward c7 is too slow; Black simply plays ...Rc8 or ...Kd8 and the fork is gone."
+        }
+      ],
+      "hint": "Which squares does the knight on b5 attack? Is one of them next to the king and the rook at the same time?",
+      "objective": "Recognize a knight fork of king and rook on an unguarded square.",
+      "tags": [
+        "fork"
+      ]
+    },
+    {
+      "id": "07-02",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "rnbqkb1r/ppp2ppp/5n2/3pp3/8/2NBPN2/PPPP1PPP/R1BQK2R b KQkq - 1 4",
+      "question": "Black to move. White has developed with e3, Nc3, Bd3 and Nf3. Win material.",
+      "solution": [
+        "e4"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The bishop on d3 and the knight on f3 stand side by side, exactly where one black pawn can hit both. ...e4 is defended by the pawn on d5 and the knight on f6, so White cannot take it safely and must lose a piece. Pawn forks are the cheapest forks of all: a pawn costs 1 and wins 3.",
+      "wrong": [
+        {
+          "move": "Bd6",
+          "why": "A normal developing move, but it lets White play e4 or Be2 and the fork disappears."
+        },
+        {
+          "move": "Nc6",
+          "why": "Natural, but it misses the immediate win of a piece with ...e4."
+        }
+      ],
+      "hint": "Look at the two white pieces on the third rank. Which pawn can attack both?",
+      "objective": "Spot a pawn fork against two minor pieces side by side.",
+      "tags": [
+        "fork"
+      ]
+    },
+    {
+      "id": "07-03",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "rnbqkb1r/pp3ppp/2pppn2/6B1/3P4/3BP3/PPP1NPPP/RN1QK2R b KQkq - 1 5",
+      "question": "Black to move. White's bishop on g5 pins your knight to your queen. Is there something better than breaking the pin slowly?",
+      "solution": [
+        "Qa5+"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The bishop on g5 has no defender: no knight on f3, no pawn on h4, and the queen on d1 cannot reach it. ...Qa5+ checks the king along the a5-e1 diagonal and attacks g5 along the fifth rank. White must deal with the check (Nd2, c3, Nbc3 or Qd2), and then ...Qxg5 wins a clean piece. A queen fork almost always means check plus a loose piece.",
+      "wrong": [
+        {
+          "move": "h6",
+          "why": "Asks the bishop a question, but White just takes on f6 or retreats; nothing is won."
+        },
+        {
+          "move": "Be7",
+          "why": "Breaks the pin calmly but misses that the pinning bishop itself is loose."
+        }
+      ],
+      "hint": "Which white piece has no defender? Which queen move gives check and attacks it?",
+      "objective": "Find a queen fork that combines a check with an attack on an unprotected piece.",
+      "tags": [
+        "fork",
+        "hanging-pieces"
+      ]
+    },
+    {
+      "id": "07-04",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "r4rk1/pp1n1ppp/2qpb3/3N4/4P3/3B1Q2/PP3PPP/R4RK1 w - - 0 15",
+      "question": "White to move. Win material.",
+      "solution": [
+        "Ne7+",
+        "Kh8",
+        "Nxc6"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Start from the targets: the king is on g8 and the queen on c6. A knight on e7 attacks both, and no black piece guards e7. Ne7+ forces the king to h8, and Nxc6 wins the queen for a knight. This is a royal fork (king and queen).",
+      "wrong": [
+        {
+          "move": "Nc7",
+          "why": "Attacks the rook on a8, but it is not check, so Black simply moves the rook or the queen takes on c7."
+        },
+        {
+          "move": "Nb4",
+          "why": "Attacks the queen, which just steps away; it wins nothing."
+        }
+      ],
+      "hint": "Find a square that touches both g8 and c6 with a knight's jump.",
+      "objective": "Work backwards from two targets to find the royal fork square.",
+      "tags": [
+        "fork"
+      ]
+    },
+    {
+      "id": "07-05",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1bqk2r/ppp1bppp/2n5/8/2P3n1/4PN2/PP3PPP/RNBQKB1R b KQkq - 1 7",
+      "question": "Black to move. The d-file is open and the queens face each other. Win material.",
+      "solution": [
+        "Qxd1+",
+        "Kxd1",
+        "Nxf2+",
+        "Ke1",
+        "Nxh1"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The knight on g4 already eyes f2, and from f2 it would attack d1 and h1. The trade ...Qxd1+ forces the white king onto d1, because nothing else can recapture. Now ...Nxf2+ forks the king on d1 and the rook on h1, and Black wins the exchange and a pawn. The capture with check drives the king onto the forkable square.",
+      "wrong": [
+        {
+          "move": "Nxf2",
+          "why": "Wrong move order: White answers Qxd8+ and Kxf2, and Black has lost a knight for a pawn."
+        },
+        {
+          "move": "O-O",
+          "why": "Safe, but after Qxd8 the chance is gone for good."
+        }
+      ],
+      "hint": "From f2 your knight would attack d1 and h1. How can you get the white king to d1?",
+      "objective": "Use a forcing capture to drive the king onto a fork square.",
+      "tags": [
+        "fork",
+        "decoy"
+      ]
+    },
+    {
+      "id": "07-06",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "r1b1kb1r/pp3ppp/2n1pn2/1N6/8/5N2/PPP2PPP/R1B1KB1R b KQkq - 1 8",
+      "question": "Black to move. White's last move, Nb5, threatens Nc7+ forking your king and rook. Find the best way to meet the threat.",
+      "solution": [
+        "Bb4+"
+      ],
+      "goal": "best",
+      "accept": [
+        "Kd8",
+        "Kd7"
+      ],
+      "explanation": "The fork square is c7, and right now nothing guards it. ...Bb4+ gains time with a check, and after c3 the bishop drops back to a5, where it guards c7. Stepping the king to d8 or d7 also covers c7 and is fine. What you must not do is make a move that ignores c7, such as ...Rb8 or ...Bc5.",
+      "wrong": [
+        {
+          "move": "Bc5",
+          "why": "Develops, but ignores the threat: Nc7+ Ke7 Nxa8 wins the rook."
+        },
+        {
+          "move": "Rb8",
+          "why": "Saves the rook from the fork but leaves it stuck; Bf4 attacks it again and Black loses the exchange."
+        },
+        {
+          "move": "Nb4",
+          "why": "A counter-threat that comes too late: Nc7+ Kd8 Nxa8 and White is a rook up."
+        }
+      ],
+      "hint": "Which square does White want? Can you guard it, or gain time first with a check?",
+      "objective": "Identify the opponent's fork square and cover it before it is used.",
+      "tags": [
+        "defense",
+        "fork"
+      ]
+    },
+    {
+      "id": "07-07",
+      "type": "defense",
+      "difficulty": 2,
+      "fen": "rnbqk2r/ppp2ppp/3b1n2/3pp3/8/2NBPN2/PPPP1PPP/R1BQK2R w KQkq - 2 5",
+      "question": "White to move. Black threatens ...e4, forking your bishop and knight. Find a good move.",
+      "solution": [
+        "e4"
+      ],
+      "goal": "best",
+      "accept": [
+        "Be2",
+        "Bb5+"
+      ],
+      "explanation": "Before you make any routine move, ask what your opponent's pawn moves would attack. ...e4 would hit d3 and f3 together. Playing e4 yourself takes the square away, and moving the bishop off d3 (Be2, or Bb5+ first) also takes the sting out of the push. Castling here is the natural blunder.",
+      "wrong": [
+        {
+          "move": "O-O",
+          "why": "Castling ignores the threat: ...e4 forks the bishop and knight and wins a piece."
+        },
+        {
+          "move": "Qe2",
+          "why": "It does nothing about the threat: after ...e4 the bishop and the knight are both still attacked."
+        },
+        {
+          "move": "b3",
+          "why": "A slow move: ...e4 wins a piece."
+        }
+      ],
+      "hint": "Which of your pieces stand side by side in front of a black pawn?",
+      "objective": "Defend against a pawn fork by moving a target or controlling the fork square.",
+      "tags": [
+        "defense",
+        "fork",
+        "blunder-check"
+      ]
+    },
+    {
+      "id": "07-08",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "r1b2rk1/pp1nqppp/2pbp3/3p4/2PP1Pn1/1P1BPN2/PB1N2PP/R2Q1R1K b - - 0 11",
+      "question": "Black to move. White has set up a Stonewall with pawns on d4, e3 and f4. Win material.",
+      "solution": [
+        "Nxe3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The pawn on e3 has no defender: the f-pawn has moved to f4, the d-pawn is on d4 and the dark-squared bishop is on b2. From e3 a knight attacks both d1 and f1, so ...Nxe3 takes a pawn and forks the queen and rook. White saves the queen with Qe2, and ...Nxf1 wins the exchange as well.",
+      "wrong": [
+        {
+          "move": "f5",
+          "why": "A normal Stonewall move, but it lets White play Qe2 or Qe1 and the fork never happens."
+        },
+        {
+          "move": "Bxf4",
+          "why": "After exf4 Black has simply given a bishop for a pawn, and the fork square e3 is no longer a target."
+        }
+      ],
+      "hint": "Which white pawn is undefended, and what would a knight on that square attack?",
+      "objective": "Spot a knight fork that also captures material.",
+      "tags": [
+        "fork",
+        "hanging-pieces"
+      ]
+    },
+    {
+      "id": "07-09",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "r3r1k1/pb3pp1/1p1qpn2/4N3/3P4/8/PPP1QPP1/1K1R3R w - - 0 20",
+      "question": "White to move. Your knight already attacks f7. Find the way to turn that into a winning fork.",
+      "solution": [
+        "Rh8+",
+        "Kxh8",
+        "Nxf7+",
+        "Kg8",
+        "Nxd6"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "A knight on f7 would attack d6 and h8, so the question is how to get the black king onto h8. Rh8+ is a sacrifice with check: the king must take, because h7 is covered by the rook. Then Nxf7+ forks king and queen, and Nxd6 leaves White a piece up. Look for checks that drive the king onto the fork square.",
+      "wrong": [
+        {
+          "move": "Nxf7",
+          "why": "Without the check first, Black simply plays ...Kxf7 and the knight is gone."
+        },
+        {
+          "move": "Qe3",
+          "why": "A reasonable attacking move, but it gives Black time to defend; the fork is there only now."
+        }
+      ],
+      "hint": "From f7 the knight would attack d6 and h8. What check forces the king to h8?",
+      "objective": "Sacrifice with check to drive the king onto a knight-fork square.",
+      "tags": [
+        "fork",
+        "decoy"
+      ]
+    },
+    {
+      "id": "07-10",
+      "type": "blunder-check",
+      "difficulty": 1,
+      "fen": "r1bqr1k1/ppN1bppp/3p1n2/8/4P3/3B1N2/PPP2PPP/R2Q1RK1 b - - 0 12",
+      "question": "Black to move. White's knight has jumped to c7, attacking both of your rooks. What should you do?",
+      "solution": [
+        "Qxc7"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "A fork only works if the forking piece is safe. Before you panic about your rooks, run the safety scan from Chapter 4: what attacks the knight on c7? Your queen on d8 does, and nothing defends it. ...Qxc7 simply wins a piece.",
+      "wrong": [
+        {
+          "move": "Rf8",
+          "why": "Saves one rook but lets the knight take the other: Nxa8 and White is ahead."
+        },
+        {
+          "move": "Rb8",
+          "why": "Moves the wrong rook; Nxe8 wins the exchange when the knight could simply have been captured."
+        }
+      ],
+      "hint": "Is the forking piece itself protected?",
+      "objective": "Check whether the forking piece can simply be captured.",
+      "tags": [
+        "blunder-check",
+        "hanging-pieces",
+        "fork"
+      ]
+    },
+    {
+      "id": "07-11",
+      "type": "quiet",
+      "difficulty": 2,
+      "fen": "r1bqkbnr/pp3ppp/2np4/1N2p3/4P3/8/PPP2PPP/RNBQKB1R w KQkq - 0 6",
+      "question": "White to move. Your knight on b5 eyes c7, next to the king and the rook. Is there a fork? Play a good move.",
+      "solution": [
+        "c4"
+      ],
+      "goal": "best",
+      "accept": [
+        "N1c3",
+        "N1a3",
+        "Nd2",
+        "Bd3"
+      ],
+      "explanation": "Nc7+ looks like a fork of king and rook, but c7 is guarded by the queen on d8, so it just loses the knight. Nxd6+ fails for the same reason: the bishop on f8 guards d6. There is no tactic, so play a sound move: c4 (or simply develop the other knight).",
+      "wrong": [
+        {
+          "move": "Nc7+",
+          "why": "The queen guards c7: ...Qxc7 wins the knight."
+        },
+        {
+          "move": "Nxd6+",
+          "why": "The bishop guards d6: ...Bxd6 wins the knight for a pawn."
+        }
+      ],
+      "hint": "Count the defenders of each fork square before you jump.",
+      "objective": "Reject a fork when the fork square is defended.",
+      "tags": [
+        "quiet-move",
+        "fork",
+        "blunder-check"
+      ]
+    }
+  ]
+}

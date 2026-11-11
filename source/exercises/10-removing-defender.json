@@ -1,0 +1,204 @@
+{
+  "chapter": 10,
+  "title": "Removing the Defender, Overloading, Deflection and Decoys",
+  "exercises": [
+    {
+      "id": "10-01",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "r4rk1/ppq1bppp/2p1bn2/3p2B1/3P4/2PQ1N2/PPB2PPP/R3R1K1 w - - 0 14",
+      "question": "White to move. The knight on f6 has one very important job. Remove it and win material.",
+      "solution": ["Bxf6"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Your queen and bishop on the b1-h7 diagonal aim at h7, and the knight on f6 is its only defender. After Bxf6 Black cannot recapture: 14...Bxf6 or 14...gxf6 allows 15.Qxh7#. Black has to block the diagonal with 14...g6, and White is simply a knight up.",
+      "wrong": [
+        {"move": "Rxe6", "why": "Grabs a bishop for a rook; after ...fxe6 the knight on f6 still guards h7 and you have given away the exchange."},
+        {"move": "Ne5", "why": "A nice square, but it does nothing to the defender of h7 and Black has time to play ...Ne4 and trade pieces."}
+      ],
+      "hint": "What would happen on h7 if the knight on f6 disappeared?",
+      "objective": "Capture a defender whose recapture would allow mate.",
+      "tags": ["removing-defender", "mate-patterns"]
+    },
+    {
+      "id": "10-02",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "2q1r1k1/pp3ppp/1np2b2/8/3N1B2/1Q6/PPP2PPP/3R2K1 b - - 0 20",
+      "question": "Black to move. White's rook on d1 is doing two jobs. Punish it.",
+      "solution": ["Bxd4"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The rook on d1 defends the knight on d4 and also guards White's back rank against ...Re1#. It cannot do both. After 20...Bxd4 the recapture 21.Rxd4?? runs into 21...Re1#, so White must leave Black a clean piece ahead.",
+      "wrong": [
+        {"move": "Nd5", "why": "Centralises the knight, but gives White time to play h3 or c3 and the overload disappears."},
+        {"move": "Re4", "why": "Attacks the knight a second time but lets White defend calmly with Be3 or c3; you had the win of a piece immediately."}
+      ],
+      "hint": "List the duties of the rook on d1.",
+      "objective": "Spot an overloaded rook that guards both a piece and the back rank.",
+      "tags": ["overloading", "back-rank"]
+    },
+    {
+      "id": "10-03",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "rn1qkb1r/ppp1n1pp/5p2/4p3/2B1P1b1/2N2N2/PPP2PPP/R1BQ1RK1 w kq - 0 8",
+      "question": "White to move. Black's queen on d8 is defended only by the king. Deflect the king and win the queen.",
+      "solution": ["Bf7+", "Kxf7", "Qxd8"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The queens face each other on the open d-file and the king on e8 is the black queen's only guard. 8.Bf7+ is a check that must be answered: the king cannot go to d7 (the white queen covers it) and e7 and f8 are blocked, so 8...Kxf7 is forced. Now the king has left e8 and 9.Qxd8 wins the queen for a bishop.",
+      "wrong": [
+        {"move": "Qxd8+", "why": "A plain queen trade; after ...Kxd8 the material is level and the chance is gone."},
+        {"move": "Qe2", "why": "A developing move that lets Black trade queens or defend the d8 queen next move."}
+      ],
+      "hint": "Which forcing move drags the king away from e8?",
+      "objective": "Use a check to deflect the only defender of a valuable piece.",
+      "tags": ["deflection", "decoy"]
+    },
+    {
+      "id": "10-04",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "5rk1/pp2q1pp/4p3/8/3Nn3/1Q2P3/PP4PP/5RK1 b - - 0 24",
+      "question": "Black to move. Lure White's king onto a square where your knight can fork it.",
+      "solution": ["Rxf1+", "Kxf1", "Nd2+", "Kf2", "Nxb3"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "On g1 the white king cannot be forked from d2, but on f1 it can. 24...Rxf1+ forces 25.Kxf1, and then 25...Nd2+ attacks the king on f1 and the queen on b3 at the same time. After the king steps aside, 26...Nxb3 leaves Black a queen against a knight.",
+      "wrong": [
+        {"move": "Nd2", "why": "Attacks the queen without check, so White answers Rxf8+ or simply moves the queen with tempo."},
+        {"move": "Rc8", "why": "A natural developing move that misses the decoy; the chance disappears once White's queen or rook moves."}
+      ],
+      "hint": "From which square does a knight attack both f1 and b3?",
+      "objective": "Use a sacrifice to decoy the king onto a forking square.",
+      "tags": ["decoy", "fork"]
+    },
+    {
+      "id": "10-05",
+      "type": "tactic",
+      "difficulty": 2,
+      "fen": "1r1q1rk1/pp3pbp/n1p1p1p1/3pP2n/3P4/2P1BN1P/PPQN1PP1/R4RK1 w - - 0 14",
+      "question": "White to move. The knight on h5 has wandered to the edge. Trap it.",
+      "solution": ["g4"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Count the knight's escape squares before you attack it: f4 is covered by the bishop on e3, g3 by the f2-pawn, f6 by the e5-pawn, and g7 is blocked by Black's own bishop. 14.g4, supported by the h3-pawn, attacks the knight and it has nowhere to go. Black can only win a pawn or two for it, for example 14...f5 15.Bg5 Qe8 16.gxh5.",
+      "wrong": [
+        {"move": "Rae1", "why": "Useful, but it gives Black time for ...f5 or ...f6, after which the knight escapes through f6."},
+        {"move": "Ng5", "why": "Aims at the kingside but lets Black free the knight with ...f6 and ...Ng7."}
+      ],
+      "hint": "Which squares can the knight on h5 move to? Are any of them safe?",
+      "objective": "Trap a piece by checking that every escape square is covered before attacking it.",
+      "tags": ["trapped-piece"]
+    },
+    {
+      "id": "10-06",
+      "type": "defense",
+      "difficulty": 2,
+      "fen": "r4rk1/ppq1bppp/2p1bn2/3p2B1/3P4/2PQ1N2/PPB2PPP/R3R1K1 b - - 0 14",
+      "question": "Black to move. White threatens Bxf6 followed by Qxh7#. Find a move that meets the threat without losing material.",
+      "solution": ["g6"],
+      "goal": "only",
+      "accept": ["Ne4"],
+      "explanation": "The knight on f6 is the only defender of h7, and Bxf6 would remove it. 14...g6 shuts the b1-h7 diagonal, so Bxf6 no longer threatens mate and Black can recapture. 14...Ne4, blocking the diagonal on e4, is the other good defence. Moves that ignore the diagonal lose at least a piece.",
+      "wrong": [
+        {"move": "h6", "why": "It attacks the bishop, but 15.Bxf6 Bxf6 16.Qh7# still works: the pawn has left h7 and the square is empty for the queen."},
+        {"move": "Rfe8", "why": "It gives the king f8, but 15.Bxf6 Bxf6 16.Qxh7+ wins a pawn and leaves Black's king exposed."}
+      ],
+      "hint": "Instead of defending the defender, can you block the attacking line?",
+      "objective": "Defend against a removing-the-defender threat by cutting the attacker's line.",
+      "tags": ["defense", "removing-defender"]
+    },
+    {
+      "id": "10-07",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "2br2k1/ppp1qppp/5n2/4p1B1/1b2P3/1Q3N2/PPP1BPPP/3R2K1 w - - 0 15",
+      "question": "White to move. Black's queen on e7 protects the rook on d8 and the bishop on b4. Overload it.",
+      "solution": ["Rxd8+", "Qxd8", "Qxb4"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "List the queen's duties: it guards the rook on d8 and the bishop on b4. 15.Rxd8+ forces 15...Qxd8, and the queen has been dragged away from b4. 16.Qxb4 collects the bishop and White is a piece up.",
+      "wrong": [
+        {"move": "Bxf6", "why": "Trades off a minor piece but gives Black time; after ...Rxd1+ and ...gxf6 the bishop on b4 is safe."},
+        {"move": "Qa4", "why": "Attacks the bishop a second time, but Black simply trades rooks on d1 and retreats with ...Bc5."}
+      ],
+      "hint": "What happens if the queen has to recapture on d8?",
+      "objective": "Exploit an overloaded queen by forcing it to choose between two duties.",
+      "tags": ["overloading", "deflection"]
+    },
+    {
+      "id": "10-08",
+      "type": "tactic",
+      "difficulty": 1,
+      "fen": "r4rk1/pb2qppp/1p2p3/2p5/3nP3/1BQ2N2/PPP2PPP/3R1RK1 b - - 0 18",
+      "question": "Black to move. Review from Chapter 7: win White's queen.",
+      "solution": ["Ne2+", "Kh1", "Nxc3"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "From e2 a knight attacks both g1 and c3, and nothing White has covers e2. 18...Ne2+ is check, so White has no time to save the queen, and 19...Nxc3 wins it. Before you play any knight move, look at every square it could reach, especially the ones that give check.",
+      "wrong": [
+        {"move": "Nxb3", "why": "Takes a bishop for a knight; that's an even trade when you could have won the queen."},
+        {"move": "Nxf3+", "why": "A check, but after Qxf3 you have only traded knights."}
+      ],
+      "hint": "Which knight check also attacks the queen?",
+      "objective": "Recognize a knight fork of king and queen.",
+      "tags": ["fork"]
+    },
+    {
+      "id": "10-09",
+      "type": "quiet",
+      "difficulty": 3,
+      "fen": "4r1k1/pp1n1ppp/5b2/q7/3N4/1B6/PPQ2PPP/3R2K1 w - - 0 22",
+      "question": "White to move. Your rook on d1 has two jobs and Black threatens both ...Qe1+ and ...Bxd4. Find a calm move that solves the problem.",
+      "solution": ["Nf3"],
+      "goal": "best",
+      "accept": ["Ne2", "g3"],
+      "explanation": "Black threatens 22...Qe1+ 23.Rxe1 Rxe1# and also 22...Bxd4, since Rxd4 would allow ...Qe1+. 22.Nf3 takes the knight away from the attacked square and covers e1, so the rook on d1 is down to one job again. Making luft with g3 is also fine.",
+      "wrong": [
+        {"move": "Bxf7+", "why": "It wins a pawn but drags the bishop away from defence; after ...Kxf7 Black's threats on the e-file and against d4 win material."},
+        {"move": "Kf1", "why": "The king steps off the back rank, but after ...Bxd4 the f2-pawn falls and White's position collapses."}
+      ],
+      "hint": "Can one move relieve the rook of one of its duties?",
+      "objective": "Defend by relieving an overloaded piece before the opponent exploits it.",
+      "tags": ["defense", "overloading", "back-rank"]
+    },
+    {
+      "id": "10-10",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "1k5r/ppq2pp1/3pb3/4p3/4P1n1/2NQ4/PPPB1PP1/3R2K1 b - - 0 21",
+      "question": "Black to move. Use the open h-file to decoy White's king, then fork.",
+      "solution": ["Rh1+", "Kxh1", "Nxf2+", "Kh2", "Nxd3"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Nxf2 would already attack the queen and rook, but with the king on g1 White could defend calmly. 21...Rh1+! forces 22.Kxh1 because g2 and f2 block every escape. Now 22...Nxf2+ is a fork of the king on h1, the queen on d3 and the rook on d1, and 23...Nxd3 leaves Black a queen against a rook.",
+      "wrong": [
+        {"move": "Nxf2", "why": "Without check White replies Qe2 or Qf3 and keeps everything; the king had to be lured to h1 first."},
+        {"move": "Bc4", "why": "Attacks the queen, but after the queen moves Black has only a slight edge."}
+      ],
+      "hint": "On which square would the white king be forked by a knight landing on f2?",
+      "objective": "Combine a decoy sacrifice with a knight fork.",
+      "tags": ["decoy", "fork"]
+    },
+    {
+      "id": "10-11",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "r1bq1rk1/3n1ppp/pp1p1b2/8/1nPNP3/2N1Q3/PP1BBPPP/R3K2R b KQ - 0 12",
+      "question": "Black to move. The knight on d4 guards an important square. Remove it.",
+      "solution": ["Bxd4", "Qf3", "Nc2+", "Kd1", "Nxa1"],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The square c2 is where your knight on b4 would fork the king and the rook on a1, and only the knight on d4 guards it. 12...Bxd4 removes that guard and hits the queen. If 13.Qxd4, then 13...Nc2+ forks king and queen. After the better 13.Qf3, 13...Nc2+ forks king and rook and wins the exchange on top of the extra piece.",
+      "wrong": [
+        {"move": "Nc2+", "why": "Too early: the knight on d4 simply takes it with Nxc2."},
+        {"move": "Nc5", "why": "A good square, but it misses the combination and White consolidates with castling."}
+      ],
+      "hint": "Which white piece stops ...Nc2+? Can you capture it?",
+      "objective": "Remove a defender to make a fork possible.",
+      "tags": ["removing-defender", "fork"]
+    }
+  ]
+}

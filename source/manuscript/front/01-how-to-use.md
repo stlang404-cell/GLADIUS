@@ -4,9 +4,9 @@ slug: how-to-use
 title: How to Use This Book
 ---
 
-You probably bought this book after a run of games that went the same way. You played a reasonable opening, you had a decent position, and then a piece disappeared. Maybe you missed a knight fork. Maybe you took a pawn and walked into checkmate. You lost, you started another game straight away, and the same thing happened again.
+You probably picked up this book after a run of games that went the same way. You had a decent position, and then a piece disappeared or you walked into checkmate. You started another game straight away, and the same thing happened again.
 
-This book exists to break that cycle. It is a complete training system for going from about 400 to about 1500 Elo. It does not hand you a pile of facts to memorize. It teaches you what to look at, what to decide, and what to do at the board, and it gives you a routine that turns each game into improvement instead of just another result.
+This book is a complete training system for going from about 400 to about 1500 Elo. It teaches you what to look at, what to decide and what to do at the board, and it gives you a routine that turns each game into improvement instead of just another result.
 
 ## Who this book is for
 
@@ -61,7 +61,7 @@ The book is divided into five stages. The rating ranges are milestones that desc
 
 **Stage 5 (1200–1500): calculation, planning and endgame technique.** Harder tactics, longer calculation, middlegame strategy, technical endgames, practical decision-making under the clock, and a lifelong method for analyzing your own games.
 
-Each stage ends with a test of 15 positions. Use the tests as checkpoints. If you are already strong in a stage, the test will show it, and you can move on. If you struggle, the test will point you to the chapters to revisit.
+Each stage ends with a test of 15 positions. Use it as a checkpoint: it shows whether you can move on or which chapters to revisit.
 
 :::coach Do not skip Stage 1
 Coaching judgment: many players who feel "beyond the basics" still lose a large share of their games to pieces left undefended. Even if you are rated above 600, take the Stage 1 test before you skip anything. If you score well, you lose an hour. If you do not, you have found your fastest route to more wins.
@@ -79,7 +79,7 @@ Work through them like this:
 4. **Check the solution** in the Solutions section at the back of the book. Read the explanation even when you were right; it often contains the reason you were right, which is the part you need next time.
 5. **Mark the result**: correct first time, correct with the hint, or wrong.
 
-Some exercises have no tactic at all. The correct answer is a sound, quiet move, and the trap is a flashy capture that does not work. These are deliberate. In real games, most moves are not tactics, and you need to know when to stop looking for one.
+Some exercises have no tactic at all: the answer is a sound, quiet move, and the trap is a capture that does not work. In real games most moves are not tactics, and you need to know when to stop looking for one.
 
 ### When to move on
 
@@ -115,9 +115,7 @@ The engine is a tool for checking your thinking, not a substitute for it. If you
 
 ## Play slow games
 
-You do not need to play blitz or bullet at all to use this book. In fact, for the next few months, they will mostly train you to repeat your current habits faster.
-
-The book's routines (the safety scan, counting, looking for candidate moves) take time to run. At first they take a lot of time. You need games where you can afford that.
+You do not need to play blitz or bullet at all to use this book. The book's routines (the safety scan, counting, looking for candidate moves) take time to run, especially at first, and you need games where you can afford that.
 
 * **Recommended:** 15 minutes plus 10 seconds per move, or slower. Thirty-minute games are excellent.
 * **Also excellent:** correspondence or "daily" chess, where you have a day or more per move. It is ideal for practising the full thinking routine without time pressure.
@@ -137,11 +135,11 @@ The book is complete on its own. Three optional companions use the same position
 * **The 90-Day Accelerator workbook.** A day-by-day schedule that tells you which chapter to read, which exercises to solve, which games to play, and when to review your misses. Use it if you prefer to follow a plan rather than set your own pace.
 * **The Interactive Trainer.** The book's exercises in an app that lets you play the moves on screen, checks your answer, shows the hint and explanation, and schedules your review dates for you.
 
-None of these is required. Everything they contain can be done with the book, a notebook and a free app.
+None of these is required.
 
 ## What is evidence, and what is coaching judgment
 
-Chess instruction is full of confident advice, and much of it has never been tested. This book tries to be honest about the difference.
+Chess instruction is full of confident advice, much of it never tested.
 
 When a recommendation is supported by published research, it appears in an **evidence** box with the source. When it is the accumulated experience of chess coaching, it appears in a **coach** box, or is described as a guideline. Both are useful. Only the first has been measured. The research below underpins the way the exercises and review schedule are designed.
 

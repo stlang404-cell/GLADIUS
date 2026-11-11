@@ -1,0 +1,353 @@
+{
+  "chapter": 24,
+  "title": "Advanced Tactics and Calculation",
+  "exercises": [
+    {
+      "id": "24-01",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "4r1k1/pb1rqp1p/1pn3p1/2p5/6N1/2P2B2/PPQ2PPP/3R1RK1 w - - 0 22",
+      "question": "White to move. Two motifs are hiding here, one behind the other. Win material.",
+      "solution": [
+        "Rxd7",
+        "Qxd7",
+        "Nf6+",
+        "Kg7",
+        "Nxd7"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The knight on g4 can reach f6, a square that forks g8, e8 and d7, and the g6 pawn no longer guards f6. Rxd7! lures the queen onto d7: after Qxd7 Nf6+ the king must move and Nxd7 wins the queen. If Black declines with a queen move, White is simply a rook up.",
+      "wrong": [
+        {
+          "move": "Nf6+",
+          "why": "The fork comes one move too early: Qxf6 and the knight is gone."
+        },
+        {
+          "move": "Bxc6",
+          "why": "Trading on c6 wins nothing and lets Black exchange rooks on d1."
+        }
+      ],
+      "hint": "Which square would fork the king and the queen, and how can you bring the queen to it?",
+      "objective": "Use a decoy capture to bring an enemy piece onto a forkable square.",
+      "tags": [
+        "decoy",
+        "fork",
+        "calculation"
+      ]
+    },
+    {
+      "id": "24-02",
+      "type": "blunder-check",
+      "difficulty": 3,
+      "fen": "r1bqkb1r/pppn1ppp/5n2/3p2B1/3P4/2N5/PP2PPPP/R2QKBNR w KQkq - 0 6",
+      "question": "White to move. The d5 pawn looks loose: the knight on f6 is pinned to the queen, so Nxd5 seems to win a pawn. Play the right move.",
+      "solution": [
+        "e3"
+      ],
+      "goal": "best",
+      "accept": [
+        "Nf3",
+        "Qc2"
+      ],
+      "explanation": "The pin is an illusion. After 6.Nxd5?? Nxd5! 7.Bxd8 Black has the in-between check 7...Bb4+, and after 8.Qd2 Bxd2+ 9.Kxd2 Kxd8 Black has won a piece. A normal developing move such as 6.e3 keeps a comfortable game.",
+      "wrong": [
+        {
+          "move": "Nxd5",
+          "why": "Nxd5! Bxd8 Bb4+ and Black regains the queen with an extra piece."
+        }
+      ],
+      "hint": "Before taking, look at every check your opponent would have after the exchanges.",
+      "objective": "Blunder-check a capture by looking for the opponent's in-between check.",
+      "tags": [
+        "blunder-check",
+        "zwischenzug",
+        "opening-traps"
+      ]
+    },
+    {
+      "id": "24-03",
+      "type": "calculation",
+      "difficulty": 3,
+      "fen": "r1bqkbnr/2p2ppp/p2p4/1p6/3QP3/1B6/PPP2PPP/RNB1K2R b KQkq - 0 8",
+      "question": "Black to move. White's queen has just taken on d4. Find the pawn moves that trap a piece.",
+      "solution": [
+        "c5",
+        "Qc3",
+        "c4"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "...c5 hits the queen with tempo, and the follow-up ...c4 traps the bishop on b3: c4 and a4 are covered by Black's pawns and a2 is blocked by White's own pawn. White can collect a pawn or two for it, but the bishop is lost. This trap in the Ruy Lopez has a nickname, Noah's Ark, and the method transfers: gain a tempo on the queen, then close the cage.",
+      "wrong": [
+        {
+          "move": "Nf6",
+          "why": "Natural development, but it lets the bishop escape and White is fine."
+        },
+        {
+          "move": "Bb7",
+          "why": "Develops, but misses the pawn chase that traps the bishop."
+        }
+      ],
+      "hint": "Where can the bishop on b3 go if you control c4 and a4?",
+      "objective": "Chain a tempo gain with a trapping pawn move.",
+      "tags": [
+        "trapped-piece",
+        "calculation",
+        "opening-traps"
+      ]
+    },
+    {
+      "id": "24-04",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "2r5/5pkp/6p1/8/P7/6P1/1p3PKP/4R3 b - - 0 38",
+      "question": "Black to move. The b-pawn wants to queen, but the rook on e1 guards b1. Cut the line.",
+      "solution": [
+        "Rc1",
+        "Rxc1",
+        "bxc1=Q"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "...Rc1! puts a rook between e1 and b1. If Rxc1, the pawn captures bxc1=Q; if White leaves the rook alone, ...b1=Q follows. The interfering piece must stand on c1, the one square where the pawn can recapture; quiet moves give White time for Rb1 and a draw.",
+      "wrong": [
+        {
+          "move": "Rb8",
+          "why": "Defends the pawn but cannot help it queen: Rb1 rounds it up and the game is a draw."
+        },
+        {
+          "move": "Ra8",
+          "why": "Grabs the a-pawn while White's rook blockades on b1; a draw."
+        }
+      ],
+      "hint": "Put a piece on the line between the defender and the queening square, on a square where the pawn can capture.",
+      "objective": "Recognize interference: blocking a defender's line of control.",
+      "tags": [
+        "interference",
+        "promotion",
+        "rook-endgame"
+      ]
+    },
+    {
+      "id": "24-05",
+      "type": "blunder-check",
+      "difficulty": 4,
+      "fen": "3q2k1/1p2bppp/p2r1n2/8/8/1QN1B3/PP3PPP/3R2K1 w - - 0 22",
+      "question": "White to move. The b7 pawn is attacked twice and defended by nobody. Can you take it right now? Play the best move.",
+      "solution": [
+        "Rxd6",
+        "Bxd6",
+        "Qxb7"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "Your rook on d1 is guarded by the queen and the knight, but Black attacks it twice with the rook and the x-raying queen. 22.Qxb7?? Rxd1+ 23.Nxd1 Qxd1# is mate on the back rank. First 22.Rxd6 removes the attacker, and only then 23.Qxb7 wins the pawn.",
+      "wrong": [
+        {
+          "move": "Qxb7",
+          "why": "Rxd1+ Nxd1 Qxd1# - the queen was guarding the back rank."
+        }
+      ],
+      "hint": "What does your queen defend right now?",
+      "objective": "Before a capture, check what the capturing piece stops defending.",
+      "tags": [
+        "blunder-check",
+        "back-rank",
+        "x-ray"
+      ]
+    },
+    {
+      "id": "24-06",
+      "type": "tactic",
+      "difficulty": 4,
+      "fen": "r3r1k1/pb1q1ppp/1pn5/2p2N2/2B5/5Q2/PPP2PPP/R3R1K1 w - - 0 18",
+      "question": "White to move. Find the quiet queen move that creates two threats at once.",
+      "solution": [
+        "Qg4"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Qg4! threatens Qxg7# and also lines the queen up behind the knight against Black's queen on d7. If ...g6, the knight jumps with check (Nh6+) and uncovers an attack on d7; if ...Qxf5, Qxf5 wins the queen for a knight. A check or capture first, such as Rxe8+, gives Black time to organize the defence.",
+      "wrong": [
+        {
+          "move": "Rxe8+",
+          "why": "Forcing, but after Qxe8 Black's queen can reach e5 and guard g7; much of the advantage is gone."
+        },
+        {
+          "move": "Red1",
+          "why": "Attacks the queen, but ...Ne5 comes with tempo and White keeps only a modest edge."
+        }
+      ],
+      "hint": "Which square attacks g7 and also stands behind your knight on the d7 diagonal?",
+      "objective": "Find a quiet move that creates two threats (mate and a discovered attack).",
+      "tags": [
+        "quiet-move",
+        "discovered-attack",
+        "mate-patterns"
+      ]
+    },
+    {
+      "id": "24-07",
+      "type": "tactic",
+      "difficulty": 3,
+      "fen": "3r2k1/pp3ppp/2p1b3/3q4/8/1P2PN2/P4PPP/2BQ1RK1 b - - 0 20",
+      "question": "Black to move. You are a piece down, but both queens face each other on the d-file. Who x-rays whom?",
+      "solution": [
+        "Qxd1"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Black's rook on d8 stands behind the queen, so it defends d1 through the queen. After ...Qxd1 White cannot recapture: Rxd1 Rxd1+ Ne1 Rxe1# is mate on the back rank, so Black simply wins the queen. Any other move lets White trade queens on d5 and stay a piece up.",
+      "wrong": [
+        {
+          "move": "Qa5",
+          "why": "Saves the queen but leaves you a piece down; the d-file shot works only now."
+        },
+        {
+          "move": "f6",
+          "why": "Making luft is too slow: Qxd5 trades queens and White stays a piece up."
+        }
+      ],
+      "hint": "Count the attackers on d1, including pieces standing behind other pieces.",
+      "objective": "Recognize an x-ray: a piece that attacks or defends through another piece.",
+      "tags": [
+        "x-ray",
+        "back-rank"
+      ]
+    },
+    {
+      "id": "24-08",
+      "type": "calculation",
+      "difficulty": 5,
+      "fen": "8/8/5k2/5pp1/ppp5/6PP/PPP2K2/8 b - - 0 40",
+      "question": "Black to move. Calculate the whole tree before you move: there is a way to make a queen by force.",
+      "solution": [
+        "b3",
+        "cxb3",
+        "a3",
+        "bxa3",
+        "c3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "...b3! is the breakthrough. If cxb3, ...a3! and after bxa3 the c-pawn runs (...c3, ...c2, ...c1=Q); if axb3, ...c3! and after bxc3 the a-pawn runs. White's king on f2 is one move too slow in every branch. Stop calculating only when no capture or check is left and a pawn is unstoppable.",
+      "wrong": [
+        {
+          "move": "a3",
+          "why": "Premature: bxa3 bxa3 and White's king collects the loose queenside pawns."
+        },
+        {
+          "move": "Ke5",
+          "why": "Centralizes, but it gives White time to defuse the breakthrough and the game is level."
+        }
+      ],
+      "hint": "Sacrifice the middle pawn first, then answer each capture with the pawn that runs.",
+      "objective": "Calculate a branching tree (two recaptures) to the end.",
+      "tags": [
+        "calculation",
+        "passed-pawn",
+        "king-pawn-endgame"
+      ]
+    },
+    {
+      "id": "24-09",
+      "type": "defense",
+      "difficulty": 4,
+      "fen": "Q7/1R3p1k/6p1/8/3q4/8/5P1P/6K1 b - - 0 38",
+      "question": "Black to move. You are a rook down and White is about to break through on f7. Which move saves the game?",
+      "solution": [
+        "Qg4+",
+        "Kf1",
+        "Qd1+",
+        "Kg2",
+        "Qg4+"
+      ],
+      "goal": "draw",
+      "accept": [
+        "Qd1+"
+      ],
+      "explanation": "White's king has no shelter: Qg4+ and Qd1+ chase it between g2 and f1, and White's queen and rook are too far away to block. Any slow defensive move loses to the mating attack, so the only resource is to keep checking. When you are losing, look for your opponent's open king before you look for defensive moves.",
+      "wrong": [
+        {
+          "move": "Qd5",
+          "why": "Centralizing is too slow: Qc8 and White's extra rook decides."
+        },
+        {
+          "move": "Qf4",
+          "why": "Too slow: Rb1 tidies up and White's king is safe while yours is not."
+        }
+      ],
+      "hint": "Can White's king ever escape your checks?",
+      "objective": "Find perpetual check as a defensive resource when material is lost.",
+      "tags": [
+        "perpetual",
+        "defense",
+        "queen-endgame"
+      ]
+    },
+    {
+      "id": "24-10",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "r4rk1/pb3p1p/1p2pBp1/q1p5/8/8/PPPQ1PPP/R4RK1 w - - 0 18",
+      "question": "White to move. Your queen is attacked. Mate in 2.",
+      "solution": [
+        "Qh6",
+        "Qd2",
+        "Qg7#"
+      ],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "Ignore the threat to your queen: Qh6! is a quiet move that threatens Qg7#, and nothing in Black's camp can cover g7 or create a flight square. The bishop on f6 is the key piece; trading queens on a5 would throw the attack away.",
+      "wrong": [
+        {
+          "move": "Qxa5",
+          "why": "Trading queens rescues Black: bxa5 and the mating idea has disappeared."
+        },
+        {
+          "move": "Qg5",
+          "why": "Also aims at h6, but gives Black a tempo; there is no mate next move."
+        }
+      ],
+      "hint": "Which square next to g7 can your queen reach in one move?",
+      "objective": "See a quiet move that creates an unstoppable mate threat.",
+      "tags": [
+        "quiet-move",
+        "mate-patterns",
+        "attack"
+      ]
+    },
+    {
+      "id": "24-11",
+      "type": "defense",
+      "difficulty": 4,
+      "fen": "3r1rk1/pb3ppp/1q2p3/2b4Q/8/2PB1N2/PP3PPP/4RRK1 b - - 0 19",
+      "question": "Black to move. White threatens Qxh7#. You also have a flashy check on f2. What is the strongest move?",
+      "solution": [
+        "Rxd3"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The bishop on d3 is both the attacker of h7 and an undefended piece: ...Rxd3 removes the threat and wins a piece outright. The check ...Bxf2+ looks forcing, but after Rxf2 Rxd3 Black has only won a pawn net; evaluate the final position honestly rather than falling for the check. Passive moves like ...h6 hold but waste the chance.",
+      "wrong": [
+        {
+          "move": "Bxf2+",
+          "why": "Forcing but not best: Rxf2 Rxd3 nets only a pawn compared with winning a whole piece."
+        },
+        {
+          "move": "h6",
+          "why": "Defends h7 but leaves the d3 bishop alive; the advantage is gone."
+        }
+      ],
+      "hint": "Is the attacking piece defended?",
+      "objective": "Defend by capturing the attacker, and compare the end positions of forcing lines honestly.",
+      "tags": [
+        "defense",
+        "removing-defender",
+        "evaluation"
+      ]
+    }
+  ]
+}

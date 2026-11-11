@@ -1,0 +1,326 @@
+{
+  "chapter": 23,
+  "title": "Rook Endgames",
+  "exercises": [
+    {
+      "id": "23-01",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "R7/P4k2/6p1/7p/7P/5KP1/8/r7 w - - 0 1",
+      "question": "White to move. Black's king has wandered to f7, away from the safe squares g7 and h7. Win the game.",
+      "solution": [
+        "Rh8"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "When your rook stands in front of an a-pawn on the seventh rank, watch for the skewer trick. Rh8! clears the a-file: if Black takes with ...Rxa7, then Rh7+ checks along the seventh rank and wins the rook on a7 next move. Against other replies the a-pawn simply promotes or costs Black the rook. Every other move lets the black king return to g7, after which the position is a well-known draw.",
+      "wrong": [
+        {
+          "move": "Kg2",
+          "why": "Bringing the king is too slow; Black plays ...Kg7 and the skewer chance is gone for good."
+        },
+        {
+          "move": "Rb8",
+          "why": "Black simply takes ...Rxa7 and the check on b7 would be met by ...Rxb7, because the black rook guards the seventh rank."
+        }
+      ],
+      "hint": "Where must the black king stand so that a check on the seventh rank is impossible?",
+      "objective": "Use the Rh8 skewer trick when the defending king leaves g7/h7.",
+      "tags": [
+        "rook-endgame",
+        "skewer"
+      ]
+    },
+    {
+      "id": "23-02",
+      "type": "endgame",
+      "difficulty": 1,
+      "fen": "4k3/7R/r3P3/4K3/8/8/8/8 b - - 0 1",
+      "question": "Black to move. You defended with the rook on the sixth rank, and White has just pushed the pawn to e6. Which move holds the draw?",
+      "solution": [
+        "Ra1"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "This is the second stage of the Philidor defence. Once the pawn reaches e6, the white king can no longer hide in front of it, so the rook drops to the far end of the board and checks from behind. After ...Ra1 the king has no shelter: every time it approaches the pawn, another check arrives. Staying on the sixth rank is now useless because the pawn blocks it.",
+      "wrong": [
+        {
+          "move": "Rb6",
+          "why": "The sixth rank no longer stops anything; Kf6 follows with mating threats on the back rank."
+        },
+        {
+          "move": "Kf8",
+          "why": "Passive king moves lose: Kf6 and Rh8+ drive the king away while the pawn advances."
+        }
+      ],
+      "hint": "Once the pawn moves to the sixth rank, the rook's job changes. Where can it check from?",
+      "objective": "Switch from third-rank defence to checks from behind in the Philidor position.",
+      "tags": [
+        "rook-endgame",
+        "defense"
+      ]
+    },
+    {
+      "id": "23-03",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/k7/8/3P4/4K3/8/r7/2R5 w - - 0 1",
+      "question": "White to move. The black king is far away on a7. Choose the move that keeps it out of the game.",
+      "solution": [
+        "Rb1"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Cut the king off first, push the pawn second. Rb1! puts a wall on the b-file: the black king cannot cross it, so it can never reach the d-pawn. White's king then escorts the pawn up the board while Black's rook alone cannot stop both king and pawn. Pushing at once with d6 lets the black king come back via b7 and c8.",
+      "wrong": [
+        {
+          "move": "d6",
+          "why": "Pushing first lets the king return with ...Kb7 and ...Kc8 (or the rook checks), and the position is a draw."
+        },
+        {
+          "move": "Kd4",
+          "why": "A natural king move, but after ...Kb7 the black king crosses towards the pawn and the game is drawn."
+        }
+      ],
+      "hint": "Which file must the black king cross to reach the pawn?",
+      "objective": "Cut off the defending king along a file before advancing the pawn.",
+      "tags": [
+        "rook-endgame",
+        "endgame-technique"
+      ]
+    },
+    {
+      "id": "23-04",
+      "type": "endgame",
+      "difficulty": 1,
+      "fen": "5r2/5k2/3P4/4K3/8/8/8/7R b - - 0 1",
+      "question": "Black to move. White's passed pawn is on d6. Find the only move that draws.",
+      "solution": [
+        "Ke8"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "The defender's king belongs in front of the pawn. ...Ke8 heads for d8, the queening square, and from there the rook can keep checking or cut the white king off. If the king stays on f7, White plays Rh7+ or Ke6 and the pawn marches with the king's help, because the rook alone cannot block and defend at the same time.",
+      "wrong": [
+        {
+          "move": "Rd8",
+          "why": "Blocking with the rook leaves the king outside; Rh7+ drives it away and White wins the rook or queens."
+        },
+        {
+          "move": "Re8+",
+          "why": "This check drives the king forward to d5 and c6, and the black king is still cut off."
+        }
+      ],
+      "hint": "Which piece should stand on the queening square?",
+      "objective": "Put the defending king in front of the passed pawn.",
+      "tags": [
+        "rook-endgame",
+        "defense"
+      ]
+    },
+    {
+      "id": "23-05",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/8/8/7K/4k3/4p3/8/2R5 w - - 0 1",
+      "question": "White to move. Rook against pawn: count the race and find the only winning move.",
+      "solution": [
+        "Kg4"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "In rook against pawn, the stronger side's king usually decides. Kg4! is the only move that brings the king close enough in time: after ...e2, Kg3 and Kf2 arrive just as the pawn reaches the second rank, and the rook can then win it with the king's help. Rook moves waste the one tempo White has, and after ...e2 and ...Kf3 the pawn costs White the rook.",
+      "wrong": [
+        {
+          "move": "Re1",
+          "why": "The rook already controls the queening square from c1; this move wastes time and the king arrives too late."
+        },
+        {
+          "move": "Kg5",
+          "why": "Moving the king away from f3/e2 loses a tempo in the race, and Black draws."
+        }
+      ],
+      "hint": "Which squares must the white king reach to help the rook?",
+      "objective": "Count tempi in rook-versus-pawn endings and bring the king towards the pawn.",
+      "tags": [
+        "rook-endgame",
+        "calculation"
+      ]
+    },
+    {
+      "id": "23-06",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "5k2/7R/3KP3/8/8/8/8/r7 b - - 0 1",
+      "question": "Black to move. White threatens e7+. Which move saves the game?",
+      "solution": [
+        "Ra6+"
+      ],
+      "goal": "draw",
+      "accept": [
+        "Rd1+"
+      ],
+      "explanation": "Your king is on the short side of the pawn (the f-file side), so your rook has room on the long side to check from a distance. ...Ra6+ starts checking along the sixth rank from three files away; the white king cannot approach the rook without leaving the pawn. Checking from behind with ...Rd1+ also holds. Anything slow allows e7+ and the pawn promotes.",
+      "wrong": [
+        {
+          "move": "Re1",
+          "why": "Getting behind the pawn is too slow; Rh8+ and Rd8 support the pawn and White wins."
+        },
+        {
+          "move": "Ra3",
+          "why": "This waits instead of checking; e7+ follows and the pawn queens."
+        }
+      ],
+      "hint": "Checks force the white king to answer instead of pushing the pawn.",
+      "objective": "Defend from the long side with checks from a distance.",
+      "tags": [
+        "rook-endgame",
+        "defense"
+      ]
+    },
+    {
+      "id": "23-07",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "2r3k1/1R3pp1/7p/8/P7/6P1/5P1P/6K1 b - - 0 1",
+      "question": "Black to move. You are a pawn down and White has an outside passed a-pawn. Find the active plan that saves the game.",
+      "solution": [
+        "Rc1+",
+        "Kg2",
+        "Ra1"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "Rooks belong behind passed pawns, including your opponent's. ...Rc1+ followed by ...Ra1 puts the rook behind the a-pawn: the further the pawn advances, the more squares the rook gains, and White's rook must stay in front of its own pawn. Passive defence with the rook on a8 or f8 lets White push the pawn with tempo and bring the king.",
+      "wrong": [
+        {
+          "move": "Rf8",
+          "why": "Guarding f7 passively lets the a-pawn run: a5-a6 and the rook is tied down."
+        }
+      ],
+      "hint": "Which square behind the a-pawn would your rook like to reach?",
+      "objective": "Place the rook behind the opponent's passed pawn and stay active.",
+      "tags": [
+        "rook-endgame",
+        "passed-pawn"
+      ]
+    },
+    {
+      "id": "23-08",
+      "type": "endgame",
+      "difficulty": 4,
+      "fen": "8/1K6/8/8/6k1/1R6/4p3/8 w - - 0 1",
+      "question": "White to move. Black's pawn is one step from queening. Is it a draw, or is there a win?",
+      "solution": [
+        "Re3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Re3! attacks the pawn from in front, and the black king cannot defend it: the rook also covers f3, the only square from which the king could protect e2. If ...e1=Q, the rook captures on e1; if ...Kf4 attacks the rook, Rxe2 removes the pawn anyway. Ordinary moves like Rb1 allow ...Kf3 and ...Kf2, and Black draws.",
+      "wrong": [
+        {
+          "move": "Rb1",
+          "why": "Black answers ...Kf3 and ...Kf2, the pawn is protected, and White must give the rook for it."
+        },
+        {
+          "move": "Kc6",
+          "why": "The king is far too slow; ...e1=Q gives Black a queen for nothing."
+        }
+      ],
+      "hint": "Attack the pawn from in front and check what happens if the king defends it.",
+      "objective": "Use the rook's long-range tricks against a far-advanced pawn.",
+      "tags": [
+        "rook-endgame",
+        "calculation"
+      ]
+    },
+    {
+      "id": "23-09",
+      "type": "defense",
+      "difficulty": 1,
+      "fen": "4k3/8/3KP3/8/6r1/8/R7/8 b - - 0 1",
+      "question": "Black to move. White threatens Ra8 mate. Find the only move that saves the game.",
+      "solution": [
+        "Rd4+"
+      ],
+      "goal": "only",
+      "accept": [],
+      "explanation": "Run your safety scan first: White threatens Ra8#, because the e6 pawn and the white king cover every flight square. ...Rd4+ checks the king and gains the time needed; after the king moves, the rook can return to the first rank or keep checking. Guarding the back rank with ...Rg8 fails because the black king on e8 blocks the rook's path to a8.",
+      "wrong": [
+        {
+          "move": "Rg6",
+          "why": "Pinning the pawn ignores the threat; Ra8 is mate."
+        },
+        {
+          "move": "Rg8",
+          "why": "It looks like back-rank defence, but the king on e8 blocks the rook, so Ra8 is still mate."
+        }
+      ],
+      "hint": "What is White threatening? Then look for a check.",
+      "objective": "Spot back-rank mate threats in rook endgames and answer with a check.",
+      "tags": [
+        "rook-endgame",
+        "back-rank",
+        "blunder-check"
+      ]
+    },
+    {
+      "id": "23-10",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "3k4/8/8/1P6/K5R1/7r/8/8 w - - 0 1",
+      "question": "White to move. Before you push the b-pawn, what must you do?",
+      "solution": [
+        "Rc4"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The black king on d8 is close enough to reach the pawn via c7 and b7. Rc4! cuts it off along the c-file, and then White's king and pawn advance together while the black rook can only give checks. Pushing b6 at once lets the king come to c8 and b7, and the game is drawn.",
+      "wrong": [
+        {
+          "move": "b6",
+          "why": "The pawn advances but ...Kc8 and ...Kb7 put the king in front of it: a draw."
+        },
+        {
+          "move": "Kb4",
+          "why": "Natural, but ...Kc7 brings the black king to the pawn first."
+        }
+      ],
+      "hint": "Build a wall between the black king and the pawn.",
+      "objective": "Cut off the defending king along a file before advancing.",
+      "tags": [
+        "rook-endgame",
+        "endgame-technique"
+      ]
+    },
+    {
+      "id": "23-11",
+      "type": "endgame",
+      "difficulty": 4,
+      "fen": "8/k7/2K2R2/3P4/8/8/8/1r6 b - - 0 1",
+      "question": "Black to move. The d-pawn is about to run. Find the only drawing move.",
+      "solution": [
+        "Rb6+"
+      ],
+      "goal": "draw",
+      "accept": [],
+      "explanation": "...Rb6+! uses a check to change the position. If Kc7, Black gives the rook for White's rook with ...Rxf6 and, after d6, the black king and remaining pieces deal with the pawn: the line ...Rxf6 d6 Rf7+ d7 Rxd7+ Kxd7 leaves bare kings. If Rxb6, ...Kxb6 brings the king next to the pawn. Slow moves let d6 and d7 come with the white king protecting them.",
+      "wrong": [
+        {
+          "move": "Rb2",
+          "why": "Too slow: d6 and the pawn reaches the seventh rank with the king's support."
+        },
+        {
+          "move": "Kb8",
+          "why": "The king heads the wrong way; d6 and d7 win for White."
+        }
+      ],
+      "hint": "A check can gain the tempo you need, or force a trade that helps you.",
+      "objective": "Use checks and exchanges to reach a drawn ending.",
+      "tags": [
+        "rook-endgame",
+        "defense"
+      ]
+    }
+  ]
+}

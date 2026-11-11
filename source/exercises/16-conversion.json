@@ -1,0 +1,334 @@
+{
+  "chapter": 16,
+  "title": "Converting a Winning Position",
+  "exercises": [
+    {
+      "id": "16-01",
+      "type": "conversion",
+      "difficulty": 2,
+      "fen": "3r4/4kp1p/6p1/8/P7/4K1P1/5P1P/3R4 w - - 0 35",
+      "question": "White to move. You are a pawn up with an outside passed a-pawn. Choose the move that converts most safely.",
+      "solution": [
+        "Rxd8"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "Trade into the king and pawn ending: 35.Rxd8 Kxd8 36.Ke4 and the outside a-pawn decides. Black's king must run to stop it, and the white king then eats the kingside pawns. With rooks on, Black's rook can attack your pawns and the win takes far longer. Before trading, check that the pawn ending is won — here it clearly is.",
+      "wrong": [
+        {
+          "move": "Ra1",
+          "why": "Keeps rooks and lets Black's rook become active; still better for White, but far from the clean win."
+        },
+        {
+          "move": "Rd2",
+          "why": "A passive retreat that hands the d-file to Black's rook."
+        }
+      ],
+      "hint": "Which ending would you most like to have with an outside passed pawn?",
+      "objective": "Simplify into a won king and pawn ending when it is clearly winning.",
+      "tags": [
+        "conversion",
+        "king-pawn-endgame",
+        "passed-pawn"
+      ]
+    },
+    {
+      "id": "16-02",
+      "type": "conversion",
+      "difficulty": 1,
+      "fen": "2r5/1p3k2/p7/8/7p/P7/1P1K4/2R5 b - - 0 40",
+      "question": "Black to move. Can you trade rooks? Count whether the white king can catch your h-pawn afterwards.",
+      "solution": [
+        "Rxc1"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "40...Rxc1 41.Kxc1 h3 and the h-pawn runs: it needs three moves to queen, while the white king on c1 is far outside its square. Without rooks White has no way to stop it. Keeping the rooks with 40...Rh8 is still good for Black but gives White's rook time to get behind the pawn.",
+      "wrong": [
+        {
+          "move": "Rh8",
+          "why": "Supports the pawn, but 41.Ke3 and Rh1 slow it down; the clean win has gone."
+        }
+      ],
+      "hint": "After the trade, draw the square of the h-pawn.",
+      "objective": "Use the rule of the square to decide whether a trade into a pawn ending wins.",
+      "tags": [
+        "conversion",
+        "king-pawn-endgame",
+        "counting"
+      ]
+    },
+    {
+      "id": "16-03",
+      "type": "mate",
+      "difficulty": 1,
+      "fen": "7k/7p/6pP/6P1/2p5/8/8/4KQ2 w - - 0 60",
+      "question": "White to move. You are a queen up. Finish the game — and check that your move does not leave Black without legal moves.",
+      "solution": [
+        "Qf8#"
+      ],
+      "goal": "mate",
+      "mate_in": 1,
+      "accept": [],
+      "explanation": "Count Black's legal moves before you move: the king has g8 and the c-pawn can advance; nothing else moves. 60.Qf8# covers g8 and g7 with check. The 'tidy' 60.Qxc4?? takes away Black's only pawn move and covers g8 without giving check — stalemate.",
+      "wrong": [
+        {
+          "move": "Qxc4",
+          "why": "Stalemate: the black king has no squares and the last free pawn is gone."
+        }
+      ],
+      "hint": "Which black moves are legal right now? Do not take them all away without check.",
+      "objective": "Count the opponent's legal moves before every move in a won ending.",
+      "tags": [
+        "stalemate",
+        "conversion",
+        "basic-mates"
+      ]
+    },
+    {
+      "id": "16-04",
+      "type": "conversion",
+      "difficulty": 1,
+      "fen": "8/p7/1p1Rk3/2q5/6p1/6Pp/7P/7K b - - 0 50",
+      "question": "Black to move. White's rook gives check and offers itself. Which way of capturing is correct?",
+      "solution": [
+        "Qxd6"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The white king has no moves: g1 is covered by your queen and g2 by the h3-pawn, while White's pawns are blocked. White's last hope is a 'desperado' rook. 50...Kxd6?? leaves White with no legal move — stalemate. 50...Qxd6! takes with the queen, which unblocks g1, and mate follows soon.",
+      "wrong": [
+        {
+          "move": "Kxd6",
+          "why": "Stalemate — the rook was White's only piece that could move."
+        }
+      ],
+      "hint": "If you take with the king, what can White move?",
+      "objective": "Spot desperado stalemate tricks and capture with the piece that frees the king.",
+      "tags": [
+        "stalemate",
+        "conversion",
+        "desperado"
+      ]
+    },
+    {
+      "id": "16-05",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "8/5pk1/6p1/7p/ppp4P/6P1/PPP2PK1/8 b - - 0 40",
+      "question": "Black to move. Your three queenside pawns face three white pawns. Create a passed pawn that queens.",
+      "solution": [
+        "b3",
+        "cxb3",
+        "a3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The classic breakthrough: 40...b3! 41.cxb3 a3! (or 41.axb3 c3! 42.bxc3 a3) and one black pawn runs through, because the white king is miles away. If White ignores 40...b3, Black takes on a2 or c2 and queens. Slow king moves give White time to bring his king across.",
+      "wrong": [
+        {
+          "move": "Kf6",
+          "why": "Too slow: the breakthrough only works while the white king is far away."
+        },
+        {
+          "move": "a3",
+          "why": "41.bxa3 bxa3 and White's c-pawn and king hold everything."
+        }
+      ],
+      "hint": "Push the middle pawn first.",
+      "objective": "Create a passed pawn with a pawn breakthrough when the enemy king is far away.",
+      "tags": [
+        "passed-pawn",
+        "king-pawn-endgame",
+        "conversion"
+      ]
+    },
+    {
+      "id": "16-06",
+      "type": "defense",
+      "difficulty": 3,
+      "fen": "3r4/4kp1p/4p1p1/8/8/5PP1/5K1P/3R4 w - - 0 40",
+      "question": "White to move. You are a pawn down. Black offers a rook trade on the d-file. Should you take?",
+      "solution": [
+        "Rb1"
+      ],
+      "goal": "draw",
+      "accept": [
+        "Rc1",
+        "Ra1",
+        "Re1"
+      ],
+      "explanation": "Four pawns against three on one side is usually a draw with rooks on the board, because your rook keeps checking and attacking. The pawn ending after 40.Rxd8? Kxd8 is a different story: Black's extra pawn becomes a passed pawn and his king walks in. When you are behind, avoid simplifications that help your opponent — move the rook off the file and keep it active.",
+      "wrong": [
+        {
+          "move": "Rxd8",
+          "why": "40...Kxd8 gives Black a winning pawn ending."
+        }
+      ],
+      "hint": "Which ending is easier to hold a pawn down: with rooks, or without?",
+      "objective": "When behind in material, avoid trades that simplify into a lost ending.",
+      "tags": [
+        "defense",
+        "rook-endgame",
+        "king-pawn-endgame"
+      ]
+    },
+    {
+      "id": "16-07",
+      "type": "conversion",
+      "difficulty": 4,
+      "fen": "r4r1k/pp4pp/2pb4/8/3P3q/1QP5/PP1N1PPP/R1B2RK1 w - - 0 16",
+      "question": "White to move. You are a knight and two pawns up, but Black threatens ...Qxh2#. Choose the safest way to meet the threat.",
+      "solution": [
+        "g3"
+      ],
+      "goal": "best",
+      "accept": [
+        "f4",
+        "h3"
+      ],
+      "explanation": "First the threat, then the extras. 16.g3 blocks the bishop's diagonal and you can collect b7 later. The 'developing' 16.Nf3? runs into 16...Rxf3!, and Black's follow-up sacrifices on g3 force at least a perpetual check. 16.Qxb7?? ignores the threat: 16...Qxh2#. When you are winning, the move that kills counterplay is usually better than the move that grabs more.",
+      "wrong": [
+        {
+          "move": "Nf3",
+          "why": "16...Rxf3! and Black's sacrifices against your king force a draw by perpetual check."
+        },
+        {
+          "move": "Qxb7",
+          "why": "16...Qxh2# — greed with a mate threat on the board."
+        }
+      ],
+      "hint": "Which defence cannot be broken by a sacrifice?",
+      "objective": "Consolidate against threats before taking more material.",
+      "tags": [
+        "conversion",
+        "king-safety",
+        "perpetual"
+      ]
+    },
+    {
+      "id": "16-08",
+      "type": "conversion",
+      "difficulty": 4,
+      "fen": "6k1/ppp2pp1/7p/8/5n2/1Q4Pq/PPP2P1P/R3R1K1 w - - 0 20",
+      "question": "White to move. You are two rooks up for a knight, but Black has thrown everything at your king and threatens ...Qg2#. Find the safest way to win.",
+      "solution": [
+        "gxf4"
+      ],
+      "goal": "best",
+      "accept": [
+        "Re8+"
+      ],
+      "explanation": "Remove the attacker: 20.gxf4 kills the mate threat for good. Black can check (20...Qg4+) but cannot do more, and your extra rooks decide. 20.Qd5?, covering g2, loses the queen to 20...Nxd5, and 20.Qxf7+? Kxf7 21.gxf4 Qg4+ only gives a perpetual check. Against a desperate attack, take the attacking piece if you safely can.",
+      "wrong": [
+        {
+          "move": "Qd5",
+          "why": "Covers g2, but the knight on f4 simply takes the queen."
+        },
+        {
+          "move": "Qxf7+",
+          "why": "A check that gives back the queen: after 20...Kxf7 Black has a perpetual check."
+        }
+      ],
+      "hint": "Which black piece makes the mate threat possible?",
+      "objective": "Meet a desperate counter-attack by removing the key attacking piece.",
+      "tags": [
+        "conversion",
+        "defense",
+        "king-safety"
+      ]
+    },
+    {
+      "id": "16-09",
+      "type": "conversion",
+      "difficulty": 3,
+      "fen": "8/p4pk1/6p1/2pq3p/7P/2Q3P1/P4P2/6K1 b - - 0 45",
+      "question": "Black to move. White checks on the long diagonal. You are a pawn up. Which reply converts best?",
+      "solution": [
+        "Qd4"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "45...Qd4 blocks the check with a centralised queen protected by the c5-pawn and offers a queen trade; after 46.Qxd4+ cxd4 the d-pawn runs and the pawn ending is easily won, so White must retreat and Black keeps the initiative. 45...Qe5?? blocks with an unprotected queen: 46.Qxe5+. A king move such as 45...Kg8 lets White's queen roam and pick up the a7-pawn.",
+      "wrong": [
+        {
+          "move": "Qe5",
+          "why": "The blocking queen is not protected: 46.Qxe5+ wins it."
+        },
+        {
+          "move": "Kg8",
+          "why": "Gives White a free hand: 46.Qa5 and the queen attacks your pawns."
+        }
+      ],
+      "hint": "Block the check with a protected piece that also offers a trade.",
+      "objective": "Offer queen trades when ahead, but only on protected squares.",
+      "tags": [
+        "conversion",
+        "queen-endgame",
+        "king-safety"
+      ]
+    },
+    {
+      "id": "16-10",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "8/pp3p2/4k1p1/7p/7P/1P3PP1/P4K2/8 b - - 0 38",
+      "question": "Black to move. Material is level, but your king is closer to the centre. Choose the move that makes the most of it.",
+      "solution": [
+        "Kf5"
+      ],
+      "goal": "best",
+      "accept": [
+        "Ke5"
+      ],
+      "explanation": "In pawn endings the king is a fighting piece: 38...Kf5 (or 38...Ke5) heads for e5, d4 and the white queenside, and White's king cannot cover both wings. Pawn moves such as 38...b5? or 38...a5? only fix the structure while wasting the tempo the king needs.",
+      "wrong": [
+        {
+          "move": "b5",
+          "why": "A pawn move that does not help; White's king reaches e3 and the advantage is gone."
+        },
+        {
+          "move": "a5",
+          "why": "The same problem: the king, not the pawns, must move first."
+        }
+      ],
+      "hint": "Which piece should go forward first in a pawn ending?",
+      "objective": "Activate the king before pushing pawns in the endgame.",
+      "tags": [
+        "king-pawn-endgame",
+        "endgame-technique",
+        "conversion"
+      ]
+    },
+    {
+      "id": "16-11",
+      "type": "conversion",
+      "difficulty": 2,
+      "fen": "r1b2rk1/pp3ppp/1qn5/4n2Q/8/2PB4/PP3PPP/R1B2RK1 b - - 0 16",
+      "question": "Black to move. You are a piece up. White threatens Qxh7#, and the pawn on b2 is loose. Choose the move that converts best.",
+      "solution": [
+        "Nxd3"
+      ],
+      "goal": "best",
+      "accept": [],
+      "explanation": "When ahead, trade pieces — especially attacking ones. 16...Nxd3 removes the bishop that supports Qxh7#, so the threat disappears and White's attack is over. 16...Qxb2?? walks into 17.Qxh7#. 16...h6? stops the mate but weakens the king: 17.Bxh6! gives White a dangerous attack.",
+      "wrong": [
+        {
+          "move": "Qxb2",
+          "why": "17.Qxh7# — the threat comes before the pawn."
+        },
+        {
+          "move": "h6",
+          "why": "17.Bxh6! — the pawn is pinned against nothing, and White's attack is back."
+        }
+      ],
+      "hint": "Which white piece makes the mate threat work? Can you trade it off?",
+      "objective": "Trade the opponent's attacking pieces when you are ahead.",
+      "tags": [
+        "conversion",
+        "threats",
+        "blunder-check"
+      ]
+    }
+  ]
+}

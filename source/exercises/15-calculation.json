@@ -1,0 +1,342 @@
+{
+  "chapter": 15,
+  "title": "Calculation Fundamentals",
+  "exercises": [
+    {
+      "id": "15-01",
+      "type": "calculation",
+      "difficulty": 1,
+      "fen": "r1bqkb1r/pppp1ppp/2n5/4p3/2B1N3/5N2/PPPP1PPP/R1BQK2R b KQkq - 0 5",
+      "question": "Black to move. You played 4...Nxe4 and White answered 5.Nxe4, so you are a piece down for a pawn. Find the forcing move that wins the piece back.",
+      "solution": [
+        "d5"
+      ],
+      "goal": "only",
+      "accept": [],
+      "explanation": "This is the 'fork trick'. 5...d5 attacks the bishop on c4 and the knight on e4 at the same time; White can save only one. After 6.Bd3 dxe4 7.Bxe4 material is level and Black has a free, central position. Every other move simply leaves Black a piece down.",
+      "wrong": [
+        {
+          "move": "Be7",
+          "why": "A quiet developing move while a piece down — White keeps the extra knight."
+        },
+        {
+          "move": "d6",
+          "why": "One square short: it attacks nothing, and White stays a piece up."
+        }
+      ],
+      "hint": "Which pawn move attacks two white pieces at once?",
+      "objective": "Look for forcing moves (attacks on two pieces) first when material is missing.",
+      "tags": [
+        "calculation",
+        "fork",
+        "counting"
+      ]
+    },
+    {
+      "id": "15-02",
+      "type": "calculation",
+      "difficulty": 3,
+      "fen": "r1bqkb1r/pppn1ppp/5n2/3N2B1/3P4/8/PP2PPPP/R2QKBNR b KQkq - 0 6",
+      "question": "Black to move. White has just played 6.Nxd5, apparently winning a pawn because your knight on f6 is pinned to the queen. Calculate, and punish the mistake.",
+      "solution": [
+        "Nxd5"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "The pin is an illusion. After 6...Nxd5! 7.Bxd8 Black has the in-between check 7...Bb4+, and after 8.Qd2 Bxd2+ 9.Kxd2 Kxd8 Black is a whole piece up. If White does not take the queen, Black is simply a knight up. To see this you must visualise the position after 7.Bxd8 and look for checks there.",
+      "wrong": [
+        {
+          "move": "c6",
+          "why": "Too slow: White keeps the pawn and the pin."
+        },
+        {
+          "move": "h6",
+          "why": "Kicking the bishop lets White exchange on f6 and stay a pawn up."
+        }
+      ],
+      "hint": "If White takes your queen, what check do you have?",
+      "objective": "Calculate to the end of a capture sequence and look for in-between checks there.",
+      "tags": [
+        "calculation",
+        "zwischenzug",
+        "opening-traps"
+      ]
+    },
+    {
+      "id": "15-03",
+      "type": "mate",
+      "difficulty": 2,
+      "fen": "4kb1r/p2n1ppp/4q3/4p1B1/4P3/1Q6/PPP2PPP/2KR4 w k - 0 16",
+      "question": "White to move and mate in two.",
+      "solution": [
+        "Qb8+",
+        "Nxb8",
+        "Rd8#"
+      ],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "This is the finish of Morphy's famous Opera game (Paris, 1858). 16.Qb8+!! deflects the knight from d7; after 16...Nxb8 17.Rd8# the rook mates, guarded by the bishop on g5, because the black queen and bishop block their own king. Forcing moves first: the queen sacrifice is a check, so it must be examined even though it 'loses' the queen.",
+      "wrong": [
+        {
+          "move": "Qb7",
+          "why": "Strong, but not mate; Black can defend with ...f6 and play on."
+        },
+        {
+          "move": "Rxd7",
+          "why": "The rook trade gives up the mating pattern and allows Black to untangle."
+        }
+      ],
+      "hint": "Which black piece guards d8? Can you force it away with check?",
+      "objective": "Examine every check, including sacrifices, before quieter moves.",
+      "tags": [
+        "calculation",
+        "deflection",
+        "mate-patterns"
+      ]
+    },
+    {
+      "id": "15-04",
+      "type": "mate",
+      "difficulty": 4,
+      "fen": "4r2k/pp4pp/2p5/6N1/2Q5/8/PPP2PPP/6K1 w - - 0 30",
+      "question": "White to move and mate in four. Visualise the whole line before you move.",
+      "solution": [
+        "Nf7+",
+        "Kg8",
+        "Nh6+",
+        "Kh8",
+        "Qg8+",
+        "Rxg8",
+        "Nf7#"
+      ],
+      "goal": "mate",
+      "mate_in": 4,
+      "accept": [],
+      "explanation": "'Philidor's legacy': 30.Nf7+ Kg8 31.Nh6+ (double check from knight and queen, so the king must move) Kh8 (31...Kf8 32.Qf7#) 32.Qg8+! Rxg8 33.Nf7#, a smothered mate. Each move is a check, which keeps Black's choices to one or two — that is what makes a four-move line calculable.",
+      "wrong": [
+        {
+          "move": "Qg8+",
+          "why": "30...Kxg8! — the king, not the rook, takes, and there is no follow-up."
+        },
+        {
+          "move": "Qf7",
+          "why": "Threatens mate but gives Black a tempo; the forced mate is gone."
+        }
+      ],
+      "hint": "Use knight checks to bring the king back to h8, then sacrifice on g8.",
+      "objective": "Calculate a sequence of checks to the end, picturing where every piece stands.",
+      "tags": [
+        "calculation",
+        "smothered-mate",
+        "double-check"
+      ]
+    },
+    {
+      "id": "15-05",
+      "type": "calculation",
+      "difficulty": 4,
+      "fen": "r2q1rk1/ppp2p1p/2b2Pp1/8/8/4Q3/PPP1BPPP/3R2K1 w - - 0 20",
+      "question": "White to move. The pawn on f6 and a queen on h6 would mate on g7. Find the forcing way to make the idea work.",
+      "solution": [
+        "Rxd8",
+        "Raxd8",
+        "Qh6"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "20.Qh6? at once fails to 20...Qxd1+, because the black queen both escapes and checks. So first remove it: 20.Rxd8 Raxd8 and only now the quiet 21.Qh6!, after which nothing stops Qg7# — Black's 21...Rd1+ 22.Bxd1 only delays it. A quiet move in the middle of a forcing line is easy to miss; look for it when the threat it creates cannot be parried.",
+      "wrong": [
+        {
+          "move": "Qh6",
+          "why": "20...Qxd1+ — the queen you wanted to deflect takes your rook with check."
+        },
+        {
+          "move": "Qf4",
+          "why": "Too slow; Black trades on d1 and the mating idea disappears."
+        }
+      ],
+      "hint": "Which black piece can stop Qg7#? Remove it with a forcing move first.",
+      "objective": "Find a quiet move inside a forcing sequence after removing the only defender.",
+      "tags": [
+        "calculation",
+        "quiet-move",
+        "mate-patterns"
+      ]
+    },
+    {
+      "id": "15-06",
+      "type": "counting",
+      "difficulty": 2,
+      "fen": "r4rk1/ppq1bppp/4bn2/3p4/8/2N1BB2/PPP1QPPP/3RR1K1 w - - 0 15",
+      "question": "White to move. Count the attackers and defenders of the pawn on d5. Can you win it? Play the right capture.",
+      "solution": [
+        "Nxd5"
+      ],
+      "goal": "best",
+      "accept": [
+        "Bxd5"
+      ],
+      "explanation": "d5 is attacked three times (Nc3, Bf3, Rd1) and defended twice (Nf6, Be6), so White wins it — provided the cheap pieces capture first. 15.Nxd5 Nxd5 16.Bxd5 Bxd5 17.Rxd5 leaves White a clean pawn up. Starting with the rook, 15.Rxd5?, gives up a rook for a knight because every recapture is by a cheaper piece.",
+      "wrong": [
+        {
+          "move": "Rxd5",
+          "why": "15...Nxd5 16.Nxd5 Bxd5 17.Bxd5 — you have traded a rook for a pawn and a knight."
+        }
+      ],
+      "hint": "Count, then capture with the least valuable attacker first.",
+      "objective": "Count a capture sequence and order the captures from cheapest to most valuable.",
+      "tags": [
+        "counting",
+        "calculation"
+      ]
+    },
+    {
+      "id": "15-07",
+      "type": "endgame",
+      "difficulty": 2,
+      "fen": "8/8/6k1/5pPp/P4P1P/7p/8/4K3 w - - 0 45",
+      "question": "White to move. Both sides have a passed pawn. Count the tempi: should you race with the a-pawn or stop the h-pawn first?",
+      "solution": [
+        "Kf1"
+      ],
+      "goal": "best",
+      "accept": [
+        "Kf2"
+      ],
+      "explanation": "Count: the h3-pawn needs two moves to queen, the a4-pawn four. In a race Black queens first (45.a5? h2 46.a6 h1=Q). But the white king is inside the h-pawn's 'square': 45.Kf1 h2 46.Kg2 catches it, and then the a-pawn walks home because the black king is far outside its square.",
+      "wrong": [
+        {
+          "move": "a5",
+          "why": "45...h2 and Black queens two moves before you do."
+        },
+        {
+          "move": "Ke2",
+          "why": "One step too slow: 45...h2 and the pawn cannot be caught."
+        }
+      ],
+      "hint": "How many moves does each pawn need? Can your king reach h1 or g2 in time?",
+      "objective": "Count tempi in a pawn race before pushing.",
+      "tags": [
+        "calculation",
+        "king-pawn-endgame",
+        "passed-pawn"
+      ]
+    },
+    {
+      "id": "15-08",
+      "type": "calculation",
+      "difficulty": 3,
+      "fen": "3rr1k1/pppQ1ppp/2n2n2/1N3b2/8/2N4P/PPP2PP1/R1B1R1K1 b - - 0 18",
+      "question": "Black to move. White's queen has just captured on d7. Recapture is natural — but is there something better first?",
+      "solution": [
+        "Rxe1+",
+        "Kh2",
+        "Rxd7"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "An intermediate move: 18...Rxe1+! takes a whole rook with check (the bishop on c1 blocks the a1-rook), and only after 19.Kh2 does Black recapture the queen with 19...Rxd7. Black ends up a rook ahead. The automatic 18...Rxd7 19.Rxe8+ Nxe8 just trades everything off.",
+      "wrong": [
+        {
+          "move": "Rxd7",
+          "why": "Recaptures, but 19.Rxe8+ follows and the position is level."
+        },
+        {
+          "move": "Nxd7",
+          "why": "Also recaptures, but leaves your e8-rook hanging to 19.Rxe8+."
+        }
+      ],
+      "hint": "Before recapturing, look for a capture that comes with check.",
+      "objective": "Look for an in-between check before making the obvious recapture.",
+      "tags": [
+        "zwischenzug",
+        "calculation",
+        "back-rank"
+      ]
+    },
+    {
+      "id": "15-09",
+      "type": "endgame",
+      "difficulty": 3,
+      "fen": "7K/4P3/6k1/5p2/5P2/8/1p6/8 b - - 0 52",
+      "question": "Black to move. You can queen at once with 52...b1=Q. Count what happens next, then find the move that wins.",
+      "solution": [
+        "Kf7"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "52...b1=Q? 53.e8=Q+ gives White a queen too, and with checks available the game is drawn. 52...Kf7! takes e8 away: if 53.e8=Q+ Kxe8, and otherwise Black collects the e-pawn; either way the b-pawn then queens and Black is a queen up. Calculation includes counting what the opponent does with his tempo.",
+      "wrong": [
+        {
+          "move": "b1=Q",
+          "why": "53.e8=Q+ — White queens with check and it is queen against queen."
+        }
+      ],
+      "hint": "What is White threatening to do on the very next move?",
+      "objective": "In a race, include the opponent's best reply before queening.",
+      "tags": [
+        "calculation",
+        "king-pawn-endgame",
+        "promotion"
+      ]
+    },
+    {
+      "id": "15-10",
+      "type": "endgame",
+      "difficulty": 1,
+      "fen": "8/8/8/3K3p/p1P4P/7k/8/8 b - - 0 50",
+      "question": "Black to move. Taking the h4-pawn looks natural. Count the race first, then play the winning move.",
+      "solution": [
+        "a3"
+      ],
+      "goal": "win",
+      "accept": [],
+      "explanation": "Count: the a-pawn needs three moves, the white c-pawn four, and the white king on d5 is outside the a-pawn's square. 50...a3! 51.c5 a2 52.c6 a1=Q wins easily. 50...Kxh4? spends the decisive tempo: 51.c5 a3 52.c6 a2 53.c7 a1=Q 54.c8=Q and both sides have a queen.",
+      "wrong": [
+        {
+          "move": "Kxh4",
+          "why": "Grabbing costs a tempo; White queens right after you and the game is drawn."
+        }
+      ],
+      "hint": "How many moves does each passed pawn need to queen?",
+      "objective": "Count tempi in a pawn race instead of grabbing material.",
+      "tags": [
+        "calculation",
+        "king-pawn-endgame",
+        "counting"
+      ]
+    },
+    {
+      "id": "15-11",
+      "type": "calculation",
+      "difficulty": 1,
+      "fen": "r1bqkbnr/1pp2ppp/p1p5/4N3/4P3/8/PPPP1PPP/RNBQK2R b KQkq - 0 5",
+      "question": "Black to move. White has just taken your e5-pawn with 5.Nxe5. Find the forcing move that wins it back.",
+      "solution": [
+        "Qd4",
+        "Nf3",
+        "Qxe4+"
+      ],
+      "goal": "best",
+      "accept": [
+        "Qe7",
+        "Qg5"
+      ],
+      "explanation": "Forcing moves first: 5...Qd4! attacks the knight on e5 and the pawn on e4 at once. After 6.Nf3 Qxe4+ 7.Qe2 Qxe2+ material is level and Black has the bishop pair. 5...Qe7 and 5...Qg5 are double attacks too. A quiet developing move such as 5...Bd6 leaves Black simply a pawn down.",
+      "wrong": [
+        {
+          "move": "Bd6",
+          "why": "Developing is nice, but you stay a pawn down; there was a double attack."
+        }
+      ],
+      "hint": "Which queen move attacks two things?",
+      "objective": "Scan queen moves for double attacks that regain material.",
+      "tags": [
+        "calculation",
+        "fork",
+        "repertoire-black"
+      ]
+    }
+  ]
+}

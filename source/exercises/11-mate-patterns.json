@@ -1,0 +1,212 @@
+{
+  "chapter": 11,
+  "title": "Checkmate Patterns",
+  "exercises": [
+    {
+      "id": "11-01",
+      "type": "mate",
+      "difficulty": 1,
+      "fen": "6k1/pp3ppp/1qn5/8/8/1P3N1P/P1r2PP1/3QR1K1 w - - 0 25",
+      "question": "White to move. Black's rook on c2 is hanging, but there is something better. Mate in 1.",
+      "solution": ["Re8#"],
+      "goal": "mate",
+      "mate_in": 1,
+      "accept": [],
+      "explanation": "Black's king is boxed in by its own pawns on f7, g7 and h7, and no black piece guards the back rank: the knight on c6 covers d8 but not e8. Re8# is the classic back-rank mate. Look for checks before you take free material.",
+      "wrong": [
+        {"move": "Qxc2", "why": "It wins a rook, but you had mate in one."}
+      ],
+      "hint": "Which black piece could stop a rook on the eighth rank?",
+      "objective": "Recognize a back-rank mate when the king has no luft.",
+      "tags": ["back-rank", "mate-patterns"]
+    },
+    {
+      "id": "11-02",
+      "type": "mate",
+      "difficulty": 2,
+      "fen": "4r1k1/pQ3ppp/5n2/4q3/8/2N5/PP3PPP/3R2K1 b - - 0 22",
+      "question": "Black to move. White has just grabbed the b7-pawn. Mate in 2.",
+      "solution": ["Qe1+", "Rxe1", "Rxe1#"],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "White's back rank is guarded only by the rook on d1. 22...Qe1+! sacrifices the queen to deflect that rook: after 23.Rxe1 Rxe1# the king on g1 is trapped by its own f-, g- and h-pawns. The queen sacrifice works because the black rook stands behind it on the open e-file.",
+      "wrong": [
+        {"move": "Qxc3", "why": "It wins a knight, but White replies Qxa7 or h3 and the mate is gone."},
+        {"move": "Qxh2+", "why": "After Kxh2 you have lost your queen for a pawn."}
+      ],
+      "hint": "Which white piece is the only guard of e1?",
+      "objective": "Use a queen sacrifice to deflect the last back-rank defender.",
+      "tags": ["back-rank", "deflection", "mate-patterns"]
+    },
+    {
+      "id": "11-03",
+      "type": "mate",
+      "difficulty": 2,
+      "fen": "3r2k1/2Q2ppp/p7/8/3q4/2N4n/PP4PP/5R1K b - - 0 27",
+      "question": "Black to move. White's king is surrounded by its own pieces. Mate in 2.",
+      "solution": ["Qg1+", "Rxg1", "Nf2#"],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "This is the smothered mate. The knight on h3 covers g1, so the king cannot take the queen and 27...Qg1+ forces 28.Rxg1. Now g1, g2 and h2 are all filled with White's own pieces, and 28...Nf2# gives a knight check that cannot be blocked.",
+      "wrong": [
+        {"move": "Nf2+", "why": "A check, but after Rxf2 the knight is gone and so is the mate."},
+        {"move": "Qxc3", "why": "Grabs a knight, but White plays gxh3 and is no longer in danger."}
+      ],
+      "hint": "Fill g1 with a white piece, then check with the knight.",
+      "objective": "Execute the smothered-mate pattern with a queen sacrifice on g1.",
+      "tags": ["smothered-mate", "mate-patterns"]
+    },
+    {
+      "id": "11-04",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "r3r1k1/pp1b1Npp/1qp5/8/2Q2B2/8/PP3PPP/3R2K1 w - - 0 23",
+      "question": "White to move. Play Philidor's smothered mate. Mate in 3.",
+      "solution": ["Nh6+", "Kh8", "Qg8+", "Rxg8", "Nf7#"],
+      "goal": "mate",
+      "mate_in": 3,
+      "accept": [],
+      "explanation": "23.Nh6+ is a double check from the knight and the queen on c4, so the king must move. 23...Kf8 allows 24.Qf7#, so 23...Kh8 is forced. Then 24.Qg8+! is protected by the knight, 24...Rxg8 is forced, and 25.Nf7# is a smothered mate.",
+      "wrong": [
+        {"move": "Ng5+", "why": "A discovered check, but Black blocks with ...Be6 and the attack fizzles."},
+        {"move": "Nd8+", "why": "Also a discovered check, but ...Be6 blocks it and the knight on d8 is out of play."}
+      ],
+      "hint": "Start with a double check that forces the king into the corner.",
+      "objective": "Execute the full smothered-mate sequence: double check, queen sacrifice, knight mate.",
+      "tags": ["smothered-mate", "double-check", "mate-patterns"]
+    },
+    {
+      "id": "11-05",
+      "type": "mate",
+      "difficulty": 2,
+      "fen": "r4r1k/ppq1Nppp/2pb4/7Q/8/1B1R4/PPP2PPP/4R1K1 w - - 0 20",
+      "question": "White to move. Your knight on e7 already controls g8 and g6. Mate in 2.",
+      "solution": ["Qxh7+", "Kxh7", "Rh3#"],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "This is Anastasia's mate: a knight on e7 covers g8 and g6, the g7-pawn blocks the king, and a rook mates on the h-file. 20.Qxh7+ forces 20...Kxh7, and 21.Rh3# finishes because nothing can block on h4, h5 or h6.",
+      "wrong": [
+        {"move": "Bxf7", "why": "Wins a pawn and threatens things, but Black survives with ...h6 and you have missed a forced mate."},
+        {"move": "Ng6+", "why": "After ...Kg8 you can take the rook on f8, but that wins only material when mate was available."}
+      ],
+      "hint": "Which white piece can reach the h-file in one move once h7 has been opened?",
+      "objective": "Recognize Anastasia's mate: knight on e7 plus a rook or queen on the h-file.",
+      "tags": ["mate-patterns", "decoy"]
+    },
+    {
+      "id": "11-06",
+      "type": "mate",
+      "difficulty": 1,
+      "fen": "1k1r3r/ppp2p2/8/3q4/8/1B3n2/PPP1Q1PP/3R1R1K b - - 0 26",
+      "question": "Black to move. Your knight on f3 is attacked twice. Mate in 1.",
+      "solution": ["Rxh2#"],
+      "goal": "mate",
+      "mate_in": 1,
+      "accept": [],
+      "explanation": "This is the Arabian mate: the rook gives check on h2 next to the cornered king, and the knight on f3 protects the rook and covers g1. White's own g2-pawn takes the last square. Rook and knight together are a very strong mating team against a king in the corner.",
+      "wrong": [
+        {"move": "Qxd1", "why": "It wins material, but after Qxf3 or Rxd1 White is fighting, and you had mate on the spot."},
+        {"move": "Nxh2", "why": "Takes a pawn but gives up the knight's control of g1 and h2; there is no mate any more."}
+      ],
+      "hint": "Rook in front of the king, knight guarding the rook.",
+      "objective": "Recognize the Arabian mate with rook and knight.",
+      "tags": ["mate-patterns"]
+    },
+    {
+      "id": "11-07",
+      "type": "mate",
+      "difficulty": 3,
+      "fen": "2kr1b1r/pp1nqppp/2n1p3/8/5B2/2N2Q2/PPP1BPPP/R2R2K1 w - - 0 14",
+      "question": "White to move. Black castled long. Use your two bishops. Mate in 2.",
+      "solution": ["Qxc6+", "bxc6", "Ba6#"],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "This is Boden's mate: two bishops on criss-crossing diagonals. The bishop on f4 already covers b8 and c7, and d7 and d8 are blocked by Black's own pieces. 14.Qxc6+ forces 14...bxc6, which opens the a6-c8 diagonal, and 15.Ba6# is mate.",
+      "wrong": [
+        {"move": "Bb5", "why": "Attacks the knight, but Black has time for ...Nde5 or ...Kb8 and the mating net is gone."},
+        {"move": "Nb5", "why": "A threat-looking move that allows ...e5 or ...Kb8 and does not force anything."}
+      ],
+      "hint": "Which pawn must move away to open a diagonal to c8?",
+      "objective": "Recognize Boden's mate against a king castled queenside.",
+      "tags": ["mate-patterns", "decoy"]
+    },
+    {
+      "id": "11-08",
+      "type": "mate",
+      "difficulty": 4,
+      "fen": "1k5r/ppp2p2/4q3/8/3P4/2P2pP1/PP1Q1P2/R5K1 b - - 0 28",
+      "question": "Black to move. Your pawn on f3 is a dagger next to White's king. Find the quiet move that mates in 2.",
+      "solution": ["Qh3", "Qe2", "Qh1#"],
+      "goal": "mate",
+      "mate_in": 2,
+      "accept": [],
+      "explanation": "The pawn on f3 covers g2, so a queen on h3 threatens both Qg2# and Qh1#. 28...Qh3! is not a check, but White has no way to cover both squares and has no checks of his own. If 29.Qe2, then 29...Qh1#, and other moves allow Qg2#.",
+      "wrong": [
+        {"move": "Rh1+", "why": "This also mates, but it takes three moves (Kxh1 Qh3+ Kg1 Qg2#); the quiet queen move is faster."},
+        {"move": "Qe4", "why": "Threatens Qg2#, but White defends with Qd3 or Qe3 and trades queens."}
+      ],
+      "hint": "A queen supported by the f3-pawn wants to land on g2. Which square aims at g2 and h1 together?",
+      "objective": "Use an advanced pawn to support a queen mate next to the king.",
+      "tags": ["mate-patterns", "quiet-move"]
+    },
+    {
+      "id": "11-09",
+      "type": "mate",
+      "difficulty": 4,
+      "fen": "r1bq1rk1/pp1nbpp1/4p3/3pP3/3P1B2/2NB4/PPP1QP2/2KR3R w - - 0 16",
+      "question": "White to move. The h-file is open and your bishop aims at h7. Mate in 3.",
+      "solution": ["Rh8+", "Kxh8", "Qh5+", "Kg8", "Qh7#"],
+      "goal": "mate",
+      "mate_in": 3,
+      "accept": [],
+      "explanation": "16.Rh8+! is a decoy: it drags the king into the corner where the queen can check it along the h-file. After 16...Kxh8 17.Qh5+ Kg8 18.Qh7#, the bishop on d3 protects the queen and the rook on f8 takes the king's last square.",
+      "wrong": [
+        {"move": "Qh5", "why": "It threatens mate, but Black defends with ...f5 and the attack slows down; the rook sacrifice was forcing."},
+        {"move": "Bh7+", "why": "After ...Kh8 you have only repositioned the bishop; the direct rook sacrifice mates faster."}
+      ],
+      "hint": "Sacrifice to bring the king to h8, then check on the h-file.",
+      "objective": "Use a rook sacrifice on the h-file to set up a queen-and-bishop mate on h7.",
+      "tags": ["mate-patterns", "decoy", "attack"]
+    },
+    {
+      "id": "11-10",
+      "type": "defense",
+      "difficulty": 1,
+      "fen": "r4rk1/pbqnbppp/1pn1p3/7Q/3P4/2NB1N2/PP3PPP/R1B1R1K1 b - - 0 13",
+      "question": "Black to move. White threatens Qxh7#. Find the best defence.",
+      "solution": ["Nf6"],
+      "goal": "best",
+      "accept": [],
+      "explanation": "The queen on h5 and the bishop on d3 both aim at h7, which only the king defends. 13...Nf6 adds a defender of h7 and attacks the queen with gain of time. Pawn moves in front of the king either fail or leave serious weaknesses.",
+      "wrong": [
+        {"move": "h6", "why": "It does not stop the threat: 14.Bxh6 or simply Qh7+ ideas leave Black's king wide open."},
+        {"move": "f5", "why": "It blocks the bishop, but 14.Rxe6 rips open the light squares and Black's king is soon in trouble."}
+      ],
+      "hint": "Which piece can defend h7 and attack the queen at the same time?",
+      "objective": "Meet a mate threat on h7 by adding a defender with tempo.",
+      "tags": ["defense", "mate-patterns", "king-safety"]
+    },
+    {
+      "id": "11-11",
+      "type": "defense",
+      "difficulty": 2,
+      "fen": "r1b2rk1/ppp2ppp/3b1n2/3p4/3P3q/2P5/PP1N1PPP/R1BQRBK1 w - - 0 11",
+      "question": "White to move. Black's queen and bishop are aiming at h2. Find a move that meets the threat.",
+      "solution": ["Nf3"],
+      "goal": "best",
+      "accept": ["g3", "h3"],
+      "explanation": "Black threatens 11...Qxh2+ and mate next, because the queen on h4 and the bishop on d6 both hit h2. 11.Nf3 develops, guards h2 and attacks the queen, so Black loses time. g3 (blocking the bishop's diagonal) and h3 (giving the king room) also hold, but moves that ignore h2 lose.",
+      "wrong": [
+        {"move": "Bd3", "why": "A natural developing move, but it ignores the threat: 11...Qxh2+ 12.Kf1 Qh1+ and White's king is torn apart."},
+        {"move": "f4", "why": "It blocks nothing on h2 and weakens e3 and g3; after ...Bg4 White is in serious trouble."}
+      ],
+      "hint": "Count attackers and defenders of h2.",
+      "objective": "Spot a queen-and-bishop battery against h2 and defend it in time.",
+      "tags": ["defense", "mate-patterns", "blunder-check"]
+    }
+  ]
+}
