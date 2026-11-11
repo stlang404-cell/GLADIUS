@@ -184,17 +184,13 @@
       "solution": [
         "Rxh4"
       ],
-      "goal": "win",
+      "goal": "best",
       "accept": [],
-      "explanation": "Rooks see whole ranks, not just files. Your rook on d4 looks along the fourth rank through e4, f4 and g4 to h4, and the knight on the edge has no defender. Rxh4 wins a piece. Players often only look at a rook's file and miss the sideways capture.",
+      "explanation": "Rooks see whole ranks, not just files. Your rook on d4 looks along the fourth rank through e4, f4 and g4 to h4, and the knight on the edge has no defender. Rxh4 wins a piece. Players often only look at a rook's file and miss the sideways capture. (Bf4, hitting the queen first, also keeps a large advantage, but the direct capture is simplest and strongest.)",
       "wrong": [
         {
           "move": "Qg4",
           "why": "Attacks the knight and g7, but the knight is free right now, and after ...Nf3+ White loses material."
-        },
-        {
-          "move": "Bf4",
-          "why": "Gains time on the queen, but the knight on h4 should simply be taken."
         }
       ],
       "hint": "Look sideways along your rook's rank.",

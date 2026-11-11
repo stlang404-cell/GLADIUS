@@ -156,7 +156,7 @@
       "solution": [
         "Nf3"
       ],
-      "goal": "only",
+      "goal": "best",
       "accept": [],
       "explanation": "Black's idea is ...cxd4: after exd4, the pinned c3-knight can be exchanged on c3 and White's queenside falls apart, and the e-file opens against White's uncastled king. Nf3 is prophylaxis and development in one move: the knight defends d4 so White can recapture with a piece, and it clears the way to castle and break the pin. The greedy dxc5 opens the d-file for Black's queen and runs into ...Nxc3 with a discovered attack.",
       "wrong": [

@@ -7,7 +7,7 @@ EPUBCHECK_CP="${EPUBCHECK_CP:-/tmp/tools/ec/lib/*}"
 mkdir -p build/logs build/dist
 
 echo "== 1. validate chess content (depth $DEPTH)"
-python3 tools/validate_all.py --depth "$DEPTH"
+if [ -z "${SKIP_VALIDATE:-}" ]; then python3 tools/validate_all.py --depth "$DEPTH"; else echo "(skipped; using existing build/logs/validate.log)"; fi
 
 echo "== 2. plan, cover, icons"
 python3 tools/plan.py

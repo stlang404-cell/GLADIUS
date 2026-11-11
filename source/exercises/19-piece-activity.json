@@ -8,17 +8,31 @@
       "difficulty": 1,
       "fen": "2r3k1/pp3pp1/1n1p3p/3N4/4P3/7P/PP3PP1/2R3K1 w - - 0 26",
       "question": "White to move. Black has just played ...Nb6, attacking your knight on its outpost. Punish it.",
-      "solution": ["Ne7+", "Kh7", "Nxc8"],
+      "solution": [
+        "Ne7+",
+        "Kh7",
+        "Nxc8"
+      ],
       "goal": "win",
       "accept": [],
       "explanation": "An active knight on d5 attacks e7, c7, b6, f6 and more — and e7 is a forking square. Ne7+ checks the king and hits the rook on c8 at the same time; after the king moves, Nxc8 wins a whole rook for the knight. Taking on b6 instead runs into ...Rxc1+, because your rook was guarded only by your back rank.",
       "wrong": [
-        {"move": "Nxb6", "why": "Black answers ...Rxc1+ and wins your rook; the knight capture left c1 undefended."},
-        {"move": "Rxc8+", "why": "Trading rooks is safe but throws away the fork; you win nothing."}
+        {
+          "move": "Nxb6",
+          "why": "Black answers ...Rxc1+ and wins your rook; the knight capture left c1 undefended."
+        },
+        {
+          "move": "Rxc8+",
+          "why": "Trading rooks is safe but throws away the fork; you win nothing."
+        }
       ],
       "hint": "Which knight check also attacks a rook?",
       "objective": "Look for forks from an active, centralized knight.",
-      "tags": ["fork", "outpost", "back-rank"]
+      "tags": [
+        "fork",
+        "outpost",
+        "back-rank"
+      ]
     },
     {
       "id": "19-02",
@@ -26,17 +40,31 @@
       "difficulty": 1,
       "fen": "8/pp2kppp/2n5/8/8/2N5/PP3PPP/5K2 w - - 0 30",
       "question": "White to move. Queens and rooks are gone. Choose the best plan move.",
-      "solution": ["Ke2"],
+      "solution": [
+        "Ke2"
+      ],
       "goal": "best",
-      "accept": ["Ke1"],
+      "accept": [
+        "Ke1"
+      ],
       "explanation": "In a knight ending the king is the most important piece. Ke2 heads for d3 and c4, keeping Black's king out of c5 and b4; the position stays level. A queenside pawn move such as a4 or b4 creates a target and loses the king race: Black's king goes d6-c5-b4.",
       "wrong": [
-        {"move": "a4", "why": "After ...Kd6 and ...Kc5, Black's king reaches b4 first and the a4 pawn becomes a target."},
-        {"move": "b4", "why": "The pawn is simply lost to ...Nxb4."}
+        {
+          "move": "a4",
+          "why": "After ...Kd6 and ...Kc5, Black's king reaches b4 first and the a4 pawn becomes a target."
+        },
+        {
+          "move": "b4",
+          "why": "The pawn is simply lost to ...Nxb4."
+        }
       ],
       "hint": "Which piece is still on its starting square doing nothing?",
       "objective": "Centralize the king as soon as the queens are off.",
-      "tags": ["piece-activity", "minor-piece-endgame", "endgame-technique"]
+      "tags": [
+        "piece-activity",
+        "minor-piece-endgame",
+        "endgame-technique"
+      ]
     },
     {
       "id": "19-03",
@@ -44,17 +72,29 @@
       "difficulty": 1,
       "fen": "3r2k1/ppp2pp1/2n4p/8/8/7P/PPP1BPP1/1R5K b - - 0 24",
       "question": "Black to move. The d-file is open and White's rook is passive. Find the most active move.",
-      "solution": ["Rd2"],
+      "solution": [
+        "Rd2"
+      ],
       "goal": "best",
       "accept": [],
       "explanation": "The second rank is Black's 'seventh rank'. ...Rd2 attacks the bishop on e2 and the pawn on c2; after Bd3 Black takes on f2 and the rook keeps eating from behind. White's rook on b1 is a spectator.",
       "wrong": [
-        {"move": "Kf8", "why": "Too slow: White plays Rd1 and trades off your only active piece."},
-        {"move": "Nd4", "why": "Centralizes the knight but lets White's rook into the d-file; Black's advantage is gone."}
+        {
+          "move": "Kf8",
+          "why": "Too slow: White plays Rd1 and trades off your only active piece."
+        },
+        {
+          "move": "Nd4",
+          "why": "Centralizes the knight but lets White's rook into the d-file; Black's advantage is gone."
+        }
       ],
       "hint": "Where can your rook attack two things at once?",
       "objective": "Invade the seventh (for Black, the second) rank with a rook on an open file.",
-      "tags": ["open-file", "piece-activity", "rook-endgame"]
+      "tags": [
+        "open-file",
+        "piece-activity",
+        "rook-endgame"
+      ]
     },
     {
       "id": "19-04",
@@ -62,18 +102,35 @@
       "difficulty": 2,
       "fen": "r2q1rk1/1b2bppp/p1pp1n2/n3p3/4P3/2PB1N1P/PP1N1PP1/R1BQR1K1 b - - 0 12",
       "question": "Black to move. Count the retreat squares of your knight on a5, then play the move that keeps it alive.",
-      "solution": ["c5"],
+      "solution": [
+        "c5"
+      ],
       "goal": "best",
-      "accept": ["Bc8"],
+      "accept": [
+        "Bc8"
+      ],
       "explanation": "The knight on the rim has no safe square: b3 and c4 are covered, and b7 and c6 are occupied by Black's own pieces. White threatens b2-b4, trapping it. ...c5 frees c6 for the knight and meets b4 with ...cxb4 cxb4 Nc6. Clearing b7 with ...Bc8 also works.",
       "wrong": [
-        {"move": "Re8", "why": "A natural developing move, but b4 wins the knight."},
-        {"move": "Qc7", "why": "Does nothing for the knight; b4 traps it."},
-        {"move": "Nd7", "why": "Brings the other knight toward c5, but b4 comes first and the a5-knight is lost."}
+        {
+          "move": "Re8",
+          "why": "A natural developing move, but b4 wins the knight."
+        },
+        {
+          "move": "Qc7",
+          "why": "Does nothing for the knight; b4 traps it."
+        },
+        {
+          "move": "Nd7",
+          "why": "Brings the other knight toward c5, but b4 comes first and the a5-knight is lost."
+        }
       ],
       "hint": "What happens to your knight after White's b2-b4?",
       "objective": "Check a rim knight's retreats and make room before it is trapped.",
-      "tags": ["trapped-piece", "piece-activity", "prophylaxis"]
+      "tags": [
+        "trapped-piece",
+        "piece-activity",
+        "prophylaxis"
+      ]
     },
     {
       "id": "19-05",
@@ -81,17 +138,31 @@
       "difficulty": 2,
       "fen": "2r3k1/p3bppp/1p1p4/4p3/2P1P3/2N5/PP3PPP/2R3K1 w - - 0 25",
       "question": "White to move. Find the best square for your knight.",
-      "solution": ["Nd5"],
+      "solution": [
+        "Nd5"
+      ],
       "goal": "best",
-      "accept": ["b3"],
+      "accept": [
+        "b3"
+      ],
       "explanation": "d5 is a classic outpost: Black has no c-pawn and the e-pawn has passed e6, so no pawn can ever chase the knight, and the e4 pawn supports it. From d5 the knight eyes b6, c7, e7 and f6, while Black's bishop is hemmed in by its own pawns on d6 and e5. b3, protecting c4 first, is also good. Nb5 hits a7, but after ...a6 the knight has to retreat to the rim; Kf1 simply drops c4.",
       "wrong": [
-        {"move": "Nb5", "why": "Hits a7, but after ...a6 the knight must go back to a3 on the rim, and White's advantage is gone."},
-        {"move": "Kf1", "why": "Centralizing the king is a good idea later, but now ...Rxc4 wins a pawn."}
+        {
+          "move": "Nb5",
+          "why": "Hits a7, but after ...a6 the knight must go back to a3 on the rim, and White's advantage is gone."
+        },
+        {
+          "move": "Kf1",
+          "why": "Centralizing the king is a good idea later, but now ...Rxc4 wins a pawn."
+        }
       ],
       "hint": "Which square can no black pawn ever attack?",
       "objective": "Recognize an outpost and occupy it with a knight.",
-      "tags": ["outpost", "bishop-vs-knight", "piece-activity"]
+      "tags": [
+        "outpost",
+        "bishop-vs-knight",
+        "piece-activity"
+      ]
     },
     {
       "id": "19-06",
@@ -99,16 +170,27 @@
       "difficulty": 2,
       "fen": "5k2/pp3ppp/2n5/8/8/2NK4/PP3PPP/8 b - - 0 30",
       "question": "Black to move. White's king is already on d3. What should Black do?",
-      "solution": ["Ke7"],
+      "solution": [
+        "Ke7"
+      ],
       "goal": "best",
-      "accept": ["Ke8"],
+      "accept": [
+        "Ke8"
+      ],
       "explanation": "White's king wants c4 and c5, where it would attack Black's queenside pawns. Black must answer by centralizing his own king at once: ...Ke7 and ...Kd6 keeps the white king out and the game stays balanced. A pawn move like ...a5 loses a tempo and creates a target: Kc4 and Kc5 (or Kb5) follow.",
       "wrong": [
-        {"move": "a5", "why": "Loses the king race: Kc4, Kb5 and the a5 pawn and b7 pawn become targets."}
+        {
+          "move": "a5",
+          "why": "Loses the king race: Kc4, Kb5 and the a5 pawn and b7 pawn become targets."
+        }
       ],
       "hint": "Count the moves each king needs to reach the queenside.",
       "objective": "Answer the opponent's king activity with your own king.",
-      "tags": ["piece-activity", "minor-piece-endgame", "endgame-technique"]
+      "tags": [
+        "piece-activity",
+        "minor-piece-endgame",
+        "endgame-technique"
+      ]
     },
     {
       "id": "19-07",
@@ -116,16 +198,25 @@
       "difficulty": 3,
       "fen": "2r3k1/p3bppp/1p1pb3/3Np3/2P1P3/3B4/PP3PPP/2R3K1 b - - 0 22",
       "question": "Black to move. White's knight on d5 is the best piece on the board. Deal with it.",
-      "solution": ["Bxd5"],
+      "solution": [
+        "Bxd5"
+      ],
       "goal": "best",
       "accept": [],
       "explanation": "Trade your opponent's best piece. ...Bxd5 removes the monster knight; after exd5 (or cxd5) White's pawns stand on light squares and White's remaining bishop on d3 becomes the bad bishop, while Black's position is solid. Black is slightly better. Attacking the knight with ...Rc5 instead allows Nxe7+, forking king and rook on the way out.",
       "wrong": [
-        {"move": "Rc5", "why": "Nxe7+ wins a piece: the knight escapes with check and the bishop is gone."}
+        {
+          "move": "Rc5",
+          "why": "Nxe7+ wins a piece: the knight escapes with check and the bishop is gone."
+        }
       ],
       "hint": "Which black piece can take the knight — and what does the recapture do to White's pawns?",
       "objective": "Exchange the opponent's strongest piece, especially an outpost knight.",
-      "tags": ["outpost", "bishop-vs-knight", "piece-activity"]
+      "tags": [
+        "outpost",
+        "bishop-vs-knight",
+        "piece-activity"
+      ]
     },
     {
       "id": "19-08",
@@ -133,17 +224,26 @@
       "difficulty": 3,
       "fen": "2r2rk1/pb3ppp/2p5/1p6/8/1P2B3/P1PR1PPP/3R2K1 w - - 0 22",
       "question": "White to move. Your rooks own the d-file. Make the most of it.",
-      "solution": ["Rd7"],
+      "solution": [
+        "Rd7"
+      ],
       "goal": "best",
-      "accept": ["Bc5"],
-      "explanation": "Doubled rooks on an open file are made for invading. Rd7 attacks the bishop on b7 and the pawns on a7 and f7; after ...Ba6 the second rook follows and a7 falls. Bc5, first driving the f8-rook away, is equally strong. Grabbing a7 with the bishop lets Black play ...Ra8 and puts the bishop on the edge, and a quiet move like f3 lets Black untangle.",
+      "accept": [
+        "Bc5"
+      ],
+      "explanation": "Doubled rooks on an open file are made for invading. Rd7 attacks the bishop on b7 and the pawns on a7 and f7; after ...Ba6 the second rook follows and a7 falls. Bc5, first driving the f8-rook away, is equally strong. Grabbing a7 with the bishop is less precise: it wins a pawn but lets Black play ...Ra8 with the bishop on the edge, and a quiet move like f3 lets Black untangle.",
       "wrong": [
-        {"move": "Bxa7", "why": "Wins a pawn but sends the bishop to the rim; after ...Ra8 Black regains activity and White's grip weakens."},
-        {"move": "f3", "why": "Luft is not needed yet; Black uses the time to untangle with ...Ra8 and ...Bc8."}
+        {
+          "move": "f3",
+          "why": "Luft is not needed yet; Black uses the time to untangle with ...Ra8 and ...Bc8."
+        }
       ],
       "hint": "Where is the seventh rank, and what does it attack?",
       "objective": "Invade the seventh rank with doubled rooks on an open file.",
-      "tags": ["open-file", "piece-activity"]
+      "tags": [
+        "open-file",
+        "piece-activity"
+      ]
     },
     {
       "id": "19-09",
@@ -151,16 +251,27 @@
       "difficulty": 3,
       "fen": "3r1rk1/ppp2ppp/2n5/4p3/4P1b1/P2P1N2/1P2BPPP/R4RK1 b - - 0 15",
       "question": "Black to move. Your knight would love the d4 square. How do you get it there safely?",
-      "solution": ["Bxf3", "Bxf3", "Rxd3"],
+      "solution": [
+        "Bxf3",
+        "Bxf3",
+        "Rxd3"
+      ],
       "goal": "best",
       "accept": [],
       "explanation": "d4 is an outpost for Black: White has no c-pawn and the e-pawn has passed e3. But the knight on f3 guards d4, so ...Nd4 at once loses a piece: after Nxd4 Rxd4 the bishop on g4 is left hanging to Be2xg4. First remove the guard: ...Bxf3 Bxf3 Rxd3 wins the d3 pawn as well, because the bishop on e2 was its only defender. The square d4 still waits for the knight.",
       "wrong": [
-        {"move": "Nd4", "why": "Nxd4 Rxd4 Bxg4 wins a piece: once the f3-knight is gone, your g4-bishop hangs."}
+        {
+          "move": "Nd4",
+          "why": "Nxd4 Rxd4 Bxg4 wins a piece: once the f3-knight is gone, your g4-bishop hangs."
+        }
       ],
       "hint": "Who guards d4 right now?",
       "objective": "Remove the defender of an outpost square before occupying it.",
-      "tags": ["outpost", "removing-defender", "piece-activity"]
+      "tags": [
+        "outpost",
+        "removing-defender",
+        "piece-activity"
+      ]
     },
     {
       "id": "19-10",
@@ -168,18 +279,33 @@
       "difficulty": 4,
       "fen": "1rbq1rk1/5pbp/p1p3p1/4P3/P1Bnp3/4B2P/1PPQ2PN/1R1R2K1 b - - 0 19",
       "question": "Black to move. Your knight on d4 is attacked by the bishop, the queen and the rook. Keep it on its outpost.",
-      "solution": ["c5"],
+      "solution": [
+        "c5"
+      ],
       "goal": "best",
       "accept": [],
       "explanation": "Count: the knight is attacked three times and defended only by the queen. ...c5 adds a pawn defender, which is what makes a square a true outpost — now Bxd4 cxd4 gives Black a protected passed pawn on d4. Retreating with ...Ne6 lets White's knight jump to g4 and f6 with a strong attack, and ...Nf5 loses material after Qxd8.",
       "wrong": [
-        {"move": "Ne6", "why": "Gives up the outpost; after Ng4 White's pieces flood the dark squares near your king."},
-        {"move": "Nf5", "why": "Abandons the defence of your queen: Qxd8 starts a sequence that leaves White a piece up."},
-        {"move": "Rb7", "why": "Ignores the knight's problem; White wins material on d4."}
+        {
+          "move": "Ne6",
+          "why": "Gives up the outpost; after Ng4 White's pieces flood the dark squares near your king."
+        },
+        {
+          "move": "Nf5",
+          "why": "Abandons the defence of your queen: Qxd8 starts a sequence that leaves White a piece up."
+        },
+        {
+          "move": "Rb7",
+          "why": "Ignores the knight's problem; White wins material on d4."
+        }
       ],
       "hint": "Which pawn can support d4?",
       "objective": "Support an outpost piece with a pawn when it is attacked more often than defended.",
-      "tags": ["outpost", "counting", "defense"]
+      "tags": [
+        "outpost",
+        "counting",
+        "defense"
+      ]
     },
     {
       "id": "19-11",
@@ -187,17 +313,29 @@
       "difficulty": 4,
       "fen": "2qrrn1k/4pp1p/1pp2n1Q/5p2/p1PP3N/P2R3P/1P3PP1/4R1K1 w - - 0 26",
       "question": "White to move. Your queen and knight are close to the king, but one piece is missing. Bring it in.",
-      "solution": ["Rg3"],
+      "solution": [
+        "Rg3"
+      ],
       "goal": "win",
       "accept": [],
       "explanation": "A rook lift: the d3-rook swings to g3 and threatens Qg7#. Black has no good defence — ...Ng4 hxg4, ...Ng6 Rxg6 and ...Nh5 Qxh5 all give up material, and White's attack continues. Rf3 lifts the rook to the wrong file, and grabbing a pawn with Nxf5 lets the queen recapture with tempo.",
       "wrong": [
-        {"move": "Rf3", "why": "The rook does not hit g7 from f3; Black regroups with ...Ng8 and is a clear exchange up."},
-        {"move": "Nxf5", "why": "...Qxf5 and your attack is over; you are simply down material."}
+        {
+          "move": "Rf3",
+          "why": "The rook does not hit g7 from f3; Black regroups with ...Ng8 and is a clear exchange up."
+        },
+        {
+          "move": "Nxf5",
+          "why": "...Qxf5 and your attack is over; you are simply down material."
+        }
       ],
       "hint": "Which square would let a rook attack g7?",
       "objective": "Use a rook lift to add an attacker on a closed position.",
-      "tags": ["piece-activity", "attack", "mate-patterns"]
+      "tags": [
+        "piece-activity",
+        "attack",
+        "mate-patterns"
+      ]
     }
   ]
 }

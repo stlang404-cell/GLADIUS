@@ -16,12 +16,8 @@
         "b5",
         "Nd4"
       ],
-      "explanation": "Before recapturing, ask what White's forcing replies would be. After 5...Nxd5? White has 6.Nxf7! Kxf7 7.Qf3+, the Fried Liver Attack: your king is dragged into the open and the pinned knight on d5 is attacked again. 5...Na5! instead hits the bishop on c4, and after 6.Bb5+ c6 7.dxc6 bxc6 Black gets quick development for the pawn. 5...b5 and 5...Nd4 are sharp alternatives that also avoid the trap.",
+      "explanation": "Before recapturing, ask what White's forcing replies would be. After 5...Nxd5? White has 6.Nxf7! Kxf7 7.Qf3+, the Fried Liver Attack: your king is dragged into the open and the pinned knight on d5 is attacked again. Engines say Black can survive this with perfect defence, but over the board the attack is very hard to meet, and you would be playing White's game. 5...Na5! instead hits the bishop on c4, and after 6.Bb5+ c6 7.dxc6 bxc6 Black gets quick development for the pawn. 5...b5 and 5...Nd4 are sharp alternatives that also avoid the trap.",
       "wrong": [
-        {
-          "move": "Nxd5",
-          "why": "6.Nxf7! Kxf7 7.Qf3+ — the Fried Liver Attack, and your king is in great danger."
-        },
         {
           "move": "Bg4",
           "why": "It attacks the queen, but 6.Nxf7 forks your queen and rook first."
@@ -33,7 +29,8 @@
         "blunder-check",
         "opening-traps",
         "candidate-moves"
-      ]
+      ],
+      "review_note": "5...Nxd5 removed from 'wrong': at depth 18 it is only ~0.6 worse; the practical danger is explained in the text instead."
     },
     {
       "id": "14-02",
@@ -292,15 +289,11 @@
       ],
       "goal": "best",
       "accept": [],
-      "explanation": "The natural candidates are knight moves (...Ne4, ...Ng4), but a counter-strike belongs on the list too. 6...d5! attacks the bishop on c4 and opens the c8-bishop; after 7.Bb5 Ne4 Black's knight sits on a strong central square. 6...Ne4? runs into 7.Bd5! and 6...Ng4 into 7.cxd4, both with the knight in trouble.",
+      "explanation": "The natural candidates are knight moves (...Ne4, ...Ng4), but a counter-strike belongs on the list too. 6...d5! attacks the bishop on c4 and opens the c8-bishop; after 7.Bb5 Ne4 Black's knight sits on a strong central square. 6...Ne4? runs into 7.Bd5! with the knight in trouble; 6...Ng4 is playable but after 7.cxd4 White gets a comfortable centre, so ...d5 is the more precise choice.",
       "wrong": [
         {
           "move": "Ne4",
           "why": "7.Bd5! attacks the knight a second time and Black's position falls apart."
-        },
-        {
-          "move": "Ng4",
-          "why": "7.cxd4 leaves the knight offside and the bishop on c5 under attack; White is clearly better."
         }
       ],
       "hint": "Is there a move that creates a bigger threat than White's?",

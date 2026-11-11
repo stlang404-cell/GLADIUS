@@ -354,7 +354,8 @@
         "practical",
         "king-pawn-endgame",
         "opposition"
-      ]
+      ],
+      "review_note": "Both 61.Kd3 and 61.Kf3 lose for White; the line shows the most instructive defence (the king standing in front)."
     }
   ]
 }

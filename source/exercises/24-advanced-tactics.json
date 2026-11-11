@@ -169,7 +169,7 @@
       "solution": [
         "Qg4"
       ],
-      "goal": "win",
+      "goal": "best",
       "accept": [],
       "explanation": "Qg4! threatens Qxg7# and also lines the queen up behind the knight against Black's queen on d7. If ...g6, the knight jumps with check (Nh6+) and uncovers an attack on d7; if ...Qxf5, Qxf5 wins the queen for a knight. A check or capture first, such as Rxe8+, gives Black time to organize the defence.",
       "wrong": [
